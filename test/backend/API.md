@@ -819,3 +819,710 @@ Authorization: Bearer <admin_token>
 
 ---
 
+## 九、图片画廊接口
+
+### 9.1 获取图片列表
+
+**GET** `/api/images`
+
+**查询参数:**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| page | number | 否 | 页码，默认 1 |
+| pageSize | number | 否 | 每页数量，默认 10 |
+| tag | string | 否 | 标签 ID 或名称 |
+| search | string | 否 | 搜索关键词（标题、描述） |
+| sort | string | 否 | 排序方式: latest(最新)、popular(热门) |
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "images": [
+      {
+        "id": "xxx",
+        "title": "美丽的风景",
+        "imageUrl": "/uploads/gallery/xxx.jpg",
+        "thumbnailUrl": null,
+        "description": "这是一张美丽的风景图片",
+        "authorId": "xxx",
+        "author": {
+          "id": "xxx",
+          "username": "张三",
+          "avatarUrl": "/uploads/avatars/xxx.jpg"
+        },
+        "tags": [
+          { "id": "xxx", "name": "风景" },
+          { "id": "xxx", "name": "自然" }
+        ],
+        "views": 100,
+        "createdAt": "2024-01-01T00:00:00Z",
+        "updatedAt": "2024-01-01T00:00:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "pageSize": 10,
+      "total": 50,
+      "totalPages": 5
+    }
+  }
+}
+```
+
+---
+
+### 9.2 获取图片详情
+
+**GET** `/api/images/:id`
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "xxx",
+    "title": "美丽的风景",
+    "imageUrl": "/uploads/gallery/xxx.jpg",
+    "thumbnailUrl": null,
+    "description": "这是一张美丽的风景图片",
+    "authorId": "xxx",
+    "author": {
+      "id": "xxx",
+      "username": "张三",
+      "avatarUrl": "/uploads/avatars/xxx.jpg",
+      "bio": "摄影爱好者"
+    },
+    "tags": [
+      { "id": "xxx", "name": "风景" }
+    ],
+    "views": 101,
+    "createdAt": "2024-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+---
+
+### 9.3 上传图片文件
+
+**POST** `/api/upload/gallery`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+```
+
+**请求体:**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| file | File | 是 | 图片文件（支持 jpg, png, gif, webp） |
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "上传成功",
+  "data": {
+    "url": "/uploads/gallery/xxx_123456_abc.jpg",
+    "filename": "xxx_123456_abc.jpg",
+    "originalName": "my-image.jpg",
+    "size": 1024000,
+    "mimetype": "image/jpeg"
+  }
+}
+```
+
+---
+
+### 9.4 创建图片
+
+**POST** `/api/images`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**请求体:**
+```json
+{
+  "title": "我的新图片",
+  "imageUrl": "/uploads/gallery/xxx.jpg",
+  "thumbnailUrl": "/uploads/gallery/xxx_thumb.jpg",
+  "description": "图片描述（可选）",
+  "tagIds": ["tag1_id", "tag2_id"]
+}
+```
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "创建成功",
+  "data": {
+    "id": "xxx",
+    "title": "我的新图片",
+    "imageUrl": "/uploads/gallery/xxx.jpg",
+    "thumbnailUrl": "/uploads/gallery/xxx_thumb.jpg",
+    "description": "图片描述",
+    "authorId": "xxx",
+    "author": {
+      "id": "xxx",
+      "username": "张三",
+      "avatarUrl": "/uploads/avatars/xxx.jpg"
+    },
+    "tags": [
+      { "id": "tag1_id", "name": "标签1" }
+    ],
+    "views": 0,
+    "createdAt": "2024-01-02T00:00:00Z"
+  }
+}
+```
+
+---
+
+### 9.5 更新图片
+
+**PUT** `/api/images/:id`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**请求体:**
+```json
+{
+  "title": "更新后的标题",
+  "description": "更新后的描述",
+  "tagIds": ["tag1_id"]
+}
+```
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "更新成功",
+  "data": {
+    "id": "xxx",
+    "title": "更新后的标题",
+    "description": "更新后的描述",
+    "updatedAt": "2024-01-03T00:00:00Z"
+  }
+}
+```
+
+---
+
+### 9.6 删除图片
+
+**DELETE** `/api/images/:id`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "删除成功",
+  "data": null
+}
+```
+
+---
+
+### 9.7 获取用户的图片列表
+
+**GET** `/api/users/:id/images`
+
+**查询参数:**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| page | number | 否 | 页码，默认 1 |
+| pageSize | number | 否 | 每页数量，默认 10 |
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "images": [],
+    "pagination": {
+      "page": 1,
+      "pageSize": 10,
+      "total": 0,
+      "totalPages": 0
+    }
+  }
+}
+```
+
+---
+
+## 十、图片标签接口
+
+### 10.1 获取图片标签列表
+
+**GET** `/api/image-tags`
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "tags": [
+      { "id": "xxx", "name": "风景", "imageCount": 10 },
+      { "id": "xxx", "name": "人物", "imageCount": 8 },
+      { "id": "xxx", "name": "动漫", "imageCount": 15 }
+    ]
+  }
+}
+```
+
+---
+
+### 10.2 获取热门图片标签
+
+**GET** `/api/image-tags/popular`
+
+**查询参数:**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| limit | number | 否 | 返回数量，默认 10 |
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    { "id": "xxx", "name": "动漫", "imageCount": 15 },
+    { "id": "xxx", "name": "风景", "imageCount": 10 }
+  ]
+}
+```
+
+---
+
+### 10.3 获取单个图片标签
+
+**GET** `/api/image-tags/:id`
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "xxx",
+    "name": "风景",
+    "imageCount": 10,
+    "createdAt": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+---
+
+### 10.4 创建图片标签
+
+**POST** `/api/image-tags`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**请求体:**
+```json
+{
+  "name": "新标签"
+}
+```
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "创建成功",
+  "data": {
+    "id": "xxx",
+    "name": "新标签",
+    "createdAt": "2024-01-02T00:00:00Z"
+  }
+}
+```
+
+---
+
+### 10.5 更新图片标签（管理员）
+
+**PUT** `/api/image-tags/:id`
+
+**Headers:**
+```
+Authorization: Bearer <admin_token>
+```
+
+**请求体:**
+```json
+{
+  "name": "更新后的标签名"
+}
+```
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "更新成功",
+  "data": {
+    "id": "xxx",
+    "name": "更新后的标签名"
+  }
+}
+```
+
+---
+
+### 10.6 删除图片标签（管理员）
+
+**DELETE** `/api/image-tags/:id`
+
+**Headers:**
+```
+Authorization: Bearer <admin_token>
+```
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "删除成功",
+  "data": null
+}
+```
+
+---
+
+## 十一、图片收藏接口
+
+### 11.1 获取用户收藏的图片列表
+
+**GET** `/api/image-collections`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**查询参数:**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| page | number | 否 | 页码，默认 1 |
+| pageSize | number | 否 | 每页数量，默认 10 |
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "collections": [
+      {
+        "id": "collection_id",
+        "imageId": "image_id",
+        "image": {
+          "id": "image_id",
+          "title": "美丽的风景",
+          "imageUrl": "/uploads/gallery/xxx.jpg",
+          "author": {
+            "id": "xxx",
+            "username": "张三"
+          }
+        },
+        "createdAt": "2024-01-02T00:00:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "pageSize": 10,
+      "total": 5,
+      "totalPages": 1
+    }
+  }
+}
+```
+
+---
+
+### 11.2 收藏图片
+
+**POST** `/api/image-collections`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**请求体:**
+```json
+{
+  "imageId": "image_id"
+}
+```
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "收藏成功",
+  "data": {
+    "id": "collection_id",
+    "imageId": "image_id",
+    "createdAt": "2024-01-02T00:00:00Z"
+  }
+}
+```
+
+---
+
+### 11.3 检查是否已收藏图片
+
+**GET** `/api/image-collections/check/:imageId`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "collected": true,
+    "collectionId": "collection_id"
+  }
+}
+```
+
+---
+
+### 11.4 取消收藏（通过收藏ID）
+
+**DELETE** `/api/image-collections/:id`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "取消收藏成功",
+  "data": null
+}
+```
+
+---
+
+### 11.5 取消收藏（通过图片ID）
+
+**DELETE** `/api/image-collections/image/:imageId`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "取消收藏成功",
+  "data": null
+}
+```
+
+---
+
+## 十二、文件上传接口
+
+### 12.1 上传头像
+
+**POST** `/api/upload/avatar`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+```
+
+**请求体:**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| file | File | 是 | 头像图片文件 |
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "上传成功",
+  "data": {
+    "url": "/uploads/avatars/xxx_123456_abc.jpg",
+    "filename": "xxx_123456_abc.jpg",
+    "originalName": "avatar.jpg",
+    "size": 102400,
+    "mimetype": "image/jpeg"
+  }
+}
+```
+
+---
+
+### 12.2 上传封面
+
+**POST** `/api/upload/cover`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+```
+
+**请求体:**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| file | File | 是 | 封面图片文件 |
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "上传成功",
+  "data": {
+    "url": "/uploads/covers/xxx_123456_abc.jpg",
+    "filename": "xxx_123456_abc.jpg",
+    "originalName": "cover.jpg",
+    "size": 204800,
+    "mimetype": "image/jpeg"
+  }
+}
+```
+
+---
+
+### 12.3 删除已上传文件
+
+**DELETE** `/api/upload`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**请求体:**
+```json
+{
+  "url": "/uploads/gallery/xxx.jpg"
+}
+```
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "删除成功",
+  "data": null
+}
+```
+
+---
+
+## 十三、管理员图片接口
+
+### 13.1 获取所有图片（管理员）
+
+**GET** `/api/admin/images`
+
+**Headers:**
+```
+Authorization: Bearer <admin_token>
+```
+
+**查询参数:**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| page | number | 否 | 页码，默认 1 |
+| pageSize | number | 否 | 每页数量，默认 20 |
+| uploaderId | string | 否 | 上传者 ID |
+| search | string | 否 | 搜索关键词 |
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "images": [
+      {
+        "id": "xxx",
+        "title": "图片标题",
+        "imageUrl": "/uploads/gallery/xxx.jpg",
+        "author": {
+          "id": "xxx",
+          "username": "张三",
+          "email": "zhangsan@example.com"
+        },
+        "views": 100,
+        "createdAt": "2024-01-01T00:00:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "pageSize": 20,
+      "total": 100,
+      "totalPages": 5
+    }
+  }
+}
+```
+
+---
+
+### 13.2 删除图片（管理员）
+
+**DELETE** `/api/admin/images/:id`
+
+**Headers:**
+```
+Authorization: Bearer <admin_token>
+```
+
+**响应示例:**
+```json
+{
+  "code": 200,
+  "message": "删除成功",
+  "data": null
+}
+```
+
+---
