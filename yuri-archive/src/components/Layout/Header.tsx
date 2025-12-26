@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { Layout, Input, Avatar, Dropdown, Button, Drawer, Space, message } from 'antd'
 import { SearchOutlined, UserOutlined, MenuOutlined, HomeOutlined, EditOutlined, HeartOutlined, LogoutOutlined, LoginOutlined, SettingOutlined, MenuFoldOutlined, MenuUnfoldOutlined, FileTextOutlined, PictureOutlined } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
@@ -16,15 +16,26 @@ interface HeaderProps {
 
 export function Header({ sidebarCollapsed = false, onToggleSidebar }: HeaderProps) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { currentUser, isLoggedIn, logout } = useUserStore()
   const [searchValue, setSearchValue] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN'
+  
+  // 判断是否在画廊页面
+  const isGalleryPage = location.pathname.startsWith('/gallery')
+  const searchPlaceholder = isGalleryPage ? '搜索图片...' : '搜索文章...'
 
   const handleSearch = (value: string) => {
     if (value.trim()) {
-      navigate(`/search?q=${encodeURIComponent(value.trim())}`)
+      if (isGalleryPage) {
+        // 在画廊页面搜索图片
+        navigate(`/gallery?search=${encodeURIComponent(value.trim())}`)
+      } else {
+        // 在其他页面搜索文章
+        navigate(`/search?q=${encodeURIComponent(value.trim())}`)
+      }
       setSearchValue('')
       setDrawerOpen(false)
     }
@@ -176,7 +187,7 @@ export function Header({ sidebarCollapsed = false, onToggleSidebar }: HeaderProp
         {/* 桌面端搜索框 */}
         <div className={styles.searchWrapper}>
           <Input.Search
-            placeholder="搜索文章..."
+            placeholder={searchPlaceholder}
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             onSearch={handleSearch}
@@ -228,7 +239,7 @@ export function Header({ sidebarCollapsed = false, onToggleSidebar }: HeaderProp
         >
           {/* 移动端搜索框 */}
           <Input.Search
-            placeholder="搜索文章..."
+            placeholder={searchPlaceholder}
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             onSearch={handleSearch}

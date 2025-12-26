@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Typography, Avatar, Tabs, message, Row, Col, Card, Button, Modal, Form, Input, Upload } from 'antd'
 import { UserOutlined, EditOutlined, HeartOutlined, LoginOutlined, SettingOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
-import { ArticleList, GalleryList } from '../../components'
+import { ArticleList, GalleryList, CollectionSearch } from '../../components'
 import { getUserArticles, getCollections, getImageCollections, updateProfile, uploadAvatar, getImageUrl } from '../../services/api'
 import { useUserStore } from '../../store'
 import type { Article, GalleryImage } from '../../types'
@@ -46,6 +46,10 @@ export function UserCenterPage() {
   // 头像上传状态
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState<string>('')
+  
+  // 收藏搜索状态
+  const [articleSearchKeyword, setArticleSearchKeyword] = useState('')
+  const [imageSearchKeyword, setImageSearchKeyword] = useState('')
 
   useEffect(() => {
     if (currentUser && isLoggedIn) {
@@ -107,7 +111,30 @@ export function UserCenterPage() {
 
   const handleTabChange = (key: string) => {
     setSearchParams({ tab: key })
+    // 切换 tab 时清空搜索关键词
+    setArticleSearchKeyword('')
+    setImageSearchKeyword('')
   }
+
+  // 过滤收藏的文章
+  const filteredCollectedArticles = useMemo(() => {
+    if (!articleSearchKeyword.trim()) return collectedArticles
+    const keyword = articleSearchKeyword.toLowerCase()
+    return collectedArticles.filter(article =>
+      article.title.toLowerCase().includes(keyword) ||
+      (article.summary && article.summary.toLowerCase().includes(keyword))
+    )
+  }, [collectedArticles, articleSearchKeyword])
+
+  // 过滤收藏的图片
+  const filteredCollectedImages = useMemo(() => {
+    if (!imageSearchKeyword.trim()) return collectedImages
+    const keyword = imageSearchKeyword.toLowerCase()
+    return collectedImages.filter(image =>
+      image.title.toLowerCase().includes(keyword) ||
+      (image.description && image.description.toLowerCase().includes(keyword))
+    )
+  }, [collectedImages, imageSearchKeyword])
 
   const openEditModal = () => {
     form.setFieldsValue({
@@ -233,16 +260,23 @@ export function UserCenterPage() {
         </span>
       ),
       children: (
-        <ArticleList
-          articles={collectedArticles}
-          loading={collectionsLoading && activeTab === 'collections'}
-          pagination={{
-            current: collectionsPage,
-            total: collectionsTotal,
-            pageSize: PAGE_SIZE,
-            onChange: setCollectionsPage,
-          }}
-        />
+        <>
+          <CollectionSearch
+            value={articleSearchKeyword}
+            onChange={setArticleSearchKeyword}
+            placeholder="搜索收藏的文章..."
+          />
+          <ArticleList
+            articles={filteredCollectedArticles}
+            loading={collectionsLoading && activeTab === 'collections'}
+            pagination={{
+              current: collectionsPage,
+              total: articleSearchKeyword ? filteredCollectedArticles.length : collectionsTotal,
+              pageSize: PAGE_SIZE,
+              onChange: setCollectionsPage,
+            }}
+          />
+        </>
       ),
     },
     {
@@ -253,16 +287,23 @@ export function UserCenterPage() {
         </span>
       ),
       children: (
-        <GalleryList
-          images={collectedImages}
-          loading={imageCollectionsLoading && activeTab === 'image-collections'}
-          pagination={{
-            current: imageCollectionsPage,
-            total: imageCollectionsTotal,
-            pageSize: PAGE_SIZE,
-            onChange: setImageCollectionsPage,
-          }}
-        />
+        <>
+          <CollectionSearch
+            value={imageSearchKeyword}
+            onChange={setImageSearchKeyword}
+            placeholder="搜索收藏的图片..."
+          />
+          <GalleryList
+            images={filteredCollectedImages}
+            loading={imageCollectionsLoading && activeTab === 'image-collections'}
+            pagination={{
+              current: imageCollectionsPage,
+              total: imageSearchKeyword ? filteredCollectedImages.length : imageCollectionsTotal,
+              pageSize: PAGE_SIZE,
+              onChange: setImageCollectionsPage,
+            }}
+          />
+        </>
       ),
     },
   ]

@@ -1,0 +1,17 @@
+.searchContainer {
+  margin-bottom: 16px;
+}
+
+.searchInput {
+  max-width: 300px;
+  border-radius: 20px;
+}
+
+.searchInput:hover,
+.searchInput:focus-within {
+  border-color: #a855f7;
+}
+
+.searchIcon {
+  color: #9ca3af;
+}

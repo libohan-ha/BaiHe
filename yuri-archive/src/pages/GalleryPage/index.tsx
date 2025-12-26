@@ -24,16 +24,22 @@ export function GalleryPage() {
   const { isLoggedIn } = useUserStore()
 
   const tagId = searchParams.get('tag')
+  const searchKeyword = searchParams.get('search')
 
   useEffect(() => {
     loadData()
-  }, [page, tagId])
+  }, [page, tagId, searchKeyword])
 
   const loadData = async () => {
     setLoading(true)
     try {
       const [imagesRes, tagsRes] = await Promise.all([
-        getImages({ page, pageSize: PAGE_SIZE, tag: tagId || undefined }),
+        getImages({
+          page,
+          pageSize: PAGE_SIZE,
+          tag: tagId || undefined,
+          search: searchKeyword || undefined
+        }),
         getPopularImageTags(8)
       ])
       setImages(imagesRes.data)
@@ -88,15 +94,17 @@ export function GalleryPage() {
 
       <ImageTagCloud tags={tags} onTagClick={handleTagClick} />
 
-      {tagId && (
+      {(tagId || searchKeyword) && (
         <div className={styles.filterInfo}>
-          <span>当前筛选：</span>
+          <span>
+            {searchKeyword ? `搜索结果："${searchKeyword}"` : '当前筛选：'}
+          </span>
           <Button
             type="link"
             onClick={() => navigate('/gallery')}
             className={styles.clearFilter}
           >
-            清除筛选
+            清除{searchKeyword ? '搜索' : '筛选'}
           </Button>
         </div>
       )}
