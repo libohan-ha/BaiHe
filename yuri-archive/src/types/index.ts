@@ -43,6 +43,23 @@ export interface Article {
   updatedAt: string
 }
 
+// 评论类型
+export interface Comment {
+  id: string
+  content: string
+  articleId: string
+  userId: string
+  user: User
+  parentId: string | null
+  replies?: Comment[]
+  createdAt: string
+}
+
+// 评论区组件Props
+export interface CommentSectionProps {
+  articleId: string
+}
+
 // 收藏类型
 export interface Collection {
   id: string

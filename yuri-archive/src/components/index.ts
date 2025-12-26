@@ -8,3 +8,5 @@ export { SearchBox } from './SearchBox'
 export { GalleryCard } from './GalleryCard'
 export { GalleryList } from './GalleryList'
 export { ImageTagCloud } from './ImageTagCloud'
+// 评论组件
+export { CommentSection } from './CommentSection'

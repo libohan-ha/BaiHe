@@ -41,10 +41,13 @@
   font-size: 18px !important;
 }
 
-/* 响应式 */
+/* 响应式 - 移动端强制隐藏侧边栏 */
 @media (max-width: 768px) {
   .sidebar {
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    width: 0;
+    overflow: hidden;
+    border-right: none;
+    padding-top: 0;
   }
 
   .sidebar.collapsed {

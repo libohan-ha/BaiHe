@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Typography, Tag, Avatar, Button, Space, Breadcrumb, Spin, message, Popconfirm } from 'antd'
 import { HeartOutlined, HeartFilled, ArrowLeftOutlined, EyeOutlined, ClockCircleOutlined, UserOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import { MarkdownRenderer } from '../../components'
+import { MarkdownRenderer, CommentSection } from '../../components'
 import { getArticleById, addCollection, removeCollection, getCollections, deleteArticle, getImageUrl } from '../../services/api'
 import { useUserStore } from '../../store'
 import type { Article } from '../../types'
@@ -167,6 +167,9 @@ export function ArticleDetailPage() {
         <div className={styles.content}>
           <MarkdownRenderer content={article.content} />
         </div>
+
+        {/* 评论区 */}
+        <CommentSection articleId={id!} />
 
         <footer className={styles.footer}>
           <Space size="middle">
