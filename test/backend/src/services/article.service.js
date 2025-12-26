@@ -143,8 +143,16 @@ const getArticles = async (filters) => {
   }
 
   const orderBy = {};
-  const sortField = sort.startsWith('-') ? sort.substring(1) : sort;
-  const sortOrder = sort.startsWith('-') ? 'desc' : 'asc';
+  let sortField = sort.startsWith('-') ? sort.substring(1) : sort;
+  const sortOrder = sort.startsWith('-') ? 'asc' : 'desc';
+  
+  // 处理排序字段别名映射
+  if (sortField === 'latest' || sortField === 'createdAt') {
+    sortField = 'createdAt';
+  } else if (sortField === 'popular' || sortField === 'views') {
+    sortField = 'views';
+  }
+  
   orderBy[sortField] = sortOrder;
 
   const [articles, total] = await Promise.all([
