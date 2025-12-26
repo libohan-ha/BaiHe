@@ -5,14 +5,20 @@
 }
 
 .coverWrapper {
-  height: 160px;
+  height: 200px;
   overflow: hidden;
+  position: relative;
+  background: #f5f0fa;
 }
 
 .cover {
   width: 100%;
   height: 100%;
+  position: absolute;
+  inset: 0;
   object-fit: cover;
+  object-position: center;
+  display: block;
   transition: transform 0.3s;
 }
 
@@ -51,8 +57,9 @@
 }
 
 .tags {
-  margin-bottom: 12px;
+  margin-top: 12px;
 }
+
 
 .tag {
   cursor: pointer;
@@ -85,3 +92,10 @@
   color: #9ca3af;
   font-size: 12px;
 }
+
+@media (max-width: 768px) {
+  .coverWrapper {
+    height: 180px;
+  }
+}
+

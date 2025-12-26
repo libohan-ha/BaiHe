@@ -46,22 +46,7 @@ export function ArticleCard({ article, onTagClick }: ArticleCardProps) {
     >
       <div className={styles.content}>
         <h3 className={styles.title}>{article.title}</h3>
-        <p className={styles.summary}>{article.summary}</p>
-        
-        <div className={styles.tags}>
-          {article.tags.map(tag => (
-            <Tag
-              key={tag.id}
-              color="purple"
-              className={styles.tag}
-              onClick={(e) => handleTagClick(e, tag.id)}
-            >
-              {tag.name}
-            </Tag>
-          ))}
-        </div>
-
-        <div className={styles.meta}>
+        <p className={styles.summary}>{article.summary}</p><div className={styles.meta}>
           <Space className={styles.author} onClick={handleAuthorClick}>
             <Avatar
               size="small"
@@ -76,7 +61,23 @@ export function ArticleCard({ article, onTagClick }: ArticleCardProps) {
             <span><ClockCircleOutlined /> {dayjs(article.createdAt).format('MM-DD')}</span>
           </Space>
         </div>
+
+
+        
+        <div className={styles.tags}>
+          {article.tags.map(tag => (
+            <Tag
+              key={tag.id}
+              color="purple"
+              className={styles.tag}
+              onClick={(e) => handleTagClick(e, tag.id)}
+            >
+              {tag.name}
+            </Tag>
+          ))}
+        </div>
       </div>
     </Card>
   )
 }
+
