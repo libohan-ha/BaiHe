@@ -1,0 +1,123 @@
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.header {
+  margin-bottom: 24px;
+}
+
+.backButton {
+  color: #666;
+  padding: 0;
+  margin-bottom: 16px;
+}
+
+.backButton:hover {
+  color: #a855f7 !important;
+}
+
+.title {
+  margin: 0 !important;
+  color: #a855f7;
+}
+
+.card {
+  border-radius: 12px;
+  border: 1px solid #f0e6f6;
+}
+
+.form {
+  max-width: 600px;
+}
+
+.uploadItem {
+  margin-bottom: 24px;
+}
+
+.upload :global(.ant-upload-wrapper) {
+  display: block;
+}
+
+.upload :global(.ant-upload-list-item-container) {
+  width: 200px !important;
+  height: 200px !important;
+}
+
+.upload :global(.ant-upload.ant-upload-select) {
+  width: 200px !important;
+  height: 200px !important;
+  border: 2px dashed #d8b4fe !important;
+  background: #faf5ff !important;
+  border-radius: 8px !important;
+}
+
+.upload :global(.ant-upload.ant-upload-select:hover) {
+  border-color: #a855f7 !important;
+}
+
+.uploadButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #a855f7;
+  font-size: 14px;
+}
+
+.uploadButton :global(.anticon) {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.uploadingText {
+  color: #a855f7;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.submitItem {
+  margin-top: 32px;
+  margin-bottom: 0;
+}
+
+.submitButton {
+  margin-right: 12px;
+  background: linear-gradient(135deg, #c084fc 0%, #a855f7 100%);
+  border: none;
+  height: 40px;
+  padding: 0 32px;
+}
+
+.submitButton:hover {
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%) !important;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+
+  .upload :global(.ant-upload-list-item-container),
+  .upload :global(.ant-upload.ant-upload-select) {
+    width: 150px !important;
+    height: 150px !important;
+  }
+
+  .submitItem {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .submitButton {
+    margin-right: 0;
+    width: 100%;
+  }
+
+  .submitItem button {
+    width: 100%;
+  }
+}

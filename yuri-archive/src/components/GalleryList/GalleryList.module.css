@@ -1,0 +1,28 @@
+.container {
+  width: 100%;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.empty {
+  padding: 60px 0;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+  padding: 16px 0;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .pagination {
+    margin-top: 24px;
+  }
+}

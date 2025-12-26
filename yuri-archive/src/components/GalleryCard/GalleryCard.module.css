@@ -1,0 +1,109 @@
+.card {
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height: 100%;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(168, 85, 247, 0.15);
+}
+
+.imageContainer {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background: #f5f0fa;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.card:hover .image {
+  transform: scale(1.05);
+}
+
+.overlay {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.viewIcon {
+  font-size: 12px;
+}
+
+.content {
+  padding: 4px 0;
+}
+
+.title {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.author {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.authorName {
+  font-size: 12px;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tag {
+  margin: 0 !important;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0 6px;
+  border-radius: 4px;
+}
+
+.tag:hover {
+  opacity: 0.8;
+}
+
+.moreTag {
+  margin: 0 !important;
+  background: #f0e6f6;
+  border-color: #e8ddf0;
+  color: #a855f7;
+  font-size: 11px;
+  padding: 0 6px;
+  border-radius: 4px;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .imageContainer {
+    height: 160px;
+  }
+  
+  .title {
+    font-size: 13px;
+  }
+}

@@ -1,0 +1,81 @@
+.container {
+  background: linear-gradient(135deg, #fefefe 0%, #faf5ff 100%);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  border: 1px solid #f0e6f6;
+}
+
+.title {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #a855f7;
+  font-weight: 600;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+  border: 1px solid #d8b4fe;
+  color: #7c3aed;
+  font-size: 13px;
+  transition: all 0.3s ease;
+  margin: 0 !important;
+}
+
+.tag:hover {
+  background: linear-gradient(135deg, #e9d5ff 0%, #d8b4fe 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
+}
+
+.count {
+  margin-left: 4px;
+  font-size: 11px;
+  color: #9333ea;
+  opacity: 0.8;
+}
+
+.moreTag {
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 16px;
+  background: #f5f0fa;
+  border: 1px dashed #d8b4fe;
+  color: #a855f7;
+  font-size: 13px;
+  transition: all 0.3s ease;
+  margin: 0 !important;
+}
+
+.moreTag:hover {
+  background: #f3e8ff;
+  border-style: solid;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .title {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  .tag,
+  .moreTag {
+    font-size: 12px;
+    padding: 3px 10px;
+  }
+}

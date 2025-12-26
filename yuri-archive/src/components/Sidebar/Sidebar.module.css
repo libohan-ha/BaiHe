@@ -1,0 +1,55 @@
+.sidebar {
+  background: #ffffff;
+  border-right: 1px solid #f0e6f6;
+  min-height: calc(100vh - 64px);
+  height: auto;
+  transition: width 0.2s ease;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0;
+  top: 64px;
+  z-index: 99;
+  padding-top: 8px;
+}
+
+.sidebar.collapsed {
+  width: 80px;
+}
+
+.menu {
+  flex: 1;
+  border-inline-end: none !important;
+}
+
+.menu :global(.ant-menu-item) {
+  margin: 8px;
+  border-radius: 8px;
+}
+
+.menu :global(.ant-menu-item-selected) {
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%) !important;
+  color: #a855f7 !important;
+}
+
+.menu :global(.ant-menu-item:hover) {
+  background: #faf5ff !important;
+}
+
+.menu :global(.ant-menu-item-icon) {
+  font-size: 18px !important;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .sidebar {
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar.collapsed {
+    width: 0;
+    overflow: hidden;
+    border-right: none;
+  }
+}
