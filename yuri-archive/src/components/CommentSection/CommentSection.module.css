@@ -173,6 +173,7 @@
   border-color: #e9d5ff;
   font-size: 13px;
   resize: none;
+  margin-bottom: 24px;
 }
 
 .replyInput:focus,
