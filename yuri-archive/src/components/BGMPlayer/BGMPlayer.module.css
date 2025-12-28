@@ -141,6 +141,15 @@
   transform: scale(1.1);
 }
 
+.modeBtn {
+  font-size: 14px;
+  color: #667eea;
+}
+
+.modeBtn:hover {
+  background: rgba(102, 126, 234, 0.15);
+}
+
 /* 音量控制 */
 .volumeControl {
   display: flex;
