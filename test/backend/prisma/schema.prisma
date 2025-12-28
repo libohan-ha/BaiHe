@@ -84,16 +84,19 @@ model Collection {
 model Comment {
   id        String   @id @default(cuid())
   content   String
-  articleId String
+  articleId String?
+  imageId   String?
   userId    String
   parentId  String?
-  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  article   Article? @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  image     Image?   @relation(fields: [imageId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies   Comment[] @relation("CommentReplies")
   createdAt DateTime @default(now())
 
   @@index([articleId])
+  @@index([imageId])
   @@index([userId])
   @@index([parentId])
 }
@@ -111,6 +114,7 @@ model Image {
   uploader     User              @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
   tags         ImageTag[]
   collections  ImageCollection[]
+  comments     Comment[]
   views        Int               @default(0)
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt

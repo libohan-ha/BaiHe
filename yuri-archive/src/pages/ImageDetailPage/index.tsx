@@ -24,6 +24,7 @@ import dayjs from 'dayjs'
 import { getImageById, deleteImage, addImageCollection, removeImageCollection, getImageCollections } from '../../services/api'
 import { getImageUrl } from '../../services/api'
 import { useUserStore } from '../../store/userStore'
+import { CommentSection } from '../../components'
 import type { GalleryImage } from '../../types'
 import styles from './ImageDetailPage.module.css'
 
@@ -261,6 +262,9 @@ export function ImageDetailPage() {
           )}
         </div>
       </div>
+
+      {/* 评论区 */}
+      <CommentSection imageId={id!} />
 
       <Modal
         open={previewVisible}

@@ -19,7 +19,8 @@ const { TextArea } = Input
 interface Comment {
   id: string
   content: string
-  articleId: string
+  articleId: string | null
+  imageId: string | null
   userId: string
   user: User
   parentId: string | null
@@ -29,10 +30,13 @@ interface Comment {
 }
 
 interface CommentSectionProps {
-  articleId: string
+  articleId?: string
+  imageId?: string
 }
 
-export function CommentSection({ articleId }: CommentSectionProps) {
+export function CommentSection({ articleId, imageId }: CommentSectionProps) {
+  // 构建评论目标对象
+  const commentTarget = articleId ? { articleId } : { imageId }
   const { currentUser, isLoggedIn } = useUserStore()
   
   const [comments, setComments] = useState<Comment[]>([])
@@ -47,12 +51,12 @@ export function CommentSection({ articleId }: CommentSectionProps) {
 
   useEffect(() => {
     loadComments()
-  }, [articleId, page])
+  }, [articleId, imageId, page])
 
   const loadComments = async () => {
     setLoading(true)
     try {
-      const res = await getComments(articleId, page, pageSize)
+      const res = await getComments(commentTarget, page, pageSize)
       setComments(res.comments || [])
       setTotal(res.pagination?.total || 0)
     } catch (err) {
@@ -75,7 +79,7 @@ export function CommentSection({ articleId }: CommentSectionProps) {
 
     setSubmitting(true)
     try {
-      await createComment(articleId, commentText.trim())
+      await createComment(commentTarget, commentText.trim())
       message.success('评论发表成功')
       setCommentText('')
       setPage(1)
@@ -100,7 +104,7 @@ export function CommentSection({ articleId }: CommentSectionProps) {
 
     setSubmitting(true)
     try {
-      await createComment(articleId, replyText.trim(), parentId)
+      await createComment(commentTarget, replyText.trim(), parentId)
       message.success('回复成功')
       setReplyText('')
       setReplyingTo(null)

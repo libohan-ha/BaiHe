@@ -371,10 +371,12 @@ export async function removeCollection(collectionId: string): Promise<void> {
 interface Comment {
   id: string
   content: string
-  articleId: string
+  articleId: string | null
+  imageId: string | null
   userId: string
   user: User
   parentId: string | null
+  replyToUser?: User | null
   replies?: Comment[]
   createdAt: string
 }
@@ -389,14 +391,38 @@ interface CommentsResponse {
   }
 }
 
-export async function getComments(articleId: string, page: number = 1, pageSize: number = 10): Promise<CommentsResponse> {
-  return request<CommentsResponse>(`/api/comments?articleId=${articleId}&page=${page}&pageSize=${pageSize}`)
+// 评论目标参数类型
+interface CommentTarget {
+  articleId?: string
+  imageId?: string
 }
 
-export async function createComment(articleId: string, content: string, parentId?: string): Promise<Comment> {
+export async function getComments(target: CommentTarget, page: number = 1, pageSize: number = 10): Promise<CommentsResponse> {
+  const params = new URLSearchParams()
+  if (target.articleId) params.set('articleId', target.articleId)
+  if (target.imageId) params.set('imageId', target.imageId)
+  params.set('page', String(page))
+  params.set('pageSize', String(pageSize))
+  return request<CommentsResponse>(`/api/comments?${params.toString()}`)
+}
+
+export async function createComment(target: CommentTarget, content: string, parentId?: string): Promise<Comment> {
+  // 构建请求体，只包含存在的字段
+  const body: Record<string, string | undefined> = { content }
+  
+  if (target.articleId) {
+    body.articleId = target.articleId
+  }
+  if (target.imageId) {
+    body.imageId = target.imageId
+  }
+  if (parentId) {
+    body.parentId = parentId
+  }
+
   return request<Comment>('/api/comments', {
     method: 'POST',
-    body: JSON.stringify({ articleId, content, parentId: parentId || null }),
+    body: JSON.stringify(body),
   })
 }
 

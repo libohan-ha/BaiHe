@@ -604,9 +604,31 @@ Authorization: Bearer <token>
 
 ## 六、评论接口
 
-### 6.1 获取文章评论列表
+评论接口同时支持文章评论和图片评论，通过 `articleId` 或 `imageId` 参数区分。
 
-**GET** `/api/comments?articleId=:articleId`
+### 6.1 获取评论列表
+
+**GET** `/api/comments`
+
+**查询参数:**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| articleId | string | 否* | 文章ID |
+| imageId | string | 否* | 图片ID |
+| page | number | 否 | 页码，默认 1 |
+| pageSize | number | 否 | 每页数量，默认 10 |
+
+> *注意：`articleId` 和 `imageId` 必须提供其中一个
+
+**获取文章评论示例:**
+```
+GET /api/comments?articleId=xxx
+```
+
+**获取图片评论示例:**
+```
+GET /api/comments?imageId=xxx
+```
 
 **响应示例:**
 ```json
@@ -614,12 +636,28 @@ Authorization: Bearer <token>
   "code": 200,
   "message": "success",
   "data": {
-    "comments": [],
+    "comments": [
+      {
+        "id": "xxx",
+        "content": "这是一条评论",
+        "articleId": "article_id",
+        "imageId": null,
+        "userId": "xxx",
+        "user": {
+          "id": "xxx",
+          "username": "张三",
+          "avatarUrl": "/uploads/avatars/xxx.jpg"
+        },
+        "parentId": null,
+        "replies": [],
+        "createdAt": "2024-01-02T00:00:00Z"
+      }
+    ],
     "pagination": {
       "page": 1,
       "pageSize": 10,
-      "total": 0,
-      "totalPages": 0
+      "total": 1,
+      "totalPages": 1
     }
   }
 }
@@ -637,10 +675,29 @@ Authorization: Bearer <token>
 ```
 
 **请求体:**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| content | string | 是 | 评论内容 |
+| articleId | string | 否* | 文章ID |
+| imageId | string | 否* | 图片ID |
+| parentId | string | 否 | 父评论ID（用于回复） |
+
+> *注意：`articleId` 和 `imageId` 必须提供其中一个
+
+**文章评论请求示例:**
 ```json
 {
-  "content": "这是一条评论",
+  "content": "这是一条文章评论",
   "articleId": "article_id",
+  "parentId": null
+}
+```
+
+**图片评论请求示例:**
+```json
+{
+  "content": "这是一条图片评论",
+  "imageId": "image_id",
   "parentId": null
 }
 ```
@@ -654,7 +711,13 @@ Authorization: Bearer <token>
     "id": "xxx",
     "content": "这是一条评论",
     "articleId": "article_id",
+    "imageId": null,
     "userId": "xxx",
+    "user": {
+      "id": "xxx",
+      "username": "张三",
+      "avatarUrl": "/uploads/avatars/xxx.jpg"
+    },
     "parentId": null,
     "createdAt": "2024-01-02T00:00:00Z"
   }

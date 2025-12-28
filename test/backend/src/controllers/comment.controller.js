@@ -3,14 +3,15 @@ const { success, error } = require('../utils/response');
 
 const getComments = async (req, res, next) => {
   try {
-    const articleId = req.query.articleId;
-    if (!articleId) {
-      return res.status(400).json(error('文章ID不能为空', 400));
+    const { articleId, imageId } = req.query;
+    
+    if (!articleId && !imageId) {
+      return res.status(400).json(error('文章ID或图片ID不能为空', 400));
     }
 
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 10;
-    const result = await commentService.getComments(articleId, page, pageSize);
+    const result = await commentService.getComments({ articleId, imageId, page, pageSize });
     res.json(success(result, '获取成功'));
   } catch (err) {
     next(err);
@@ -19,8 +20,8 @@ const getComments = async (req, res, next) => {
 
 const createComment = async (req, res, next) => {
   try {
-    const { content, articleId, parentId } = req.body;
-    const comment = await commentService.createComment(req.user.id, articleId, content, parentId);
+    const { content, articleId, imageId, parentId } = req.body;
+    const comment = await commentService.createComment(req.user.id, { articleId, imageId, content, parentId });
     res.status(201).json(success(comment, '评论成功'));
   } catch (err) {
     next(err);
