@@ -129,6 +129,12 @@ export function ImageDetailPage() {
     navigate(`/gallery?tag=${tagId}`)
   }
 
+  const handleAuthorClick = () => {
+    if (image?.author?.id || image?.authorId) {
+      navigate(`/user/${image.author?.id || image.authorId}`)
+    }
+  }
+
   const isOwner = currentUser && image && currentUser.id === image.authorId
   const isAdmin = currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN')
   const canEdit = isOwner || isAdmin
@@ -216,7 +222,7 @@ export function ImageDetailPage() {
           </Title>
 
           <div className={styles.meta}>
-            <div className={styles.author}>
+            <div className={styles.author} onClick={handleAuthorClick} style={{ cursor: 'pointer' }}>
               <Avatar
                 size={40}
                 src={getImageUrl(image.author?.avatarUrl)}

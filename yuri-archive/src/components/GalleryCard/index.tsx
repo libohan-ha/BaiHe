@@ -27,6 +27,13 @@ export function GalleryCard({ image, onTagClick, onImageClick }: GalleryCardProp
     }
   }
 
+  const handleAuthorClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (image.author?.id || image.authorId) {
+      navigate(`/user/${image.author?.id || image.authorId}`)
+    }
+  }
+
   return (
     <Card
       hoverable
@@ -51,10 +58,10 @@ export function GalleryCard({ image, onTagClick, onImageClick }: GalleryCardProp
           {image.title}
         </Text>
         
-        <div className={styles.author}>
-          <Avatar 
-            size="small" 
-            src={getImageUrl(image.author?.avatarUrl)} 
+        <div className={styles.author} onClick={handleAuthorClick} style={{ cursor: 'pointer' }}>
+          <Avatar
+            size="small"
+            src={getImageUrl(image.author?.avatarUrl)}
             icon={<UserOutlined />}
           />
           <Text type="secondary" className={styles.authorName}>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Typography, Button, Input, Avatar, Spin, Empty, message, Popconfirm, Pagination } from 'antd'
 import { UserOutlined, MessageOutlined, DeleteOutlined, SendOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
@@ -35,6 +36,7 @@ interface CommentSectionProps {
 }
 
 export function CommentSection({ articleId, imageId }: CommentSectionProps) {
+  const navigate = useNavigate()
   // 构建评论目标对象
   const commentTarget = articleId ? { articleId } : { imageId }
   const { currentUser, isLoggedIn } = useUserStore()
@@ -133,6 +135,10 @@ export function CommentSection({ articleId, imageId }: CommentSectionProps) {
            currentUser.role === 'SUPER_ADMIN'
   }
 
+  const handleUserClick = (userId: string) => {
+    navigate(`/user/${userId}`)
+  }
+
   const renderComment = (comment: Comment, isReply = false) => (
     <div
       key={comment.id}
@@ -143,10 +149,17 @@ export function CommentSection({ articleId, imageId }: CommentSectionProps) {
         icon={<UserOutlined />}
         size={isReply ? 32 : 40}
         className={styles.avatar}
+        style={{ cursor: 'pointer' }}
+        onClick={() => handleUserClick(comment.userId)}
       />
       <div className={styles.commentContent}>
         <div className={styles.commentHeader}>
-          <Text strong className={styles.username}>
+          <Text
+            strong
+            className={styles.username}
+            style={{ cursor: 'pointer' }}
+            onClick={() => handleUserClick(comment.userId)}
+          >
             {comment.user?.username || '匿名用户'}
           </Text>
           <Text type="secondary" className={styles.time}>

@@ -8,6 +8,7 @@ import {
   SearchPage,
   TagPage,
   UserCenterPage,
+  UserProfilePage,
   LoginPage,
   RegisterPage,
   CreateArticlePage,
@@ -63,6 +64,7 @@ function App() {
               <Route path="search" element={<SearchPage />} />
               <Route path="tag/:id" element={<TagPage />} />
               <Route path="user" element={<UserCenterPage />} />
+              <Route path="user/:id" element={<UserProfilePage />} />
               <Route path="login" element={<LoginPage />} />
               <Route path="register" element={<RegisterPage />} />
               <Route path="create" element={<CreateArticlePage />} />
