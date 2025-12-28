@@ -1,0 +1,258 @@
+.container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* 收缩状态的圆形按钮 */
+.toggleButton {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s ease;
+  opacity: 1;
+  transform: scale(1);
+}
+
+.toggleButton:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+.toggleButton.hidden {
+  opacity: 0;
+  transform: scale(0);
+  pointer-events: none;
+}
+
+.toggleButton.playing {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 25px rgba(102, 126, 234, 0.6), 0 0 0 8px rgba(102, 126, 234, 0.1);
+  }
+  100% {
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  }
+}
+
+.icon {
+  font-size: 22px;
+  color: #fff;
+}
+
+/* 展开状态的控制面板 */
+.panel {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 240px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  transform: scale(0.8) translateY(10px);
+  transform-origin: bottom right;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.panel.expanded {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  pointer-events: auto;
+}
+
+/* 歌曲名称 */
+.trackName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.trackIcon {
+  font-size: 18px;
+  color: #667eea;
+}
+
+.trackText {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+/* 播放控制 */
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.controlBtn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: #333;
+  font-size: 20px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.controlBtn:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+}
+
+.controlBtn:nth-child(2) {
+  font-size: 28px;
+  color: #667eea;
+}
+
+.controlBtn:nth-child(2):hover {
+  transform: scale(1.1);
+}
+
+/* 音量控制 */
+.volumeControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.volumeIcon {
+  font-size: 16px;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.volumeSlider {
+  flex: 1;
+  margin: 0;
+}
+
+.volumeSlider :global(.ant-slider-rail) {
+  background: #e8e8e8;
+}
+
+.volumeSlider :global(.ant-slider-track) {
+  background: linear-gradient(90deg, #667eea, #764ba2);
+}
+
+.volumeSlider :global(.ant-slider-handle) {
+  border-color: #667eea;
+}
+
+.volumeSlider :global(.ant-slider-handle:focus) {
+  box-shadow: 0 0 0 5px rgba(102, 126, 234, 0.2);
+}
+
+/* 关闭按钮 */
+.closeBtn {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #999;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.closeBtn:hover {
+  color: #666;
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+  .panel {
+    background: rgba(30, 30, 30, 0.95);
+  }
+  
+  .trackName {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .trackText {
+    color: #eee;
+  }
+  
+  .controlBtn {
+    color: #eee;
+  }
+  
+  .controlBtn:hover {
+    background: rgba(102, 126, 234, 0.2);
+  }
+  
+  .volumeIcon {
+    color: #aaa;
+  }
+  
+  .volumeSlider :global(.ant-slider-rail) {
+    background: #444;
+  }
+  
+  .closeBtn {
+    color: #888;
+  }
+  
+  .closeBtn:hover {
+    color: #aaa;
+  }
+}
+
+/* 移动端适配 */
+@media (max-width: 480px) {
+  .container {
+    bottom: 16px;
+    right: 16px;
+  }
+  
+  .toggleButton {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .icon {
+    font-size: 20px;
+  }
+  
+  .panel {
+    width: 220px;
+    padding: 14px;
+  }
+}

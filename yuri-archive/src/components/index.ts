@@ -12,3 +12,5 @@ export { ImageTagCloud } from './ImageTagCloud'
 export { CommentSection } from './CommentSection'
 // 收藏搜索组件
 export { CollectionSearch } from './CollectionSearch'
+// BGM 播放器组件
+export { BGMPlayer } from './BGMPlayer'

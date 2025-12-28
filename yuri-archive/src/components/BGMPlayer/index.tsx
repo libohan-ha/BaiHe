@@ -1,0 +1,192 @@
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { CustomerServiceOutlined, PauseCircleOutlined, PlayCircleOutlined, StepBackwardOutlined, StepForwardOutlined, SoundOutlined } from '@ant-design/icons'
+import { Slider } from 'antd'
+import styles from './BGMPlayer.module.css'
+
+// BGM 列表配置 - 用户可以在这里添加更多音频
+// 音频文件放在 public/audio/ 目录下
+const BGM_LIST = [
+  { id: 1, name: '歌曲1', src: '/audio/歌曲1.mp3' },
+  { id: 2, name: 'BGM 2', src: '/audio/bgm2.mp3' },
+  { id: 3, name: 'BGM 3', src: '/audio/bgm3.mp3' },
+]
+
+export function BGMPlayer() {
+  const audioRef = useRef<HTMLAudioElement>(null)
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [volume, setVolume] = useState(() => {
+    const saved = localStorage.getItem('bgm-volume')
+    return saved ? Number(saved) : 50
+  })
+
+  const currentBGM = BGM_LIST[currentIndex]
+
+  // 重置自动隐藏计时器
+  const resetHideTimer = useCallback(() => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current)
+    }
+    hideTimerRef.current = setTimeout(() => {
+      setIsExpanded(false)
+    }, 3000)
+  }, [])
+
+  // 点击展开/收起
+  const handleToggle = () => {
+    if (!isExpanded) {
+      setIsExpanded(true)
+      resetHideTimer()
+    } else {
+      setIsExpanded(false)
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current)
+      }
+    }
+  }
+
+  // 面板内交互时重置计时器
+  const handlePanelInteraction = () => {
+    if (isExpanded) {
+      resetHideTimer()
+    }
+  }
+
+  // 播放/暂停
+  const handlePlayPause = () => {
+    handlePanelInteraction()
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause()
+      } else {
+        audioRef.current.play().catch(() => {
+          // 浏览器可能阻止自动播放，忽略错误
+        })
+      }
+      setIsPlaying(!isPlaying)
+    }
+  }
+
+  // 上一首
+  const handlePrev = () => {
+    handlePanelInteraction()
+    const newIndex = currentIndex === 0 ? BGM_LIST.length - 1 : currentIndex - 1
+    setCurrentIndex(newIndex)
+  }
+
+  // 下一首
+  const handleNext = () => {
+    handlePanelInteraction()
+    const newIndex = currentIndex === BGM_LIST.length - 1 ? 0 : currentIndex + 1
+    setCurrentIndex(newIndex)
+  }
+
+  // 音量调节
+  const handleVolumeChange = (value: number) => {
+    handlePanelInteraction()
+    setVolume(value)
+    localStorage.setItem('bgm-volume', String(value))
+    if (audioRef.current) {
+      audioRef.current.volume = value / 100
+    }
+  }
+
+  // 音频结束时自动下一首
+  const handleEnded = () => {
+    handleNext()
+  }
+
+  // 当歌曲切换时重新播放
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume / 100
+      if (isPlaying) {
+        audioRef.current.play().catch(() => {})
+      }
+    }
+  }, [currentIndex])
+
+  // 初始化音量
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume / 100
+    }
+  }, [])
+
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current)
+      }
+    }
+  }, [])
+
+  return (
+    <div className={styles.container}>
+      <audio
+        ref={audioRef}
+        src={currentBGM?.src}
+        onEnded={handleEnded}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+      />
+
+      {/* 收缩状态：圆形按钮 */}
+      <div
+        className={`${styles.toggleButton} ${isExpanded ? styles.hidden : ''} ${isPlaying ? styles.playing : ''}`}
+        onClick={handleToggle}
+        title="BGM 播放器"
+      >
+        <CustomerServiceOutlined className={styles.icon} />
+      </div>
+
+      {/* 展开状态：控制面板 */}
+      <div
+        className={`${styles.panel} ${isExpanded ? styles.expanded : ''}`}
+        onMouseMove={handlePanelInteraction}
+        onClick={handlePanelInteraction}
+      >
+        {/* 歌曲名称 */}
+        <div className={styles.trackName}>
+          <CustomerServiceOutlined className={styles.trackIcon} />
+          <span className={styles.trackText}>{currentBGM?.name || '未选择'}</span>
+        </div>
+
+        {/* 播放控制 */}
+        <div className={styles.controls}>
+          <button className={styles.controlBtn} onClick={handlePrev} title="上一首">
+            <StepBackwardOutlined />
+          </button>
+          <button className={styles.controlBtn} onClick={handlePlayPause} title={isPlaying ? '暂停' : '播放'}>
+            {isPlaying ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
+          </button>
+          <button className={styles.controlBtn} onClick={handleNext} title="下一首">
+            <StepForwardOutlined />
+          </button>
+        </div>
+
+        {/* 音量控制 */}
+        <div className={styles.volumeControl}>
+          <SoundOutlined className={styles.volumeIcon} />
+          <Slider
+            className={styles.volumeSlider}
+            min={0}
+            max={100}
+            value={volume}
+            onChange={handleVolumeChange}
+            tooltip={{ formatter: (value) => `${value}%` }}
+          />
+        </div>
+
+        {/* 收起按钮 */}
+        <div className={styles.closeBtn} onClick={handleToggle}>
+          ×
+        </div>
+      </div>
+    </div>
+  )
+}

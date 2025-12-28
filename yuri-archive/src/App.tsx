@@ -1,7 +1,7 @@
 import { ConfigProvider, App as AntApp, message } from 'antd'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import zhCN from 'antd/locale/zh_CN'
-import { Layout } from './components/Layout'
+import { Layout, BGMPlayer } from './components'
 import {
   HomePage,
   ArticleDetailPage,
@@ -54,6 +54,8 @@ function App() {
     <ConfigProvider theme={theme} locale={zhCN}>
       <AntApp>
         <BrowserRouter>
+          {/* 全局 BGM 播放器 */}
+          <BGMPlayer />
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<HomePage />} />
