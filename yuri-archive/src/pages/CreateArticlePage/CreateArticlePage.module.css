@@ -1,0 +1,98 @@
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.card {
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.1);
+  border-radius: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f3e8ff;
+}
+
+.title {
+  margin: 0 !important;
+  color: #7c3aed !important;
+  flex: 1;
+}
+
+.contentInput {
+  font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.actions {
+  margin-bottom: 0;
+  padding-top: 16px;
+  border-top: 1px solid #f3e8ff;
+}
+
+/* 封面上传样式 */
+.coverUpload {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.coverUploader :global(.ant-upload.ant-upload-select) {
+  width: 240px !important;
+  height: 135px !important;
+}
+
+.coverPreviewWrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.coverPreview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.coverActions {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 4px;
+  text-align: center;
+  border-radius: 0 0 8px 8px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.coverPreviewWrapper:hover .coverActions {
+  opacity: 1;
+}
+
+.removeBtn {
+  color: #fff !important;
+  font-size: 12px;
+}
+
+.removeBtn:hover {
+  color: #ff4d4f !important;
+}
+
+.coverHint {
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

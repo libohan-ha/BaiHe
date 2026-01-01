@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model User {
+  id               String            @id @default(cuid())
+  email            String            @unique
+  username         String            @unique
+  password         String
+  avatarUrl        String?
+  bio              String?
+  role             UserRole          @default(USER)
+  articles         Article[]
+  collections      Collection[]
+  comments         Comment[]
+  images           Image[]
+  imageCollections ImageCollection[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([email])
+  @@index([username])
+}
+
+model Article {
+  id          String        @id @default(cuid())
+  title       String
+  summary     String?
+  content     String
+  coverUrl    String?
+  authorId    String
+  author      User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  views       Int           @default(0)
+  status      ArticleStatus @default(PUBLISHED)
+  tags        Tag[]
+  collections Collection[]
+  comments    Comment[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([authorId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  articles  Article[]
+  createdAt DateTime  @default(now())
+
+  @@index([name])
+}
+
+model Collection {
+  id        String   @id @default(cuid())
+  userId    String
+  articleId String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, articleId])
+  @@index([userId])
+  @@index([articleId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  articleId String?
+  imageId   String?
+  userId    String
+  parentId  String?
+  article   Article? @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  image     Image?   @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReplies")
+  createdAt DateTime @default(now())
+
+  @@index([articleId])
+  @@index([imageId])
+  @@index([userId])
+  @@index([parentId])
+}
+
+model Image {
+  id           String            @id @default(cuid())
+  title        String
+  description  String?
+  url          String
+  thumbnailUrl String?
+  width        Int?
+  height       Int?
+  size         Int               @default(0)
+  uploaderId   String
+  uploader     User              @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  tags         ImageTag[]
+  collections  ImageCollection[]
+  comments     Comment[]
+  views        Int               @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([uploaderId])
+  @@index([createdAt])
+}
+
+model ImageTag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  images    Image[]
+  createdAt DateTime @default(now())
+
+  @@index([name])
+}
+
+model ImageCollection {
+  id        String   @id @default(cuid())
+  userId    String
+  imageId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  image     Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, imageId])
+  @@index([userId])
+  @@index([imageId])
+}

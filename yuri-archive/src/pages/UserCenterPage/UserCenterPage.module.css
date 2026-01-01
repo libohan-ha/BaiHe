@@ -1,0 +1,106 @@
+.container {
+  width: 100%;
+}
+
+.notLoggedIn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.loginCard {
+  width: 300px;
+}
+
+.loginContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.profileCard {
+  position: sticky;
+  top: 88px;
+}
+
+.profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.avatar {
+  margin-bottom: 16px;
+  border: 3px solid #f3e8ff;
+}
+
+.username {
+  margin-bottom: 8px !important;
+  color: #1f2937 !important;
+}
+
+.bio {
+  color: #6b7280;
+  margin-bottom: 16px;
+}
+
+.editBtn {
+  margin-bottom: 20px;
+}
+
+.stats {
+  display: flex;
+  gap: 32px;
+  padding-top: 20px;
+  border-top: 1px solid #f3e8ff;
+  width: 100%;
+  justify-content: center;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.statValue {
+  font-size: 24px;
+  font-weight: 600;
+  color: #7c3aed;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.contentCard {
+  min-height: 500px;
+}
+
+/* 头像上传样式 */
+.avatarUpload {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.uploadHint {
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .profileCard {
+    position: static;
+    margin-bottom: 24px;
+  }
+
+  .stats {
+    gap: 48px;
+  }
+}

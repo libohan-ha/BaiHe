@@ -1,0 +1,100 @@
+.markdown {
+  line-height: 1.8;
+  color: #374151;
+  font-size: 16px;
+}
+
+.markdown h1 {
+  font-size: 28px;
+  color: #1f2937;
+  margin: 32px 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f3e8ff;
+}
+
+.markdown h2 {
+  font-size: 24px;
+  color: #1f2937;
+  margin: 28px 0 14px;
+}
+
+.markdown h3 {
+  font-size: 20px;
+  color: #1f2937;
+  margin: 24px 0 12px;
+}
+
+.markdown p {
+  margin: 16px 0;
+}
+
+.markdown blockquote {
+  margin: 16px 0;
+  padding: 12px 20px;
+  background: #faf5ff;
+  border-left: 4px solid #c084fc;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.markdown code {
+  background: #f3e8ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Fira Code', monospace;
+  font-size: 14px;
+}
+
+.markdown pre {
+  background: #1f2937;
+  color: #e5e7eb;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 16px 0;
+}
+
+.markdown pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+.markdown hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #c084fc, transparent);
+  margin: 32px 0;
+}
+
+.markdown ul, .markdown ol {
+  margin: 16px 0;
+  padding-left: 24px;
+}
+
+.markdown li {
+  margin: 8px 0;
+}
+
+.markdown a {
+  color: #a855f7;
+  text-decoration: none;
+}
+
+.markdown a:hover {
+  text-decoration: underline;
+}
+
+.markdown em {
+  color: #7c3aed;
+}
+
+.markdown strong {
+  color: #1f2937;
+}
+
+.markdown img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 16px 0;
+}

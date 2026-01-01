@@ -1,0 +1,198 @@
+.header {
+  background: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 101;
+  padding: 0;
+}
+
+.container {
+  display: flex;
+  align-items: center;
+  height: 64px;
+  width: 100%;
+}
+
+.logoArea {
+  display: flex;
+  align-items: center;
+  width: 200px;
+  flex-shrink: 0;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border-right: 1px solid #f0e6f6;
+  transition: width 0.2s ease;
+}
+
+.logoAreaCollapsed {
+  width: 80px;
+  justify-content: center;
+}
+
+.toggleButton {
+  color: #c084fc;
+  flex-shrink: 0;
+}
+
+.toggleButton:hover {
+  color: #a855f7 !important;
+  background: #faf5ff !important;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  color: #7c3aed;
+  font-weight: 600;
+  font-size: 15px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.logoIcon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.logoText {
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.searchWrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 0 24px;
+}
+
+.searchInput {
+  width: 100%;
+  max-width: 400px;
+}
+
+.userArea {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-right: 24px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 20px;
+  transition: background 0.2s;
+}
+
+.userInfo:hover {
+  background: #f3e8ff;
+}
+
+.username {
+  color: #374151;
+  font-size: 14px;
+}
+
+.menuButton {
+  display: none;
+  font-size: 20px;
+}
+
+/* 抽屉样式 */
+.drawerUser {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid #f3e8ff;
+  margin-bottom: 16px;
+}
+
+.drawerUserInfo {
+  flex: 1;
+}
+
+.drawerUsername {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.drawerBio {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.drawerMenu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawerMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #374151;
+  transition: background 0.2s;
+}
+
+.drawerMenuItem:hover {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.drawerDivider {
+  height: 1px;
+  background: #f3e8ff;
+  margin: 8px 0;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .header {
+    padding: 0 16px;
+  }
+
+  .logoArea {
+    width: auto;
+    padding: 0;
+    border-right: none;
+  }
+
+  .logoAreaCollapsed {
+    width: auto;
+  }
+
+  .toggleButton {
+    display: none;
+  }
+
+  .logoText {
+    display: none;
+  }
+
+  .searchWrapper {
+    display: none;
+  }
+
+  .userArea {
+    display: none;
+  }
+
+  .menuButton {
+    display: block;
+  }
+}

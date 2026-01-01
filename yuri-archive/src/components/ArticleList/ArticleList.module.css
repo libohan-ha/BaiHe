@@ -1,0 +1,15 @@
+.container {
+  width: 100%;
+}
+
+.empty {
+  padding: 48px 0;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #f3e8ff;
+}
