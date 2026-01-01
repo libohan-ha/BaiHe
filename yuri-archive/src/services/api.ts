@@ -1,11 +1,20 @@
-import type { Article, Tag, User, PaginatedResponse, GalleryImage, ImageTag } from '../types'
+import type { AICharacter, Article, ChatMessage, Conversation, CreateCharacterData, GalleryImage, ImageTag, PaginatedResponse, Tag, UpdateCharacterData, User } from '../types'
 
-// 开发环境使用代理，生产环境使用完整URL
-const BASE_URL = import.meta.env.PROD ? 'http://localhost:3000' : ''
+/**
+ * API Base URL 配置
+ * 优先级：环境变量 > 自动判断
+ * - 开发环境：使用空字符串（通过 Vite proxy 代理到 localhost:3000）
+ * - 生产环境：使用相对路径 /api（通过 Nginx 反向代理到后端）
+ */
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '' : '')
 
-// 后端服务器地址（用于图片等静态资源）
-// 始终使用完整地址以确保图片正确显示
-const BACKEND_URL = 'http://localhost:3000'
+/**
+ * 后端服务器地址（用于图片等静态资源）
+ * 优先级：环境变量 > 自动判断
+ * - 开发环境：http://localhost:3000
+ * - 生产环境：使用相对路径（通过 Nginx 反向代理）
+ */
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || (import.meta.env.DEV ? 'http://localhost:3000' : '')
 
 /**
  * 获取完整的图片URL
@@ -13,17 +22,17 @@ const BACKEND_URL = 'http://localhost:3000'
  */
 export function getImageUrl(url: string | undefined | null): string | undefined {
   if (!url) return undefined
-  
+
   // 如果已经是完整URL，直接返回
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url
   }
-  
+
   // 如果是相对路径，拼接后端地址
   if (url.startsWith('/')) {
     return `${BACKEND_URL}${url}`
   }
-  
+
   return url
 }
 
@@ -643,16 +652,20 @@ interface CreateImageData {
 }
 
 export async function createImage(data: CreateImageData): Promise<GalleryImage> {
+  // 将 tagIds 转换为 tags 发送给后端
+  const { tagIds, ...rest } = data
   return request<GalleryImage>('/api/images', {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify({ ...rest, tags: tagIds }),
   })
 }
 
 export async function updateImage(id: string, data: Partial<CreateImageData>): Promise<GalleryImage> {
+  // 将 tagIds 转换为 tags 发送给后端
+  const { tagIds, ...rest } = data
   return request<GalleryImage>(`/api/images/${id}`, {
     method: 'PUT',
-    body: JSON.stringify(data),
+    body: JSON.stringify({ ...rest, tags: tagIds }),
   })
 }
 
@@ -824,4 +837,110 @@ export async function deleteImageAdmin(imageId: string): Promise<void> {
   await request<null>(`/api/admin/images/${imageId}`, {
     method: 'DELETE',
   })
+}
+
+// ============ AI聊天接口 ============
+
+// AI角色相关
+interface CharactersResponse {
+  characters: AICharacter[]
+}
+
+export async function getAICharacters(): Promise<AICharacter[]> {
+  const result = await request<CharactersResponse>('/api/ai-chat/characters')
+  return result.characters
+}
+
+export async function getAICharacterById(id: string): Promise<AICharacter> {
+  return request<AICharacter>(`/api/ai-chat/characters/${id}`)
+}
+
+export async function createAICharacter(data: CreateCharacterData): Promise<AICharacter> {
+  return request<AICharacter>('/api/ai-chat/characters', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function updateAICharacter(id: string, data: UpdateCharacterData): Promise<AICharacter> {
+  return request<AICharacter>(`/api/ai-chat/characters/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function deleteAICharacter(id: string): Promise<void> {
+  await request<null>(`/api/ai-chat/characters/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+// 对话相关
+interface ConversationsResponse {
+  conversations: Conversation[]
+}
+
+export async function getConversations(characterId: string): Promise<Conversation[]> {
+  const result = await request<ConversationsResponse>(`/api/ai-chat/characters/${characterId}/conversations`)
+  return result.conversations
+}
+
+export async function createConversation(characterId: string, title?: string): Promise<Conversation> {
+  return request<Conversation>(`/api/ai-chat/characters/${characterId}/conversations`, {
+    method: 'POST',
+    body: JSON.stringify({ title }),
+  })
+}
+
+export async function deleteConversation(id: string): Promise<void> {
+  await request<null>(`/api/ai-chat/conversations/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+// 消息相关
+interface MessagesResponse {
+  messages: ChatMessage[]
+}
+
+export async function getChatMessages(conversationId: string): Promise<ChatMessage[]> {
+  const result = await request<MessagesResponse>(`/api/ai-chat/conversations/${conversationId}/messages`)
+  return result.messages
+}
+
+export async function sendChatMessage(conversationId: string, content: string): Promise<ChatMessage> {
+  return request<ChatMessage>(`/api/ai-chat/conversations/${conversationId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  })
+}
+
+export async function saveAssistantMessage(conversationId: string, content: string): Promise<ChatMessage> {
+  return request<ChatMessage>(`/api/ai-chat/conversations/${conversationId}/assistant-message`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  })
+}
+
+// 上传AI角色相关图片 (头像/背景)
+export async function uploadAIChatImage(file: File, type: 'avatar' | 'background'): Promise<UploadResponse> {
+  const token = getToken()
+
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('type', type === 'avatar' ? 'avatar' : 'gallery')
+
+  const response = await fetch(`${BASE_URL}/api/upload`, {
+    method: 'POST',
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    body: formData,
+  })
+
+  const result: ApiResponse<UploadResponse> = await response.json()
+
+  if (result.code !== 200 && result.code !== 201) {
+    throw new Error(result.message || '上传失败')
+  }
+
+  return result.data
 }
