@@ -1,4 +1,4 @@
-import type { Article, GalleryImage, ImageTag, PaginatedResponse, Tag, User } from '../types'
+import type { AICharacter, Article, ChatMessage, Conversation, CreateCharacterData, GalleryImage, ImageTag, PaginatedResponse, Tag, UpdateCharacterData, User } from '../types'
 
 /**
  * API Base URL 配置
@@ -837,4 +837,110 @@ export async function deleteImageAdmin(imageId: string): Promise<void> {
   await request<null>(`/api/admin/images/${imageId}`, {
     method: 'DELETE',
   })
+}
+
+// ============ AI聊天接口 ============
+
+// AI角色相关
+interface CharactersResponse {
+  characters: AICharacter[]
+}
+
+export async function getAICharacters(): Promise<AICharacter[]> {
+  const result = await request<CharactersResponse>('/api/ai-chat/characters')
+  return result.characters
+}
+
+export async function getAICharacterById(id: string): Promise<AICharacter> {
+  return request<AICharacter>(`/api/ai-chat/characters/${id}`)
+}
+
+export async function createAICharacter(data: CreateCharacterData): Promise<AICharacter> {
+  return request<AICharacter>('/api/ai-chat/characters', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function updateAICharacter(id: string, data: UpdateCharacterData): Promise<AICharacter> {
+  return request<AICharacter>(`/api/ai-chat/characters/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function deleteAICharacter(id: string): Promise<void> {
+  await request<null>(`/api/ai-chat/characters/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+// 对话相关
+interface ConversationsResponse {
+  conversations: Conversation[]
+}
+
+export async function getConversations(characterId: string): Promise<Conversation[]> {
+  const result = await request<ConversationsResponse>(`/api/ai-chat/characters/${characterId}/conversations`)
+  return result.conversations
+}
+
+export async function createConversation(characterId: string, title?: string): Promise<Conversation> {
+  return request<Conversation>(`/api/ai-chat/characters/${characterId}/conversations`, {
+    method: 'POST',
+    body: JSON.stringify({ title }),
+  })
+}
+
+export async function deleteConversation(id: string): Promise<void> {
+  await request<null>(`/api/ai-chat/conversations/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+// 消息相关
+interface MessagesResponse {
+  messages: ChatMessage[]
+}
+
+export async function getChatMessages(conversationId: string): Promise<ChatMessage[]> {
+  const result = await request<MessagesResponse>(`/api/ai-chat/conversations/${conversationId}/messages`)
+  return result.messages
+}
+
+export async function sendChatMessage(conversationId: string, content: string): Promise<ChatMessage> {
+  return request<ChatMessage>(`/api/ai-chat/conversations/${conversationId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  })
+}
+
+export async function saveAssistantMessage(conversationId: string, content: string): Promise<ChatMessage> {
+  return request<ChatMessage>(`/api/ai-chat/conversations/${conversationId}/assistant-message`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  })
+}
+
+// 上传AI角色相关图片 (头像/背景)
+export async function uploadAIChatImage(file: File, type: 'avatar' | 'background'): Promise<UploadResponse> {
+  const token = getToken()
+
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('type', type === 'avatar' ? 'avatar' : 'gallery')
+
+  const response = await fetch(`${BASE_URL}/api/upload`, {
+    method: 'POST',
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    body: formData,
+  })
+
+  const result: ApiResponse<UploadResponse> = await response.json()
+
+  if (result.code !== 200 && result.code !== 201) {
+    throw new Error(result.message || '上传失败')
+  }
+
+  return result.data
 }

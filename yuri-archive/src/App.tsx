@@ -1,25 +1,27 @@
-import { ConfigProvider, App as AntApp, message } from 'antd'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { App as AntApp, ConfigProvider, message } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
-import { Layout, BGMPlayer } from './components'
-import {
-  HomePage,
-  ArticleDetailPage,
-  SearchPage,
-  TagPage,
-  UserCenterPage,
-  UserProfilePage,
-  LoginPage,
-  RegisterPage,
-  CreateArticlePage,
-  EditArticlePage,
-  AdminPage,
-  GalleryPage,
-  ImageDetailPage,
-  UploadImagePage,
-  EditImagePage
-} from './pages'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import './App.css'
+import { BGMPlayer, Layout } from './components'
+import {
+    AdminPage,
+    AIChatPage,
+    AIChatRoomPage,
+    ArticleDetailPage,
+    CreateArticlePage,
+    EditArticlePage,
+    EditImagePage,
+    GalleryPage,
+    HomePage,
+    ImageDetailPage,
+    LoginPage,
+    RegisterPage,
+    SearchPage,
+    TagPage,
+    UploadImagePage,
+    UserCenterPage,
+    UserProfilePage
+} from './pages'
 
 // 百合主题配色 - 柔和的粉紫色系
 const theme = {
@@ -75,6 +77,9 @@ function App() {
               <Route path="image/:id" element={<ImageDetailPage />} />
               <Route path="upload-image" element={<UploadImagePage />} />
               <Route path="edit-image/:id" element={<EditImagePage />} />
+              {/* AI聊天相关路由 */}
+              <Route path="ai-chat" element={<AIChatPage />} />
+              <Route path="ai-chat/:characterId" element={<AIChatRoomPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

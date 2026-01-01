@@ -1,10 +1,11 @@
-import { useNavigate, useLocation } from 'react-router-dom'
-import { Menu } from 'antd'
 import {
-  FileTextOutlined,
-  PictureOutlined,
+    FileTextOutlined,
+    PictureOutlined,
+    RobotOutlined,
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
+import { Menu } from 'antd'
+import { useLocation, useNavigate } from 'react-router-dom'
 import styles from './Sidebar.module.css'
 
 type MenuItem = Required<MenuProps>['items'][number]
@@ -19,6 +20,11 @@ const menuItems: MenuItem[] = [
     key: 'gallery',
     icon: <PictureOutlined />,
     label: '图片',
+  },
+  {
+    key: 'ai-chat',
+    icon: <RobotOutlined />,
+    label: 'AI聊天',
   },
 ]
 
@@ -35,6 +41,9 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
     if (location.pathname.startsWith('/gallery') || location.pathname.startsWith('/image')) {
       return 'gallery'
     }
+    if (location.pathname.startsWith('/ai-chat')) {
+      return 'ai-chat'
+    }
     return 'articles'
   }
 
@@ -43,6 +52,8 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
       navigate('/')
     } else if (key === 'gallery') {
       navigate('/gallery')
+    } else if (key === 'ai-chat') {
+      navigate('/ai-chat')
     }
   }
 
