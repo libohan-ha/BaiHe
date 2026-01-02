@@ -34,17 +34,19 @@ const register = async (req, res, next) => {
 
 const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    // 支持 email 或 identifier 字段（兼容旧版本）
+    const identifier = req.body.identifier || req.body.email;
+    const { password } = req.body;
 
-    if (!email || !password) {
+    if (!identifier || !password) {
       return res.status(400).json({
         code: 400,
-        message: '邮箱和密码不能为空',
+        message: '邮箱/用户名和密码不能为空',
         data: null
       });
     }
 
-    const { user, token } = await authService.login(email, password);
+    const { user, token } = await authService.login(identifier, password);
 
     res.json({
       code: 200,

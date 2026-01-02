@@ -50,9 +50,15 @@ const register = async (email, username, password) => {
   return { user, token };
 };
 
-const login = async (email, password) => {
-  const user = await prisma.user.findUnique({
-    where: { email }
+const login = async (identifier, password) => {
+  // 支持邮箱或用户名登录
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { email: identifier },
+        { username: identifier }
+      ]
+    }
   });
 
   if (!user) {

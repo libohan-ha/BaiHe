@@ -1,7 +1,7 @@
+import { LockOutlined, UserOutlined } from '@ant-design/icons'
+import { Button, Card, Divider, Form, Input, Typography, message } from 'antd'
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { Form, Input, Button, Card, Typography, message, Divider } from 'antd'
-import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons'
+import { Link, useNavigate } from 'react-router-dom'
 import { login } from '../../services/api'
 import { useUserStore } from '../../store'
 import styles from './LoginPage.module.css'
@@ -9,7 +9,7 @@ import styles from './LoginPage.module.css'
 const { Title, Text } = Typography
 
 interface LoginForm {
-  email: string
+  identifier: string
   password: string
 }
 
@@ -21,7 +21,7 @@ export function LoginPage() {
   const handleSubmit = async (values: LoginForm) => {
     setLoading(true)
     try {
-      const res = await login(values.email, values.password)
+      const res = await login(values.identifier, values.password)
       setUser(res.user, res.token)
       message.success('登录成功')
       navigate('/')
@@ -48,15 +48,14 @@ export function LoginPage() {
           layout="vertical"
         >
           <Form.Item
-            name="email"
+            name="identifier"
             rules={[
-              { required: true, message: '请输入邮箱' },
-              { type: 'email', message: '请输入有效的邮箱地址' }
+              { required: true, message: '请输入邮箱或用户名' }
             ]}
           >
             <Input
-              prefix={<MailOutlined />}
-              placeholder="邮箱"
+              prefix={<UserOutlined />}
+              placeholder="邮箱或用户名"
             />
           </Form.Item>
 

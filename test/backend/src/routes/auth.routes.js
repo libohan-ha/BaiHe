@@ -19,8 +19,15 @@ router.post('/register', [
 ], register);
 
 router.post('/login', [
-  body('email').isEmail().withMessage('请输入有效的邮箱地址'),
   body('password').notEmpty().withMessage('密码不能为空'),
+  // 验证 identifier 或 email 字段（兼容新旧版本）
+  body().custom((value, { req }) => {
+    const identifier = req.body.identifier || req.body.email;
+    if (!identifier || identifier.trim() === '') {
+      throw new Error('邮箱/用户名不能为空');
+    }
+    return true;
+  }),
   validator
 ], login);
 

@@ -1,7 +1,7 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import { defineConfig } from 'vitest/config'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -12,6 +12,8 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0',  // 监听所有网络接口，允许局域网访问
+    port: 5173,
     proxy: {
       '/api': {
         target: 'http://localhost:3000',

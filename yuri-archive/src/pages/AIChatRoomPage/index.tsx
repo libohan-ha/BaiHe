@@ -85,7 +85,7 @@ export function AIChatRoomPage() {
   const [backgroundUploading, setBackgroundUploading] = useState(false)
   const [form] = Form.useForm()
   const chatAreaRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -301,8 +301,14 @@ export function AIChatRoomPage() {
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Ctrl+Enter 或 Shift+Enter 换行
+    if (e.key === 'Enter' && (e.ctrlKey || e.shiftKey)) {
+      // 不阻止默认行为，允许换行
+      return
+    }
+    // 单独按 Enter 发送消息
+    if (e.key === 'Enter') {
       e.preventDefault()
       handleSend()
     }
@@ -571,13 +577,14 @@ export function AIChatRoomPage() {
             {imageUploading ? <Spin size="small" /> : <PictureOutlined style={{ fontSize: 20, color: '#666' }} />}
           </button>
           <div className={styles.inputWrapper}>
-            <input
+            <textarea
               ref={inputRef}
               value={inputValue}
               onChange={e => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder={selectedImages.length > 0 ? "添加说明（可选）..." : "输入消息..."}
+              onKeyDown={handleKeyDown}
+              placeholder={selectedImages.length > 0 ? "添加说明（可选）... (Ctrl+Enter 换行)" : "输入消息... (Ctrl+Enter 换行)"}
               disabled={!currentConversation || sending}
+              rows={1}
             />
           </div>
           <button
