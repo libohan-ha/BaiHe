@@ -67,6 +67,7 @@ export function AIChatRoomPage() {
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [streamingContent, setStreamingContent] = useState('')
   const [editModalVisible, setEditModalVisible] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string>('')
   const [userAvatarUrl, setUserAvatarUrl] = useState<string>('')
@@ -159,13 +160,14 @@ export function AIChatRoomPage() {
     const userContent = inputValue.trim()
     setInputValue('')
     setSending(true)
+    setStreamingContent('')
 
     try {
       // 保存用户消息
       const userMsg = await sendChatMessage(currentConversation.id, userContent)
       setMessages(prev => [...prev, userMsg])
 
-      // 调用 AI API (支持 DeepSeek 和 Claude)
+      // 调用 AI API (支持 DeepSeek 和 Claude) - 启用流式响应
       const response = await fetch(apiConfig.url, {
         method: 'POST',
         headers: {
@@ -178,7 +180,8 @@ export function AIChatRoomPage() {
             { role: 'system', content: character?.prompt || '你是一个友好的AI助手。' },
             ...messages.map(m => ({ role: m.role, content: m.content })),
             { role: 'user', content: userContent }
-          ]
+          ],
+          stream: true  // 启用流式响应
         })
       })
 
@@ -187,14 +190,48 @@ export function AIChatRoomPage() {
         throw new Error(errorData.error?.message || 'AI请求失败')
       }
 
-      const data = await response.json()
-      const aiContent = data.choices?.[0]?.message?.content || '抱歉，我暂时无法回复。'
+      // 流式读取响应
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+      let fullContent = ''
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value, { stream: true })
+          const lines = chunk.split('\n')
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6).trim()
+              if (data === '[DONE]') continue
+
+              try {
+                const parsed = JSON.parse(data)
+                const content = parsed.choices?.[0]?.delta?.content || ''
+                if (content) {
+                  fullContent += content
+                  setStreamingContent(fullContent)
+                }
+              } catch {
+                // 忽略解析错误
+              }
+            }
+          }
+        }
+      }
+
+      const aiContent = fullContent || '抱歉，我暂时无法回复。'
 
       // 保存AI回复
       const aiMsg = await saveAssistantMessage(currentConversation.id, aiContent)
       setMessages(prev => [...prev, aiMsg])
+      setStreamingContent('')
     } catch (err) {
       message.error(err instanceof Error ? err.message : '发送失败')
+      setStreamingContent('')
     } finally {
       setSending(false)
       // AI回复完成后自动聚焦输入框
@@ -398,8 +435,15 @@ export function AIChatRoomPage() {
             {sending && (
               <div className={`${styles.messageWrapper} ${styles.assistant}`}>
                 <Avatar size={36} src={getImageUrl(character.avatarUrl)} icon={<RobotOutlined />} />
-                <div className={`${styles.messageBubble} ${styles.assistant}`}>
-                  <div className={styles.typing}><span></span><span></span><span></span></div>
+                <div className={`${styles.messageBubble} ${styles.assistant}`} style={bubbleStyle('assistant')}>
+                  {streamingContent ? (
+                    <>
+                      {streamingContent}
+                      <span className={styles.cursor}>|</span>
+                    </>
+                  ) : (
+                    <div className={styles.typing}><span></span><span></span><span></span></div>
+                  )}
                 </div>
               </div>
             )}

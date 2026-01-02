@@ -220,6 +220,19 @@
   30% { transform: translateY(-8px); }
 }
 
+/* 光标闪烁动画 */
+.cursor {
+  display: inline-block;
+  animation: blink 1s infinite;
+  font-weight: normal;
+  color: #666;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
 /* 设置面板 */
 .settingsPanel {
   padding: 16px 0;
