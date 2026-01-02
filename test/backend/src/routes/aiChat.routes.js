@@ -12,13 +12,24 @@ const {
   deleteConversation,
   getMessages,
   sendMessage,
-  saveAssistantMessage
+  saveAssistantMessage,
+  proxyAIRequest
 } = require('../controllers/aiChat.controller');
 
 const router = require('express').Router();
 
 // 所有路由都需要认证
 router.use(auth);
+
+// ============ AI API 代理路由 ============
+// 通过后端代理转发 AI 请求，避免 CORS 问题
+router.post('/proxy', [
+  body('apiUrl').notEmpty().withMessage('API URL 不能为空'),
+  body('apiKey').notEmpty().withMessage('API Key 不能为空'),
+  body('model').notEmpty().withMessage('模型名称不能为空'),
+  body('messages').isArray().withMessage('消息必须是数组'),
+  validator
+], proxyAIRequest);
 
 // ============ AI角色路由 ============
 

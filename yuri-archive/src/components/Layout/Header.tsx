@@ -49,12 +49,6 @@ export function Header({ sidebarCollapsed = false, onToggleSidebar }: HeaderProp
 
   const userMenuItems: MenuProps['items'] = [
     {
-      key: 'create',
-      icon: <EditOutlined />,
-      label: '投稿文章',
-      onClick: () => navigate('/create'),
-    },
-    {
       key: 'profile',
       icon: <UserOutlined />,
       label: '个人中心',
@@ -109,12 +103,6 @@ export function Header({ sidebarCollapsed = false, onToggleSidebar }: HeaderProp
   const mobileMenuItems = isLoggedIn ? [
     ...navigationMenuItems,
     { key: 'divider-1', type: 'divider' as const },
-    {
-      key: 'create',
-      icon: <EditOutlined />,
-      label: '投稿文章',
-      onClick: () => { navigate('/create'); setDrawerOpen(false) },
-    },
     {
       key: 'profile',
       icon: <UserOutlined />,

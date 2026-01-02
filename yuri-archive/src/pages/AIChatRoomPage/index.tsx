@@ -38,14 +38,37 @@ const isClaudeModel = (modelName: string) => {
   return modelName?.startsWith('claude')
 }
 
+/**
+ * 修复本地地址问题
+ * 当检测到 127.0.0.1 或 localhost 时，自动替换为当前访问的 hostname
+ * 这样手机端也能正常访问代理服务
+ */
+const fixLocalUrl = (url: string): string => {
+  if (!url) return url
+  
+  try {
+    const urlObj = new URL(url)
+    // 检测是否是本地地址
+    if (urlObj.hostname === '127.0.0.1' || urlObj.hostname === 'localhost') {
+      // 替换为当前页面的 hostname
+      urlObj.hostname = window.location.hostname
+      return urlObj.toString()
+    }
+    return url
+  } catch {
+    return url
+  }
+}
+
 // 获取 API 配置 - 根据角色选择的模型自动判断
 const getApiConfig = (settings: any, characterModel?: string) => {
   // 优先根据角色模型判断使用哪个 API
   const useClaudeApi = characterModel ? isClaudeModel(characterModel) : (settings.provider === 'claude')
   
   if (useClaudeApi) {
+    const baseUrl = fixLocalUrl(settings.claudeBaseUrl || 'http://127.0.0.1:8045/v1')
     return {
-      url: `${settings.claudeBaseUrl || 'http://127.0.0.1:8045/v1'}/chat/completions`,
+      url: `${baseUrl}/chat/completions`,
       apiKey: settings.claudeApiKey || '',
       model: characterModel || settings.claudeModel || 'claude-opus-4-5-thinking',
       provider: 'claude' as const
@@ -225,14 +248,17 @@ export function AIChatRoomPage() {
       // 构建多模态消息内容（只对最新消息处理图片）
       const formattedUserContent = await formatMessageWithImages(userContent, imagesToSend)
 
-      // 调用 AI API (支持 DeepSeek 和 Claude) - 启用流式响应
-      const response = await fetch(apiConfig.url, {
+      // 通过后端代理调用 AI API - 避免 CORS 问题
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/ai-chat/proxy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiConfig.apiKey}`
+          'Authorization': token ? `Bearer ${token}` : ''
         },
         body: JSON.stringify({
+          apiUrl: apiConfig.url,
+          apiKey: apiConfig.apiKey,
           model: apiConfig.model,
           messages: [
             { role: 'system', content: character?.prompt || '你是一个友好的AI助手。' },
