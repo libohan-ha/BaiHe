@@ -28,6 +28,9 @@ const processUpload = (file, type = 'avatar') => {
     case 'gallery':
       relativePath = 'gallery';
       break;
+    case 'chat':
+      relativePath = 'chat';
+      break;
     default:
       relativePath = 'avatars';
   }
@@ -82,6 +85,9 @@ const deleteFileByUrl = (url) => {
       break;
     case 'gallery':
       type = 'gallery';
+      break;
+    case 'chat':
+      type = 'chat';
       break;
     default:
       type = 'avatar';

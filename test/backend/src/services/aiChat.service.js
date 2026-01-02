@@ -153,7 +153,7 @@ const getMessages = async (conversationId, userId) => {
   return { messages };
 };
 
-const addMessage = async (conversationId, content, role, userId) => {
+const addMessage = async (conversationId, content, role, userId, images = []) => {
   // 验证对话属于当前用户
   const conversation = await prisma.conversation.findFirst({
     where: { id: conversationId, userId }
@@ -167,6 +167,7 @@ const addMessage = async (conversationId, content, role, userId) => {
     data: {
       content,
       role,
+      images,
       conversationId
     }
   });

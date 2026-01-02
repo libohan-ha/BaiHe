@@ -1,6 +1,6 @@
 const express = require('express');
 const { auth } = require('../middleware/auth.middleware');
-const { upload, uploadAvatar, uploadCover, uploadGallery } = require('../config/multer');
+const { upload, uploadAvatar, uploadCover, uploadGallery, uploadChat } = require('../config/multer');
 const { uploadFile, deleteFile } = require('../controllers/upload.controller');
 
 const router = express.Router();
@@ -60,6 +60,24 @@ router.post('/gallery', auth, uploadGallery.single('file'), (req, res, next) => 
 }, uploadFile);
 
 /**
+ * POST /api/upload/chat
+ * 上传聊天图片（需要登录）- 支持10MB大小
+ * Content-Type: multipart/form-data
+ * 参数:
+ *   - file: 文件
+ */
+router.post('/chat', auth, uploadChat.single('file'), (req, res, next) => {
+  if (req.fileValidationError) {
+    return res.status(400).json({
+      code: 400,
+      message: req.fileValidationError,
+      data: null
+    });
+  }
+  next();
+}, uploadFile);
+
+/**
  * POST /api/upload
  * 通用上传文件（需要登录）- 默认上传到 avatars
  * Content-Type: multipart/form-data
@@ -90,7 +108,7 @@ router.use((err, req, res, next) => {
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(400).json({
       code: 400,
-      message: '文件大小不能超过 5MB',
+      message: '文件大小超出限制',
       data: null
     });
   }

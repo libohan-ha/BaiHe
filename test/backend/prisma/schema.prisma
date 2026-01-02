@@ -186,6 +186,7 @@ model ChatMessage {
   id             String       @id @default(cuid())
   content        String       @db.Text // 消息内容
   role           String       // 'user' 或 'assistant'
+  images         String[]     // 用户上传的图片URL数组
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   createdAt      DateTime     @default(now())

@@ -105,6 +105,7 @@
   font-size: 14px;
   line-height: 1.6;
   word-break: break-word;
+  white-space: pre-wrap;
 }
 
 .messageBubble.user {
@@ -354,6 +355,75 @@
   color: #999;
   margin-top: 4px;
   text-align: center;
+}
+
+/* 消息中的图片 */
+.messageImages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.messageImage {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 8px;
+  cursor: pointer;
+  object-fit: cover;
+  transition: transform 0.2s;
+}
+
+.messageImage:hover {
+  transform: scale(1.02);
+}
+
+/* 已选择图片预览 */
+.selectedImagesPreview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 20px;
+  background: #fafafa;
+  border-bottom: 1px solid #eee;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.previewImageWrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.previewImage {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.removeImageBtn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ff4d4f;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  transition: all 0.2s;
+}
+
+.removeImageBtn:hover {
+  background: #ff7875;
+  transform: scale(1.1);
 }
 
 /* 响应式 */

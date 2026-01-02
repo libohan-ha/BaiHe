@@ -1,8 +1,11 @@
 import {
   ArrowLeftOutlined,
+  CloseOutlined,
   DeleteOutlined,
   EditOutlined,
-  PlusOutlined, RobotOutlined,
+  PictureOutlined,
+  PlusOutlined,
+  RobotOutlined,
   SendOutlined,
   UploadOutlined
 } from '@ant-design/icons'
@@ -11,7 +14,9 @@ import { Avatar, Button, Form, Input, message, Modal, Select, Slider, Spin, Uplo
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
+  compressImage,
   createConversation,
+  formatMessageWithImages,
   getAICharacterById,
   getChatMessages,
   getConversations,
@@ -19,7 +24,8 @@ import {
   saveAssistantMessage,
   sendChatMessage,
   updateAICharacter,
-  uploadAIChatImage
+  uploadAIChatImage,
+  uploadChatImage
 } from '../../services/api'
 import { useAIChatStore, useUserStore } from '../../store'
 import type { AICharacter, ChatMessage, Conversation } from '../../types'
@@ -68,6 +74,8 @@ export function AIChatRoomPage() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [streamingContent, setStreamingContent] = useState('')
+  const [selectedImages, setSelectedImages] = useState<string[]>([])  // 待发送的图片URL列表
+  const [imageUploading, setImageUploading] = useState(false)
   const [editModalVisible, setEditModalVisible] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string>('')
   const [userAvatarUrl, setUserAvatarUrl] = useState<string>('')
@@ -78,6 +86,7 @@ export function AIChatRoomPage() {
   const [form] = Form.useForm()
   const chatAreaRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -152,8 +161,45 @@ export function AIChatRoomPage() {
     }
   }
 
+  // 处理图片选择
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setImageUploading(true)
+    try {
+      for (const file of Array.from(files)) {
+        // 验证文件类型
+        if (!file.type.startsWith('image/')) {
+          message.warning('只支持上传图片文件')
+          continue
+        }
+
+        // 压缩大图片
+        const processedFile = await compressImage(file)
+
+        // 上传到服务器
+        const result = await uploadChatImage(processedFile)
+        setSelectedImages(prev => [...prev, result.url])
+      }
+    } catch (err) {
+      message.error('图片上传失败')
+    } finally {
+      setImageUploading(false)
+      // 清空 input 以允许重复选择相同文件
+      if (imageInputRef.current) {
+        imageInputRef.current.value = ''
+      }
+    }
+  }
+
+  // 移除已选择的图片
+  const handleRemoveImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index))
+  }
+
   const handleSend = async () => {
-    if (!inputValue.trim() || sending || !currentConversation) return
+    if ((!inputValue.trim() && selectedImages.length === 0) || sending || !currentConversation) return
     
     // 获取 API 配置
     const apiConfig = getApiConfig(settings, character?.modelName)
@@ -165,14 +211,19 @@ export function AIChatRoomPage() {
     }
 
     const userContent = inputValue.trim()
+    const imagesToSend = [...selectedImages]
     setInputValue('')
+    setSelectedImages([])
     setSending(true)
     setStreamingContent('')
 
     try {
-      // 保存用户消息
-      const userMsg = await sendChatMessage(currentConversation.id, userContent)
+      // 保存用户消息（包含图片）
+      const userMsg = await sendChatMessage(currentConversation.id, userContent, imagesToSend.length > 0 ? imagesToSend : undefined)
       setMessages(prev => [...prev, userMsg])
+
+      // 构建多模态消息内容（只对最新消息处理图片）
+      const formattedUserContent = await formatMessageWithImages(userContent, imagesToSend)
 
       // 调用 AI API (支持 DeepSeek 和 Claude) - 启用流式响应
       const response = await fetch(apiConfig.url, {
@@ -185,8 +236,10 @@ export function AIChatRoomPage() {
           model: apiConfig.model,
           messages: [
             { role: 'system', content: character?.prompt || '你是一个友好的AI助手。' },
+            // 历史消息不传图片
             ...messages.map(m => ({ role: m.role, content: m.content })),
-            { role: 'user', content: userContent }
+            // 当前消息使用多模态格式
+            { role: 'user', content: formattedUserContent }
           ],
           stream: true  // 启用流式响应
         })
@@ -433,6 +486,20 @@ export function AIChatRoomPage() {
                 />
                 <div>
                   <div className={`${styles.messageBubble} ${styles[msg.role]}`} style={bubbleStyle(msg.role)}>
+                    {/* 显示消息中的图片 */}
+                    {msg.images && msg.images.length > 0 && (
+                      <div className={styles.messageImages}>
+                        {msg.images.map((imgUrl, idx) => (
+                          <img
+                            key={idx}
+                            src={getImageUrl(imgUrl)}
+                            alt={`图片 ${idx + 1}`}
+                            className={styles.messageImage}
+                            onClick={() => window.open(getImageUrl(imgUrl), '_blank')}
+                          />
+                        ))}
+                      </div>
+                    )}
                     {msg.content}
                   </div>
                   <div className={styles.messageTime}>{formatTime(msg.createdAt)}</div>
@@ -467,18 +534,57 @@ export function AIChatRoomPage() {
 
       {/* 输入区域 */}
       <div className={styles.inputArea}>
+        {/* 已选择的图片预览 */}
+        {selectedImages.length > 0 && (
+          <div className={styles.selectedImagesPreview}>
+            {selectedImages.map((imgUrl, idx) => (
+              <div key={idx} className={styles.previewImageWrapper}>
+                <img src={getImageUrl(imgUrl)} alt={`预览 ${idx + 1}`} className={styles.previewImage} />
+                <button
+                  className={styles.removeImageBtn}
+                  onClick={() => handleRemoveImage(idx)}
+                  type="button"
+                >
+                  <CloseOutlined />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className={styles.inputContainer}>
+          {/* 隐藏的文件输入 */}
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            style={{ display: 'none' }}
+            onChange={handleImageSelect}
+          />
+          {/* 图片上传按钮 */}
+          <button
+            className={styles.actionButton}
+            onClick={() => imageInputRef.current?.click()}
+            disabled={!currentConversation || sending || imageUploading}
+            type="button"
+          >
+            {imageUploading ? <Spin size="small" /> : <PictureOutlined style={{ fontSize: 20, color: '#666' }} />}
+          </button>
           <div className={styles.inputWrapper}>
             <input
               ref={inputRef}
               value={inputValue}
               onChange={e => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="输入消息..."
+              placeholder={selectedImages.length > 0 ? "添加说明（可选）..." : "输入消息..."}
               disabled={!currentConversation || sending}
             />
           </div>
-          <button className={styles.sendButton} onClick={handleSend} disabled={!inputValue.trim() || sending || !currentConversation}>
+          <button
+            className={styles.sendButton}
+            onClick={handleSend}
+            disabled={(!inputValue.trim() && selectedImages.length === 0) || sending || !currentConversation}
+          >
             <SendOutlined style={{ color: '#fff', fontSize: 18 }} />
           </button>
         </div>

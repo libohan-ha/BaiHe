@@ -111,10 +111,10 @@ const getMessages = async (req, res, next) => {
 const sendMessage = async (req, res, next) => {
   try {
     const { conversationId } = req.params;
-    const { content } = req.body;
+    const { content, images } = req.body;
     
-    // 保存用户消息
-    const userMessage = await aiChatService.addMessage(conversationId, content, 'user', req.user.id);
+    // 保存用户消息（支持图片）
+    const userMessage = await aiChatService.addMessage(conversationId, content, 'user', req.user.id, images || []);
     
     res.json(success(userMessage, '发送成功'));
   } catch (err) {

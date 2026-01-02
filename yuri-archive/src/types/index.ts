@@ -229,6 +229,7 @@ export interface ChatMessage {
   id: string
   content: string
   role: 'user' | 'assistant'
+  images?: string[]  // 用户上传的图片URL数组
   conversationId: string
   createdAt: string
 }
