@@ -1,10 +1,10 @@
-import { useState } from 'react'
-import { useNavigate, useLocation, Link } from 'react-router-dom'
-import { Layout, Input, Avatar, Dropdown, Button, Drawer, Space, message } from 'antd'
-import { SearchOutlined, UserOutlined, MenuOutlined, HomeOutlined, EditOutlined, HeartOutlined, LogoutOutlined, LoginOutlined, SettingOutlined, MenuFoldOutlined, MenuUnfoldOutlined, FileTextOutlined, PictureOutlined } from '@ant-design/icons'
+import { EditOutlined, FileTextOutlined, HeartOutlined, LoginOutlined, LogoutOutlined, MenuFoldOutlined, MenuOutlined, MenuUnfoldOutlined, PictureOutlined, RobotOutlined, SearchOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
-import { useUserStore } from '../../store'
+import { Avatar, Button, Drawer, Dropdown, Input, Layout, Space, message } from 'antd'
+import { useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { getImageUrl } from '../../services/api'
+import { useUserStore } from '../../store'
 import styles from './Header.module.css'
 
 const { Header: AntHeader } = Layout
@@ -97,6 +97,12 @@ export function Header({ sidebarCollapsed = false, onToggleSidebar }: HeaderProp
       icon: <PictureOutlined />,
       label: '图片画廊',
       onClick: () => { navigate('/gallery'); setDrawerOpen(false) },
+    },
+    {
+      key: 'ai-chat',
+      icon: <RobotOutlined />,
+      label: 'AI聊天',
+      onClick: () => { navigate('/ai-chat'); setDrawerOpen(false) },
     },
   ]
 

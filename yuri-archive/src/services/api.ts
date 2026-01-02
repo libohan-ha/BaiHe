@@ -1,6 +1,27 @@
 import type { AICharacter, Article, ChatMessage, Conversation, CreateCharacterData, GalleryImage, ImageTag, PaginatedResponse, Tag, UpdateCharacterData, User } from '../types'
 
 /**
+ * 获取后端服务器地址
+ * 开发环境：使用当前页面的 host + 端口 3000
+ * 生产环境：使用相对路径
+ */
+function getBackendUrl(): string {
+  // 如果配置了环境变量，优先使用
+  if (import.meta.env.VITE_BACKEND_URL) {
+    return import.meta.env.VITE_BACKEND_URL
+  }
+  
+  // 开发环境：根据当前访问地址动态获取后端地址
+  if (import.meta.env.DEV) {
+    const { protocol, hostname } = window.location
+    return `${protocol}//${hostname}:3000`
+  }
+  
+  // 生产环境：使用相对路径
+  return ''
+}
+
+/**
  * API Base URL 配置
  * 优先级：环境变量 > 自动判断
  * - 开发环境：使用空字符串（通过 Vite proxy 代理到 localhost:3000）
@@ -10,11 +31,9 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '' 
 
 /**
  * 后端服务器地址（用于图片等静态资源）
- * 优先级：环境变量 > 自动判断
- * - 开发环境：http://localhost:3000
- * - 生产环境：使用相对路径（通过 Nginx 反向代理）
+ * 动态获取，支持局域网访问
  */
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || (import.meta.env.DEV ? 'http://localhost:3000' : '')
+const BACKEND_URL = getBackendUrl()
 
 /**
  * 获取完整的图片URL
