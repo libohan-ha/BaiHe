@@ -17,6 +17,7 @@ const uploadRoutes = require('./routes/upload.routes');
 const imageRoutes = require('./routes/image.routes');
 const imageTagRoutes = require('./routes/imageTag.routes');
 const imageCollectionRoutes = require('./routes/imageCollection.routes');
+const aiChatRoutes = require('./routes/aiChat.routes');
 
 const app = express();
 
@@ -47,6 +48,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/images', imageRoutes);
 app.use('/api/image-tags', imageTagRoutes);
 app.use('/api/image-collections', imageCollectionRoutes);
+app.use('/api/ai-chat', aiChatRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
