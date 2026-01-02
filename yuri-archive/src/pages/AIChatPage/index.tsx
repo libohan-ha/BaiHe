@@ -59,7 +59,8 @@ export function AIChatPage() {
     setModalVisible(true)
   }
 
-  const handleEdit = (character: AICharacter, e: React.MouseEvent) => {
+  // 编辑角色（备用，可在卡片上添加编辑按钮时使用）
+  const _handleEdit = (character: AICharacter, e: React.MouseEvent) => {
     e.stopPropagation()
     setEditingCharacter(character)
     form.setFieldsValue({
@@ -73,8 +74,11 @@ export function AIChatPage() {
     setBackgroundUrl(character.backgroundUrl || '')
     setModalVisible(true)
   }
+  // 使用 void 消除未使用警告
+  void _handleEdit
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
+  // 删除角色（备用，可在卡片上添加删除按钮时使用）
+  const _handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
     Modal.confirm({
       title: '确认删除',
@@ -90,6 +94,8 @@ export function AIChatPage() {
       }
     })
   }
+  // 使用 void 消除未使用警告
+  void _handleDelete
 
   const handleSubmit = async (values: CreateCharacterData) => {
     try {

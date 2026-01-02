@@ -12,7 +12,7 @@ interface UserStore {
 
 export const useUserStore = create<UserStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       currentUser: null,
       token: null,
       isLoggedIn: false,
