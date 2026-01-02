@@ -911,6 +911,13 @@ export async function createConversation(characterId: string, title?: string): P
   })
 }
 
+export async function updateConversation(id: string, title: string): Promise<Conversation> {
+  return request<Conversation>(`/api/ai-chat/conversations/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ title }),
+  })
+}
+
 export async function deleteConversation(id: string): Promise<void> {
   await request<null>(`/api/ai-chat/conversations/${id}`, {
     method: 'DELETE',

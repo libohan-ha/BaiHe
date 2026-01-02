@@ -121,6 +121,26 @@ const createConversation = async (characterId, userId, title) => {
   return conversation;
 };
 
+const updateConversation = async (id, data, userId) => {
+  const conversation = await prisma.conversation.findFirst({
+    where: { id, userId }
+  });
+  
+  if (!conversation) {
+    return null;
+  }
+  
+  const { title } = data;
+  const updateData = {};
+  if (title !== undefined) updateData.title = title;
+  
+  const updated = await prisma.conversation.update({
+    where: { id },
+    data: updateData
+  });
+  return updated;
+};
+
 const deleteConversation = async (id, userId) => {
   const conversation = await prisma.conversation.findFirst({
     where: { id, userId }
@@ -189,6 +209,7 @@ module.exports = {
   deleteCharacter,
   getConversations,
   createConversation,
+  updateConversation,
   deleteConversation,
   getMessages,
   addMessage

@@ -9,6 +9,7 @@ const {
   deleteCharacter,
   getConversations,
   createConversation,
+  updateConversation,
   deleteConversation,
   getMessages,
   sendMessage,
@@ -59,6 +60,9 @@ router.get('/characters/:characterId/conversations', getConversations);
 
 // 创建新对话
 router.post('/characters/:characterId/conversations', createConversation);
+
+// 更新对话（标题等）
+router.put('/conversations/:id', updateConversation);
 
 // 删除对话
 router.delete('/conversations/:id', deleteConversation);

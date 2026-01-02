@@ -1,8 +1,10 @@
 import {
   ArrowLeftOutlined,
+  CheckOutlined,
   CloseOutlined,
   DeleteOutlined,
   EditOutlined,
+  HistoryOutlined,
   PictureOutlined,
   PlusOutlined,
   RobotOutlined,
@@ -10,12 +12,13 @@ import {
   UploadOutlined
 } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
-import { Avatar, Button, Form, Input, message, Modal, Select, Slider, Spin, Upload } from 'antd'
+import { Avatar, Button, Drawer, Form, Input, message, Modal, Select, Slider, Spin, Upload } from 'antd'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   compressImage,
   createConversation,
+  deleteConversation,
   formatMessageWithImages,
   getAICharacterById,
   getChatMessages,
@@ -24,6 +27,7 @@ import {
   saveAssistantMessage,
   sendChatMessage,
   updateAICharacter,
+  updateConversation,
   uploadAIChatImage,
   uploadChatImage
 } from '../../services/api'
@@ -100,6 +104,9 @@ export function AIChatRoomPage() {
   const [selectedImages, setSelectedImages] = useState<string[]>([])  // 待发送的图片URL列表
   const [imageUploading, setImageUploading] = useState(false)
   const [editModalVisible, setEditModalVisible] = useState(false)
+  const [historyDrawerVisible, setHistoryDrawerVisible] = useState(false)
+  const [editingConvId, setEditingConvId] = useState<string | null>(null)
+  const [editingTitle, setEditingTitle] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string>('')
   const [userAvatarUrl, setUserAvatarUrl] = useState<string>('')
   const [backgroundUrl, setBackgroundUrl] = useState<string>('')
@@ -179,8 +186,98 @@ export function AIChatRoomPage() {
       setConversations([conv, ...conversations])
       setCurrentConversation(conv)
       setMessages([])
+      setHistoryDrawerVisible(false) // 创建新对话后关闭抽屉
     } catch (err) {
       message.error('创建对话失败')
+    }
+  }
+
+  // 切换到历史对话
+  const handleSwitchConversation = async (conv: Conversation) => {
+    await loadConversation(conv)
+    setHistoryDrawerVisible(false)
+  }
+
+  // 删除对话
+  const handleDeleteConversation = (convId: string, e: React.MouseEvent) => {
+    e.stopPropagation() // 阻止事件冒泡，避免触发切换对话
+    Modal.confirm({
+      title: '确认删除',
+      content: '确定要删除这个对话吗？删除后无法恢复。',
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          await deleteConversation(convId)
+          const newConversations = conversations.filter(c => c.id !== convId)
+          setConversations(newConversations)
+          
+          // 如果删除的是当前对话，切换到第一个对话或创建新对话
+          if (currentConversation?.id === convId) {
+            if (newConversations.length > 0) {
+              await loadConversation(newConversations[0])
+            } else {
+              const newConv = await createConversation(characterId!)
+              setConversations([newConv])
+              setCurrentConversation(newConv)
+              setMessages([])
+            }
+          }
+          message.success('删除成功')
+        } catch (err) {
+          message.error('删除失败')
+        }
+      }
+    })
+  }
+
+  // 开始编辑对话标题
+  const handleStartEditTitle = (conv: Conversation, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingConvId(conv.id)
+    setEditingTitle(conv.title || '新对话')
+  }
+
+  // 保存对话标题
+  const handleSaveTitle = async (convId: string) => {
+    if (!editingTitle.trim()) {
+      setEditingConvId(null)
+      return
+    }
+    
+    try {
+      const updated = await updateConversation(convId, editingTitle.trim())
+      setConversations(conversations.map(c => c.id === convId ? { ...c, title: updated.title } : c))
+      if (currentConversation?.id === convId) {
+        setCurrentConversation({ ...currentConversation, title: updated.title })
+      }
+      message.success('标题已更新')
+    } catch (err) {
+      message.error('更新失败')
+    } finally {
+      setEditingConvId(null)
+    }
+  }
+
+  // 取消编辑
+  const handleCancelEdit = () => {
+    setEditingConvId(null)
+    setEditingTitle('')
+  }
+
+  // 格式化对话时间
+  const formatConversationTime = (dateStr: string) => {
+    const date = new Date(dateStr)
+    const now = new Date()
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+    
+    if (diffDays === 0) {
+      return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+    } else if (diffDays === 1) {
+      return '昨天'
+    } else if (diffDays < 7) {
+      return `${diffDays}天前`
+    } else {
+      return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
     }
   }
 
@@ -484,9 +581,16 @@ export function AIChatRoomPage() {
         </div>
       </div>
 
-      {/* 新建对话按钮 */}
-      <div style={{ padding: '8px 20px', background: '#fff', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 14, color: '#666' }}>{character.name}</span>
+      {/* 对话操作栏 */}
+      <div className={styles.conversationBar}>
+        <Button
+          type="text"
+          icon={<HistoryOutlined />}
+          onClick={() => setHistoryDrawerVisible(true)}
+          className={styles.historyButton}
+        >
+          历史对话 ({conversations.length})
+        </Button>
         <Button size="small" icon={<PlusOutlined />} onClick={handleNewConversation}>新建对话</Button>
       </div>
 
@@ -714,6 +818,94 @@ export function AIChatRoomPage() {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* 历史对话抽屉 */}
+      <Drawer
+        title="历史对话"
+        placement="left"
+        onClose={() => setHistoryDrawerVisible(false)}
+        open={historyDrawerVisible}
+        width={320}
+        className={styles.historyDrawer}
+      >
+        <div className={styles.historyHeader}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleNewConversation} block>
+            新建对话
+          </Button>
+        </div>
+        <div className={styles.historyList}>
+          {conversations.length === 0 ? (
+            <div className={styles.emptyHistory}>
+              <p>暂无历史对话</p>
+            </div>
+          ) : (
+            conversations.map(conv => (
+              <div
+                key={conv.id}
+                className={`${styles.historyItem} ${currentConversation?.id === conv.id ? styles.active : ''}`}
+                onClick={() => editingConvId !== conv.id && handleSwitchConversation(conv)}
+              >
+                <div className={styles.historyItemContent}>
+                  {editingConvId === conv.id ? (
+                    <div className={styles.editTitleWrapper} onClick={e => e.stopPropagation()}>
+                      <Input
+                        size="small"
+                        value={editingTitle}
+                        onChange={e => setEditingTitle(e.target.value)}
+                        onPressEnter={() => handleSaveTitle(conv.id)}
+                        onBlur={() => handleSaveTitle(conv.id)}
+                        autoFocus
+                        className={styles.editTitleInput}
+                      />
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<CheckOutlined />}
+                        onClick={() => handleSaveTitle(conv.id)}
+                        className={styles.editTitleBtn}
+                      />
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<CloseOutlined />}
+                        onClick={handleCancelEdit}
+                        className={styles.editTitleBtn}
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <div className={styles.historyItemTitle}>{conv.title || '新对话'}</div>
+                      <div className={styles.historyItemMeta}>
+                        <span className={styles.historyItemTime}>{formatConversationTime(conv.updatedAt)}</span>
+                        {conv._count && <span className={styles.historyItemCount}>{conv._count.messages} 条消息</span>}
+                      </div>
+                    </>
+                  )}
+                </div>
+                {editingConvId !== conv.id && (
+                  <div className={styles.historyItemActions}>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<EditOutlined />}
+                      onClick={(e) => handleStartEditTitle(conv, e)}
+                      className={styles.historyItemEdit}
+                    />
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      onClick={(e) => handleDeleteConversation(conv.id, e)}
+                      className={styles.historyItemDelete}
+                      danger
+                    />
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </Drawer>
     </div>
   )
 }

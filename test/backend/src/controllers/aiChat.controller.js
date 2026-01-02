@@ -168,6 +168,19 @@ const createConversation = async (req, res, next) => {
   }
 };
 
+const updateConversation = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const conversation = await aiChatService.updateConversation(id, req.body, req.user.id);
+    if (!conversation) {
+      return res.status(404).json(error('对话不存在', 404));
+    }
+    res.json(success(conversation, '更新成功'));
+  } catch (err) {
+    next(err);
+  }
+};
+
 const deleteConversation = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -229,6 +242,7 @@ module.exports = {
   deleteCharacter,
   getConversations,
   createConversation,
+  updateConversation,
   deleteConversation,
   getMessages,
   sendMessage,
