@@ -94,6 +94,13 @@ export function AIChatRoomPage() {
     scrollToBottom()
   }, [messages])
 
+  // 流式响应时也滚动到底部
+  useEffect(() => {
+    if (streamingContent) {
+      scrollToBottom()
+    }
+  }, [streamingContent])
+
   const scrollToBottom = () => {
     if (chatAreaRef.current) {
       chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight
@@ -434,16 +441,23 @@ export function AIChatRoomPage() {
             ))}
             {sending && (
               <div className={`${styles.messageWrapper} ${styles.assistant}`}>
-                <Avatar size={36} src={getImageUrl(character.avatarUrl)} icon={<RobotOutlined />} />
-                <div className={`${styles.messageBubble} ${styles.assistant}`} style={bubbleStyle('assistant')}>
-                  {streamingContent ? (
-                    <>
-                      {streamingContent}
-                      <span className={styles.cursor}>|</span>
-                    </>
-                  ) : (
-                    <div className={styles.typing}><span></span><span></span><span></span></div>
-                  )}
+                <Avatar
+                  size={36}
+                  src={getImageUrl(character.avatarUrl)}
+                  icon={<RobotOutlined />}
+                  className={styles.streamingAvatar}
+                />
+                <div>
+                  <div className={`${styles.messageBubble} ${styles.assistant}`} style={bubbleStyle('assistant')}>
+                    {streamingContent ? (
+                      <>
+                        {streamingContent}
+                        <span className={styles.cursor}>|</span>
+                      </>
+                    ) : (
+                      <div className={styles.typing}><span></span><span></span><span></span></div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

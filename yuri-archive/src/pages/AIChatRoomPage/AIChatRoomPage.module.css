@@ -90,6 +90,15 @@
   flex-shrink: 0;
 }
 
+/* 流式响应时的头像 - 固定大小防止收缩 */
+.streamingAvatar {
+  flex-shrink: 0;
+  min-width: 36px;
+  min-height: 36px;
+  width: 36px !important;
+  height: 36px !important;
+}
+
 .messageBubble {
   padding: 12px 16px;
   border-radius: 16px;
