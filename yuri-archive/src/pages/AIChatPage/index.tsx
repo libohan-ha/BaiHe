@@ -343,8 +343,8 @@ export function AIChatPage() {
 
           <Form.Item name="modelName" label="使用模型" initialValue="deepseek-chat">
             <Select>
-              <Select.Option value="deepseek-chat">deepseek-chat (通用)</Select.Option>
-              <Select.Option value="deepseek-coder">deepseek-coder (代码)</Select.Option>
+              <Select.Option value="deepseek-chat">DeepSeek</Select.Option>
+              <Select.Option value="claude-opus-4-5-thinking">Claude</Select.Option>
             </Select>
           </Form.Item>
 
