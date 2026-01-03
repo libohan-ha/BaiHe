@@ -3,22 +3,35 @@ const { success, error } = require('../utils/response');
 
 /**
  * 修复 API URL
- * 当检测到局域网 IP + 本地代理端口时，转换回 127.0.0.1
- * 因为后端代理运行在服务器本机，应该连接本机的代理服务
+ * Docker环境下：所有本地代理端口都转换为 host.docker.internal
+ * 非Docker环境下：局域网IP转换为127.0.0.1
  */
 const fixProxyUrl = (url) => {
   try {
     const urlObj = new URL(url);
-    // 如果是局域网地址（10.x.x.x, 192.168.x.x, 172.16-31.x.x）连接到常见代理端口
-    // 则认为是本机代理，转换回 127.0.0.1
-    const localProxyPorts = ['8045', '8080', '8000', '3000'];
+    const localProxyPorts = ['8045', '8080', '8000'];
     const isPrivateIP = /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(urlObj.hostname);
+    const isLocalhost = urlObj.hostname === '127.0.0.1' || urlObj.hostname === 'localhost';
     
-    if (isPrivateIP && localProxyPorts.includes(urlObj.port)) {
-      urlObj.hostname = '127.0.0.1';
-      return urlObj.toString();
+    // 检测是否在Docker环境中
+    const isDocker = process.env.NODE_ENV === 'production' || process.env.DOCKER_ENV === 'true';
+    
+    if (isDocker) {
+      // Docker环境下：所有本地代理端口（127.0.0.1、localhost、局域网IP）都转换为 host.docker.internal
+      // 因为代理服务通常只监听 127.0.0.1，Docker容器需要通过 host.docker.internal 访问
+      if ((isLocalhost || isPrivateIP) && localProxyPorts.includes(urlObj.port)) {
+        urlObj.hostname = 'host.docker.internal';
+        return urlObj.toString();
+      }
+      return url;
+    } else {
+      // 非Docker环境：局域网IP转换为127.0.0.1
+      if (isPrivateIP && localProxyPorts.includes(urlObj.port)) {
+        urlObj.hostname = '127.0.0.1';
+        return urlObj.toString();
+      }
+      return url;
     }
-    return url;
   } catch {
     return url;
   }

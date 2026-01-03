@@ -146,6 +146,16 @@ export function AIChatRoomPage() {
     }
   }
 
+  // 获取保存的对话ID
+  const getSavedConversationId = () => {
+    return localStorage.getItem(`ai-chat-conv-${characterId}`)
+  }
+
+  // 保存当前对话ID
+  const saveConversationId = (convId: string) => {
+    localStorage.setItem(`ai-chat-conv-${characterId}`, convId)
+  }
+
   const loadCharacter = async () => {
     setLoading(true)
     try {
@@ -154,13 +164,17 @@ export function AIChatRoomPage() {
       const convs = await getConversations(characterId!)
       setConversations(convs)
       if (convs.length > 0) {
-        await loadConversation(convs[0])
+        // 优先恢复之前的对话
+        const savedConvId = getSavedConversationId()
+        const savedConv = savedConvId ? convs.find(c => c.id === savedConvId) : null
+        await loadConversation(savedConv || convs[0])
       } else {
         // 如果没有对话，自动创建一个新对话
         const newConv = await createConversation(characterId!)
         setConversations([newConv])
         setCurrentConversation(newConv)
         setMessages([])
+        saveConversationId(newConv.id)
       }
     } catch (err) {
       message.error(err instanceof Error ? err.message : '加载失败')
@@ -172,6 +186,7 @@ export function AIChatRoomPage() {
 
   const loadConversation = async (conv: Conversation) => {
     setCurrentConversation(conv)
+    saveConversationId(conv.id) // 保存当前对话ID
     try {
       const msgs = await getChatMessages(conv.id)
       setMessages(msgs)
@@ -186,6 +201,7 @@ export function AIChatRoomPage() {
       setConversations([conv, ...conversations])
       setCurrentConversation(conv)
       setMessages([])
+      saveConversationId(conv.id) // 保存新对话ID
       setHistoryDrawerVisible(false) // 创建新对话后关闭抽屉
     } catch (err) {
       message.error('创建对话失败')
