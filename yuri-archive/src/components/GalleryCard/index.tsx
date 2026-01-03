@@ -1,9 +1,8 @@
-import { useState } from 'react'
-import { Card, Tag, Avatar, Typography, Checkbox, message } from 'antd'
 import { EyeOutlined, UserOutlined } from '@ant-design/icons'
+import { Avatar, Card, Checkbox, Tag, Typography } from 'antd'
 import { useNavigate } from 'react-router-dom'
-import type { GalleryCardProps } from '../../types'
 import { getImageUrl } from '../../services/api'
+import type { GalleryCardProps } from '../../types'
 import styles from './GalleryCard.module.css'
 
 const { Text } = Typography
