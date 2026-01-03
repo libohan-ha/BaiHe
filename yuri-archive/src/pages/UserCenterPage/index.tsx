@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { Typography, Avatar, Tabs, message, Row, Col, Card, Button, Modal, Form, Input, Upload } from 'antd'
-import { UserOutlined, EditOutlined, HeartOutlined, LoginOutlined, SettingOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons'
+import { UserOutlined, EditOutlined, HeartOutlined, LoginOutlined, SettingOutlined, LoadingOutlined, PlusOutlined, LockOutlined } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
 import { ArticleList, GalleryList, CollectionSearch } from '../../components'
-import { getUserArticles, getCollections, getImageCollections, updateProfile, uploadAvatar, getImageUrl } from '../../services/api'
+import { getUserArticles, getCollections, getImageCollections, getPrivateImageCollections, updateProfile, uploadAvatar, getImageUrl } from '../../services/api'
 import { useUserStore } from '../../store'
-import type { Article, GalleryImage } from '../../types'
+import type { Article, GalleryImage, PrivateImage } from '../../types'
 import styles from './UserCenterPage.module.css'
 
 const { Title, Text } = Typography
@@ -21,6 +21,7 @@ interface ProfileForm {
 
 export function UserCenterPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const activeTab = searchParams.get('tab') || 'articles'
   
   const { currentUser, isLoggedIn, setUser } = useUserStore()
@@ -28,15 +29,19 @@ export function UserCenterPage() {
   const [articles, setArticles] = useState<Article[]>([])
   const [collectedArticles, setCollectedArticles] = useState<Article[]>([])
   const [collectedImages, setCollectedImages] = useState<GalleryImage[]>([])
+  const [collectedPrivateImages, setCollectedPrivateImages] = useState<PrivateImage[]>([])
   const [articlesLoading, setArticlesLoading] = useState(false)
   const [collectionsLoading, setCollectionsLoading] = useState(false)
   const [imageCollectionsLoading, setImageCollectionsLoading] = useState(false)
+  const [privateImageCollectionsLoading, setPrivateImageCollectionsLoading] = useState(false)
   const [articlesPage, setArticlesPage] = useState(1)
   const [collectionsPage, setCollectionsPage] = useState(1)
   const [imageCollectionsPage, setImageCollectionsPage] = useState(1)
+  const [privateImageCollectionsPage, setPrivateImageCollectionsPage] = useState(1)
   const [articlesTotal, setArticlesTotal] = useState(0)
   const [collectionsTotal, setCollectionsTotal] = useState(0)
   const [imageCollectionsTotal, setImageCollectionsTotal] = useState(0)
+  const [privateImageCollectionsTotal, setPrivateImageCollectionsTotal] = useState(0)
   
   // 编辑资料弹窗
   const [editModalOpen, setEditModalOpen] = useState(false)
@@ -50,6 +55,7 @@ export function UserCenterPage() {
   // 收藏搜索状态
   const [articleSearchKeyword, setArticleSearchKeyword] = useState('')
   const [imageSearchKeyword, setImageSearchKeyword] = useState('')
+  const [privateImageSearchKeyword, setPrivateImageSearchKeyword] = useState('')
 
   useEffect(() => {
     if (currentUser && isLoggedIn) {
@@ -68,6 +74,12 @@ export function UserCenterPage() {
       loadImageCollections()
     }
   }, [isLoggedIn, imageCollectionsPage])
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      loadPrivateImageCollections()
+    }
+  }, [isLoggedIn, privateImageCollectionsPage])
 
   const loadArticles = async () => {
     if (!currentUser) return
@@ -109,11 +121,25 @@ export function UserCenterPage() {
     }
   }
 
+  const loadPrivateImageCollections = async () => {
+    setPrivateImageCollectionsLoading(true)
+    try {
+      const res = await getPrivateImageCollections(privateImageCollectionsPage, PAGE_SIZE)
+      setCollectedPrivateImages(res.data)
+      setPrivateImageCollectionsTotal(res.total)
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '加载隐私图片收藏失败')
+    } finally {
+      setPrivateImageCollectionsLoading(false)
+    }
+  }
+
   const handleTabChange = (key: string) => {
     setSearchParams({ tab: key })
     // 切换 tab 时清空搜索关键词
     setArticleSearchKeyword('')
     setImageSearchKeyword('')
+    setPrivateImageSearchKeyword('')
   }
 
   // 过滤收藏的文章
@@ -135,6 +161,38 @@ export function UserCenterPage() {
       (image.description && image.description.toLowerCase().includes(keyword))
     )
   }, [collectedImages, imageSearchKeyword])
+
+  // 过滤收藏的隐私图片
+  const filteredCollectedPrivateImages = useMemo(() => {
+    if (!privateImageSearchKeyword.trim()) return collectedPrivateImages
+    const keyword = privateImageSearchKeyword.toLowerCase()
+    return collectedPrivateImages.filter(image =>
+      image.title.toLowerCase().includes(keyword) ||
+      (image.description && image.description.toLowerCase().includes(keyword))
+    )
+  }, [collectedPrivateImages, privateImageSearchKeyword])
+
+  // 将隐私图片转换为 GalleryImage 格式以便 GalleryList 使用
+  const privateImagesAsGallery: GalleryImage[] = useMemo(() => {
+    return filteredCollectedPrivateImages.map(img => ({
+      id: img.id,
+      title: img.title,
+      imageUrl: img.imageUrl,
+      thumbnailUrl: img.thumbnailUrl,
+      description: img.description,
+      authorId: img.authorId,
+      author: img.author,
+      tags: img.tags,
+      views: 0,
+      createdAt: img.createdAt,
+      updatedAt: img.updatedAt,
+    }))
+  }, [filteredCollectedPrivateImages])
+
+  // 隐私图片点击处理
+  const handlePrivateImageClick = (imageId: string) => {
+    navigate(`/private-image/${imageId}`)
+  }
 
   const openEditModal = () => {
     form.setFieldsValue({
@@ -306,6 +364,34 @@ export function UserCenterPage() {
         </>
       ),
     },
+    {
+      key: 'private-image-collections',
+      label: (
+        <span>
+          <LockOutlined /> 隐私图片收藏 ({privateImageCollectionsTotal})
+        </span>
+      ),
+      children: (
+        <>
+          <CollectionSearch
+            value={privateImageSearchKeyword}
+            onChange={setPrivateImageSearchKeyword}
+            placeholder="搜索收藏的隐私图片..."
+          />
+          <GalleryList
+            images={privateImagesAsGallery}
+            loading={privateImageCollectionsLoading && activeTab === 'private-image-collections'}
+            pagination={{
+              current: privateImageCollectionsPage,
+              total: privateImageSearchKeyword ? filteredCollectedPrivateImages.length : privateImageCollectionsTotal,
+              pageSize: PAGE_SIZE,
+              onChange: setPrivateImageCollectionsPage,
+            }}
+            onImageClick={handlePrivateImageClick}
+          />
+        </>
+      ),
+    },
   ]
 
   return (
@@ -339,7 +425,7 @@ export function UserCenterPage() {
                   <span className={styles.statLabel}>投稿</span>
                 </div>
                 <div className={styles.statItem}>
-                  <span className={styles.statValue}>{collectionsTotal + imageCollectionsTotal}</span>
+                  <span className={styles.statValue}>{collectionsTotal + imageCollectionsTotal + privateImageCollectionsTotal}</span>
                   <span className={styles.statLabel}>收藏</span>
                 </div>
               </div>
