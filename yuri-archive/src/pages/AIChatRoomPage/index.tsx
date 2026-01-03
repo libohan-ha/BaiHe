@@ -417,10 +417,12 @@ export function AIChatRoomPage() {
       setStreamingContent('')
     } finally {
       setSending(false)
-      // AI回复完成后自动聚焦输入框
-      setTimeout(() => {
-        inputRef.current?.focus()
-      }, 100)
+      // AI回复完成后自动聚焦输入框（仅PC端，移动端不自动聚焦避免弹出键盘）
+      if (window.innerWidth >= 768) {
+        setTimeout(() => {
+          inputRef.current?.focus()
+        }, 100)
+      }
     }
   }
 
