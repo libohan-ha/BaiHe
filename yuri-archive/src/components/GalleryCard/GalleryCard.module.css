@@ -47,6 +47,48 @@
   font-size: 12px;
 }
 
+.transferButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+}
+
+.imageContainer:hover .transferButton {
+  opacity: 1;
+}
+
+.transferButton:hover {
+  transform: scale(1.1);
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+}
+
+.transferButton.transferring {
+  opacity: 1;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .content {
   padding: 4px 0;
 }

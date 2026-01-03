@@ -19,22 +19,25 @@ enum ArticleStatus {
 }
 
 model User {
-  id               String            @id @default(cuid())
-  email            String            @unique
-  username         String            @unique
-  password         String
-  avatarUrl        String?
-  bio              String?
-  role             UserRole          @default(USER)
-  articles         Article[]
-  collections      Collection[]
-  comments         Comment[]
-  images           Image[]
-  imageCollections ImageCollection[]
-  aiCharacters     AICharacter[]
-  conversations    Conversation[]
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  id                        String                   @id @default(cuid())
+  email                     String                   @unique
+  username                  String                   @unique
+  password                  String
+  avatarUrl                 String?
+  bio                       String?
+  role                      UserRole                 @default(USER)
+  articles                  Article[]
+  collections               Collection[]
+  comments                  Comment[]
+  images                    Image[]
+  imageCollections          ImageCollection[]
+  aiCharacters              AICharacter[]
+  conversations             Conversation[]
+  // 隐私相册相关
+  privateImages             PrivateImage[]
+  privateImageCollections   PrivateImageCollection[]
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
 
   @@index([email])
   @@index([username])
@@ -192,4 +195,48 @@ model ChatMessage {
   createdAt      DateTime     @default(now())
 
   @@index([conversationId])
+}
+
+// ============ 隐私相册相关模型 ============
+
+model PrivateImage {
+  id           String                   @id @default(cuid())
+  title        String                   // 图片标题
+  description  String?                  // 图片描述
+  url          String                   // 图片URL
+  thumbnailUrl String?                  // 缩略图URL
+  width        Int?                     // 图片宽度
+  height       Int?                     // 图片高度
+  size         Int                      @default(0) // 文件大小(字节)
+  ownerId      String                   // 所有者ID（只有所有者可以访问）
+  owner        User                     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  tags         PrivateImageTag[]        // 隐私图片标签
+  collections  PrivateImageCollection[] // 收藏记录
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+
+  @@index([ownerId])
+  @@index([createdAt])
+}
+
+model PrivateImageTag {
+  id        String         @id @default(cuid())
+  name      String         @unique // 标签名称全局唯一
+  images    PrivateImage[]
+  createdAt DateTime       @default(now())
+
+  @@index([name])
+}
+
+model PrivateImageCollection {
+  id        String       @id @default(cuid())
+  userId    String       // 收藏者ID
+  imageId   String       // 隐私图片ID
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  image     PrivateImage @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+
+  @@unique([userId, imageId]) // 同一用户不能重复收藏同一图片
+  @@index([userId])
+  @@index([imageId])
 }

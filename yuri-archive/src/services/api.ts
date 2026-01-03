@@ -1,4 +1,4 @@
-import type { AICharacter, Article, ChatMessage, Conversation, CreateCharacterData, GalleryImage, ImageTag, PaginatedResponse, Tag, UpdateCharacterData, User } from '../types'
+import type { AICharacter, Article, ChatMessage, Conversation, CreateCharacterData, GalleryImage, ImageTag, PaginatedResponse, Tag, UpdateCharacterData, User, PrivateImage, PrivateImageTag, PrivateImageStats, BatchTransferResult } from '../types'
 
 /**
  * 获取后端服务器地址
@@ -1132,4 +1132,238 @@ export async function formatMessageWithImages(
   }
 
   return contentParts
+}
+
+// ============ 隐私相册接口 ============
+
+interface PrivateImagesResponse {
+  images: PrivateImage[]
+  pagination: {
+    page: number
+    pageSize: number
+    total: number
+    totalPages: number
+  }
+}
+
+interface GetPrivateImagesParams {
+  page?: number
+  pageSize?: number
+  tag?: string
+  search?: string
+  sort?: 'latest' | 'popular'
+}
+
+export async function getPrivateImages(params: GetPrivateImagesParams = {}): Promise<PaginatedResponse<PrivateImage>> {
+  const searchParams = new URLSearchParams()
+  
+  if (params.page) searchParams.set('page', String(params.page))
+  if (params.pageSize) searchParams.set('pageSize', String(params.pageSize))
+  if (params.tag) searchParams.set('tag', params.tag)
+  if (params.search) searchParams.set('search', params.search)
+  if (params.sort) searchParams.set('sort', params.sort)
+
+  const query = searchParams.toString()
+  const endpoint = `/api/private-images${query ? `?${query}` : ''}`
+  
+  const result = await request<PrivateImagesResponse>(endpoint)
+  
+  return {
+    data: result.images,
+    total: result.pagination.total,
+    page: result.pagination.page,
+    pageSize: result.pagination.pageSize,
+    totalPages: result.pagination.totalPages,
+  }
+}
+
+export async function getPrivateImageById(id: string): Promise<PrivateImage> {
+  return request<PrivateImage>(`/api/private-images/${id}`)
+}
+
+export async function getPrivateImageStats(): Promise<PrivateImageStats> {
+  return request<PrivateImageStats>('/api/private-images/stats')
+}
+
+interface CreatePrivateImageData {
+  title: string
+  imageUrl: string
+  thumbnailUrl?: string
+  description?: string
+  tagIds: string[]
+}
+
+export async function createPrivateImage(data: CreatePrivateImageData): Promise<PrivateImage> {
+  const { tagIds, ...rest } = data
+  return request<PrivateImage>('/api/private-images', {
+    method: 'POST',
+    body: JSON.stringify({ ...rest, tags: tagIds }),
+  })
+}
+
+export async function updatePrivateImage(id: string, data: Partial<CreatePrivateImageData>): Promise<PrivateImage> {
+  const { tagIds, ...rest } = data
+  return request<PrivateImage>(`/api/private-images/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ ...rest, tags: tagIds }),
+  })
+}
+
+export async function deletePrivateImage(id: string): Promise<void> {
+  await request<null>(`/api/private-images/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+// 从公开画廊转移单张图片到隐私相册
+export async function transferToPrivateGallery(imageId: string): Promise<PrivateImage> {
+  return request<PrivateImage>(`/api/private-images/transfer/${imageId}`, {
+    method: 'POST',
+  })
+}
+
+// 批量从公开画廊转移图片到隐私相册
+export async function batchTransferToPrivateGallery(imageIds: string[]): Promise<BatchTransferResult> {
+  return request<BatchTransferResult>('/api/private-images/transfer/batch', {
+    method: 'POST',
+    body: JSON.stringify({ imageIds }),
+  })
+}
+
+// 上传隐私图片文件
+export async function uploadPrivateImage(file: File): Promise<UploadResponse> {
+  const token = getToken()
+  
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await fetch(`${BASE_URL}/api/private-images/upload`, {
+    method: 'POST',
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    body: formData,
+  })
+
+  const result: ApiResponse<UploadResponse> = await response.json()
+
+  if (result.code !== 200 && result.code !== 201) {
+    throw new Error(result.message || '上传失败')
+  }
+
+  return result.data
+}
+
+// ============ 隐私图片标签接口 ============
+
+interface PrivateImageTagsResponse {
+  tags: PrivateImageTag[]
+}
+
+export async function getPrivateImageTags(): Promise<PrivateImageTag[]> {
+  const result = await request<PrivateImageTagsResponse>('/api/private-image-tags')
+  return result.tags
+}
+
+export async function getPopularPrivateImageTags(limit: number = 8): Promise<PrivateImageTag[]> {
+  const tags = await request<PrivateImageTag[]>('/api/private-image-tags/popular?limit=' + limit)
+  return tags
+}
+
+export async function createPrivateImageTag(name: string): Promise<PrivateImageTag> {
+  return request<PrivateImageTag>('/api/private-image-tags', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  })
+}
+
+export async function updatePrivateImageTag(tagId: string, name: string): Promise<PrivateImageTag> {
+  return request<PrivateImageTag>(`/api/private-image-tags/${tagId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ name }),
+  })
+}
+
+export async function deletePrivateImageTag(tagId: string): Promise<void> {
+  await request<null>(`/api/private-image-tags/${tagId}`, {
+    method: 'DELETE',
+  })
+}
+
+// ============ 隐私图片收藏接口 ============
+
+interface PrivateImageCollectionsResponse {
+  collections: Array<{
+    id: string
+    imageId: string
+    image?: PrivateImage
+    createdAt: string
+  }>
+  pagination: {
+    page: number
+    pageSize: number
+    total: number
+    totalPages: number
+  }
+}
+
+export async function getPrivateImageCollections(page: number = 1, pageSize: number = 12): Promise<PaginatedResponse<PrivateImage & { collectionId: string }>> {
+  const result = await request<PrivateImageCollectionsResponse>(`/api/private-image-collections?page=${page}&pageSize=${pageSize}`)
+  
+  const imagesWithCollection = result.collections
+    .filter(c => c.image)
+    .map(c => ({ ...c.image!, collectionId: c.id }))
+  
+  if (imagesWithCollection.length === 0 && result.collections.length > 0) {
+    const imagesPromises = result.collections.map(async (c) => {
+      try {
+        const image = await getPrivateImageById(c.imageId)
+        return { ...image, collectionId: c.id }
+      } catch {
+        return null
+      }
+    })
+    const images = await Promise.all(imagesPromises)
+    return {
+      data: images.filter((i): i is PrivateImage & { collectionId: string } => i !== null),
+      total: result.pagination.total,
+      page: result.pagination.page,
+      pageSize: result.pagination.pageSize,
+      totalPages: result.pagination.totalPages,
+    }
+  }
+  
+  return {
+    data: imagesWithCollection,
+    total: result.pagination.total,
+    page: result.pagination.page,
+    pageSize: result.pagination.pageSize,
+    totalPages: result.pagination.totalPages,
+  }
+}
+
+interface PrivateImageCollectionResponse {
+  id: string
+  imageId: string
+  createdAt: string
+}
+
+export async function addPrivateImageCollection(imageId: string): Promise<PrivateImageCollectionResponse> {
+  return request<PrivateImageCollectionResponse>('/api/private-image-collections', {
+    method: 'POST',
+    body: JSON.stringify({ imageId }),
+  })
+}
+
+export async function removePrivateImageCollection(collectionId: string): Promise<void> {
+  await request<null>(`/api/private-image-collections/${collectionId}`, {
+    method: 'DELETE',
+  })
+}
+
+interface CheckPrivateCollectionResponse {
+  collected: boolean
+  collectionId: string | null
+}
+
+export async function checkPrivateImageCollection(imageId: string): Promise<CheckPrivateCollectionResponse> {
+  return request<CheckPrivateCollectionResponse>(`/api/private-image-collections/check/${imageId}`)
 }

@@ -18,6 +18,10 @@ const imageRoutes = require('./routes/image.routes');
 const imageTagRoutes = require('./routes/imageTag.routes');
 const imageCollectionRoutes = require('./routes/imageCollection.routes');
 const aiChatRoutes = require('./routes/aiChat.routes');
+// 隐私相册相关路由
+const privateImageRoutes = require('./routes/privateImage.routes');
+const privateImageTagRoutes = require('./routes/privateImageTag.routes');
+const privateImageCollectionRoutes = require('./routes/privateImageCollection.routes');
 
 const app = express();
 
@@ -49,6 +53,10 @@ app.use('/api/images', imageRoutes);
 app.use('/api/image-tags', imageTagRoutes);
 app.use('/api/image-collections', imageCollectionRoutes);
 app.use('/api/ai-chat', aiChatRoutes);
+// 隐私相册相关路由
+app.use('/api/private-images', privateImageRoutes);
+app.use('/api/private-image-tags', privateImageTagRoutes);
+app.use('/api/private-image-collections', privateImageCollectionRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

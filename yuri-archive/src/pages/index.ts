@@ -14,6 +14,11 @@ export { EditImagePage } from './EditImagePage'
 export { GalleryPage } from './GalleryPage'
 export { ImageDetailPage } from './ImageDetailPage'
 export { UploadImagePage } from './UploadImagePage'
+// 隐私相册相关页面
+export { PrivateGalleryPage } from './PrivateGalleryPage'
+export { PrivateImageDetailPage } from './PrivateImageDetailPage'
+export { UploadPrivateImagePage } from './UploadPrivateImagePage'
+export { EditPrivateImagePage } from './EditPrivateImagePage'
 // AI聊天相关页面
 export { AIChatPage } from './AIChatPage'
 export { AIChatRoomPage } from './AIChatRoomPage'

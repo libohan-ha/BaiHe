@@ -11,14 +11,18 @@ import {
   CreateArticlePage,
   EditArticlePage,
   EditImagePage,
+  EditPrivateImagePage,
   GalleryPage,
   HomePage,
   ImageDetailPage,
   LoginPage,
+  PrivateGalleryPage,
+  PrivateImageDetailPage,
   RegisterPage,
   SearchPage,
   TagPage,
   UploadImagePage,
+  UploadPrivateImagePage,
   UserCenterPage,
   UserProfilePage
 } from './pages'
@@ -77,6 +81,11 @@ function App() {
               <Route path="image/:id" element={<ImageDetailPage />} />
               <Route path="upload-image" element={<UploadImagePage />} />
               <Route path="edit-image/:id" element={<EditImagePage />} />
+              {/* 隐私相册相关路由 */}
+              <Route path="private-gallery" element={<PrivateGalleryPage />} />
+              <Route path="private-image/:id" element={<PrivateImageDetailPage />} />
+              <Route path="upload-private-image" element={<UploadPrivateImagePage />} />
+              <Route path="edit-private-image/:id" element={<EditPrivateImagePage />} />
               {/* AI聊天相关路由 */}
               <Route path="ai-chat" element={<AIChatPage />} />
               <Route path="ai-chat/:characterId" element={<AIChatRoomPage />} />

@@ -255,3 +255,81 @@ export interface UpdateCharacterData {
   modelName?: string
   bubbleOpacity?: number
 }
+
+// ============ 隐私相册相关类型 ============
+
+// 隐私图片标签类型
+export interface PrivateImageTag {
+  id: string
+  name: string
+  imageCount: number
+  createdAt: string
+}
+
+// 隐私图片类型
+export interface PrivateImage {
+  id: string
+  title: string
+  imageUrl: string
+  thumbnailUrl?: string
+  description?: string
+  authorId: string
+  author: User
+  tags: PrivateImageTag[]
+  createdAt: string
+  updatedAt: string
+}
+
+// 隐私图片收藏类型
+export interface PrivateImageCollection {
+  id: string
+  userId: string
+  imageId: string
+  createdAt: string
+}
+
+// 隐私图片统计
+export interface PrivateImageStats {
+  totalImages: number
+  totalTags: number
+}
+
+// 批量转移结果
+export interface BatchTransferResult {
+  success: Array<{
+    originalId: string
+    newId: string
+    title: string
+  }>
+  failed: Array<{
+    imageId: string
+    reason: string
+  }>
+}
+
+// 隐私图片卡片Props
+export interface PrivateGalleryCardProps {
+  image: PrivateImage
+  onTagClick?: (tagId: string) => void
+  onImageClick?: (imageId: string) => void
+  selected?: boolean
+  onSelect?: (imageId: string, selected: boolean) => void
+  selectable?: boolean
+}
+
+// 隐私图片列表Props
+export interface PrivateGalleryListProps {
+  images: PrivateImage[]
+  loading?: boolean
+  pagination?: {
+    current: number
+    total: number
+    pageSize: number
+    onChange: (page: number) => void
+  }
+  onTagClick?: (tagId: string) => void
+  onImageClick?: (imageId: string) => void
+  selectable?: boolean
+  selectedIds?: string[]
+  onSelectionChange?: (ids: string[]) => void
+}

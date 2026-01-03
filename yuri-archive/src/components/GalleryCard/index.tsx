@@ -1,14 +1,32 @@
-import { Card, Tag, Avatar, Typography } from 'antd'
-import { EyeOutlined, UserOutlined } from '@ant-design/icons'
+import { useState } from 'react'
+import { Card, Tag, Avatar, Typography, Tooltip, message } from 'antd'
+import { EyeOutlined, UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import type { GalleryCardProps } from '../../types'
-import { getImageUrl } from '../../services/api'
+import { getImageUrl, transferToPrivateGallery } from '../../services/api'
+import { useUserStore } from '../../store/userStore'
 import styles from './GalleryCard.module.css'
 
 const { Text } = Typography
 
-export function GalleryCard({ image, onTagClick, onImageClick }: GalleryCardProps) {
+interface ExtendedGalleryCardProps extends GalleryCardProps {
+  showTransferButton?: boolean
+  onTransferSuccess?: () => void
+}
+
+export function GalleryCard({
+  image,
+  onTagClick,
+  onImageClick,
+  showTransferButton = true,
+  onTransferSuccess
+}: ExtendedGalleryCardProps) {
   const navigate = useNavigate()
+  const { currentUser, isLoggedIn } = useUserStore()
+  const [transferring, setTransferring] = useState(false)
+
+  // 判断是否是图片的上传者
+  const isOwner = isLoggedIn && currentUser && currentUser.id === image.authorId
 
   const handleClick = () => {
     if (onImageClick) {
@@ -34,6 +52,34 @@ export function GalleryCard({ image, onTagClick, onImageClick }: GalleryCardProp
     }
   }
 
+  const handleTransfer = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    
+    if (!isLoggedIn) {
+      message.warning('请先登录')
+      navigate('/login')
+      return
+    }
+
+    if (!isOwner) {
+      message.warning('只能转移自己上传的图片')
+      return
+    }
+
+    setTransferring(true)
+    try {
+      await transferToPrivateGallery(image.id)
+      message.success('已转移到隐私相册')
+      if (onTransferSuccess) {
+        onTransferSuccess()
+      }
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '转移失败')
+    } finally {
+      setTransferring(false)
+    }
+  }
+
   return (
     <Card
       hoverable
@@ -50,6 +96,17 @@ export function GalleryCard({ image, onTagClick, onImageClick }: GalleryCardProp
             <EyeOutlined className={styles.viewIcon} />
             <span>{image.views}</span>
           </div>
+          {/* 转移到隐私相册按钮 - 只有上传者可以看到 */}
+          {showTransferButton && isOwner && (
+            <Tooltip title="转移到隐私相册">
+              <div
+                className={`${styles.transferButton} ${transferring ? styles.transferring : ''}`}
+                onClick={handleTransfer}
+              >
+                <LockOutlined />
+              </div>
+            </Tooltip>
+          )}
         </div>
       }
     >
