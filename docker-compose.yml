@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # 注释掉Docker内的PostgreSQL，使用本地数据库
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: baihe-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: postgres123
+  #     POSTGRES_DB: baihe
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - baihe-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # 后端服务
+  backend:
+    build:
+      context: ./test/backend
+      dockerfile: Dockerfile
+    container_name: baihe-backend
+    restart: unless-stopped
+    environment:
+      # 连接本地PostgreSQL数据库（使用host.docker.internal访问宿主机）
+      DATABASE_URL: postgresql://postgres:079825lbh@host.docker.internal:5432/blog?schema=public
+      JWT_SECRET: your-super-secret-jwt-key-for-production-change-this
+      JWT_EXPIRES_IN: 7d
+      PORT: 3000
+      NODE_ENV: production
+      HOST: 0.0.0.0
+    volumes:
+      - uploads_data:/app/uploads
+      # 同步本地uploads目录（可选，让本地和Docker共享上传文件）
+      # - ./test/backend/uploads:/app/uploads
+    # 移除对postgres服务的依赖
+    # depends_on:
+    #   postgres:
+    #     condition: service_healthy
+    networks:
+      - baihe-network
+    # 添加 host.docker.internal 支持（Linux需要）
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # 执行数据库迁移后启动
+    command: sh -c "npx prisma migrate deploy && node src/app.js"
+
+  # 前端服务
+  frontend:
+    build:
+      context: ./yuri-archive
+      dockerfile: Dockerfile
+    container_name: baihe-frontend
+    restart: unless-stopped
+    ports:
+      - "3004:80"
+    depends_on:
+      - backend
+    networks:
+      - baihe-network
+
+networks:
+  baihe-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  uploads_data:
+    driver: local

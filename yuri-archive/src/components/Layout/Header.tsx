@@ -1,4 +1,4 @@
-import { EditOutlined, FileTextOutlined, HeartOutlined, LoginOutlined, LogoutOutlined, MenuFoldOutlined, MenuOutlined, MenuUnfoldOutlined, PictureOutlined, RobotOutlined, SearchOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons'
+import { EditOutlined, FileTextOutlined, HeartOutlined, LockOutlined, LoginOutlined, LogoutOutlined, MenuFoldOutlined, MenuOutlined, MenuUnfoldOutlined, PictureOutlined, RobotOutlined, SearchOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import { Avatar, Button, Drawer, Dropdown, Input, Layout, Space, message } from 'antd'
 import { useState } from 'react'
@@ -98,6 +98,13 @@ export function Header({ sidebarCollapsed = false, onToggleSidebar }: HeaderProp
       label: 'AI聊天',
       onClick: () => { navigate('/ai-chat'); setDrawerOpen(false) },
     },
+    // 隐私相册（仅登录用户可见）
+    ...(isLoggedIn ? [{
+      key: 'private-gallery',
+      icon: <LockOutlined />,
+      label: '隐私相册',
+      onClick: () => { navigate('/private-gallery'); setDrawerOpen(false) },
+    }] : []),
   ]
 
   const mobileMenuItems = isLoggedIn ? [
