@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Layout as AntLayout } from 'antd'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { Header } from './Header'
 import { Footer } from './Footer'
 import { Sidebar } from '../Sidebar'
@@ -12,6 +12,10 @@ const { Content } = AntLayout
 const MOBILE_BREAKPOINT = 768
 
 export function Layout() {
+  const location = useLocation()
+  // 判断是否在 AI 聊天室页面（/ai-chat/:characterId）
+  const isAIChatRoom = /^\/ai-chat\/[^/]+$/.test(location.pathname)
+  
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     // 初始状态：移动端默认收起
     return typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT
@@ -55,7 +59,7 @@ export function Layout() {
           </div>
         </Content>
       </AntLayout>
-      <Footer />
+      {!isAIChatRoom && <Footer />}
     </AntLayout>
   )
 }
