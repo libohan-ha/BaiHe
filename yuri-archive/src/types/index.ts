@@ -190,3 +190,68 @@ export interface SidebarProps {
   collapsed?: boolean
   onCollapse?: (collapsed: boolean) => void
 }
+
+// ============ AI聊天相关类型 ============
+
+// AI角色类型
+export interface AICharacter {
+  id: string
+  name: string
+  avatarUrl?: string
+  userAvatarUrl?: string
+  prompt: string
+  backgroundUrl?: string
+  modelName: string
+  bubbleOpacity: number
+  userId: string
+  createdAt: string
+  updatedAt: string
+  _count?: {
+    conversations: number
+  }
+}
+
+// 对话类型
+export interface Conversation {
+  id: string
+  title: string
+  characterId: string
+  userId: string
+  createdAt: string
+  updatedAt: string
+  _count?: {
+    messages: number
+  }
+}
+
+// 聊天消息类型
+export interface ChatMessage {
+  id: string
+  content: string
+  role: 'user' | 'assistant'
+  images?: string[]  // 用户上传的图片URL数组
+  conversationId: string
+  createdAt: string
+}
+
+// 创建AI角色参数
+export interface CreateCharacterData {
+  name: string
+  avatarUrl?: string
+  userAvatarUrl?: string
+  prompt: string
+  backgroundUrl?: string
+  modelName?: string
+  bubbleOpacity?: number
+}
+
+// 更新AI角色参数
+export interface UpdateCharacterData {
+  name?: string
+  avatarUrl?: string
+  userAvatarUrl?: string
+  prompt?: string
+  backgroundUrl?: string
+  modelName?: string
+  bubbleOpacity?: number
+}

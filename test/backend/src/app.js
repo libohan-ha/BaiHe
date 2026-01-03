@@ -17,16 +17,17 @@ const uploadRoutes = require('./routes/upload.routes');
 const imageRoutes = require('./routes/image.routes');
 const imageTagRoutes = require('./routes/imageTag.routes');
 const imageCollectionRoutes = require('./routes/imageCollection.routes');
+const aiChatRoutes = require('./routes/aiChat.routes');
 
 const app = express();
 
 app.use(morgan('dev'));
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: process.env.CORS_ORIGIN || true,  // 允许所有来源（开发环境）
   credentials: true
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));  // 增加请求体大小限制，支持图片 base64
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
 // 静态文件服务 - 用于访问上传的文件
@@ -47,6 +48,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/images', imageRoutes);
 app.use('/api/image-tags', imageTagRoutes);
 app.use('/api/image-collections', imageCollectionRoutes);
+app.use('/api/ai-chat', aiChatRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
@@ -59,10 +61,12 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0';  // 监听所有网络接口
 
-app.listen(PORT, () => {
-  console.log(`🚀 服务器运行在 http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 服务器运行在 http://${HOST}:${PORT}`);
   console.log(`📝 健康检查: http://localhost:${PORT}/api/health`);
+  console.log(`🌐 局域网访问: http://<你的IP>:${PORT}`);
 });
 
 module.exports = app;

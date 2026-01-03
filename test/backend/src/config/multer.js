@@ -13,7 +13,8 @@ const ensureDir = (dir) => {
 const UPLOAD_DIRS = {
   avatar: path.join(__dirname, '../../uploads/avatars'),
   cover: path.join(__dirname, '../../uploads/covers'),
-  gallery: path.join(__dirname, '../../uploads/gallery')
+  gallery: path.join(__dirname, '../../uploads/gallery'),
+  chat: path.join(__dirname, '../../uploads/chat')
 };
 
 // 确保所有上传目录存在
@@ -79,6 +80,13 @@ const uploadGallery = multer({
   limits: { fileSize: MAX_FILE_SIZE }
 });
 
+// 聊天图片上传 (10MB 限制)
+const uploadChat = multer({
+  storage: createStorage('chat'),
+  fileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 }
+});
+
 // 通用上传（默认为 avatar）
 const upload = multer({
   storage: createStorage('avatar'),
@@ -91,6 +99,7 @@ module.exports = {
   uploadAvatar,
   uploadCover,
   uploadGallery,
+  uploadChat,
   UPLOAD_DIRS,
   ALLOWED_TYPES,
   MAX_FILE_SIZE

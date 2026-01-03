@@ -31,6 +31,8 @@ model User {
   comments         Comment[]
   images           Image[]
   imageCollections ImageCollection[]
+  aiCharacters     AICharacter[]
+  conversations    Conversation[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
@@ -143,4 +145,51 @@ model ImageCollection {
   @@unique([userId, imageId])
   @@index([userId])
   @@index([imageId])
+}
+
+// ============ AI聊天相关模型 ============
+
+model AICharacter {
+  id              String        @id @default(cuid())
+  name            String        // 角色名称
+  avatarUrl       String?       // 角色头像
+  userAvatarUrl   String?       // 用户在此角色下显示的头像
+  prompt          String        @db.Text // 角色提示词
+  backgroundUrl   String?       // 聊天背景图片
+  modelName       String        @default("deepseek-chat") // 使用的模型名称
+  bubbleOpacity   Int           @default(85) // 消息气泡透明度 (0-100)
+  userId          String        // 创建者ID
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations   Conversation[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([userId])
+}
+
+model Conversation {
+  id            String        @id @default(cuid())
+  title         String        @default("新对话") // 对话标题
+  characterId   String
+  character     AICharacter   @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages      ChatMessage[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([characterId])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id             String       @id @default(cuid())
+  content        String       @db.Text // 消息内容
+  role           String       // 'user' 或 'assistant'
+  images         String[]     // 用户上传的图片URL数组
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
 }

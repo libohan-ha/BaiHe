@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react'
-import { Typography, message } from 'antd'
+import { PlusOutlined } from '@ant-design/icons'
+import { Button, Typography, message } from 'antd'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ArticleList, TagCloud } from '../../components'
 import { getArticles, getPopularTags } from '../../services/api'
+import { useUserStore } from '../../store'
 import type { Article, Tag } from '../../types'
 import styles from './HomePage.module.css'
 
@@ -9,6 +12,8 @@ const { Title } = Typography
 const PAGE_SIZE = 10
 
 export function HomePage() {
+  const navigate = useNavigate()
+  const { isLoggedIn } = useUserStore()
   const [articles, setArticles] = useState<Article[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const [loading, setLoading] = useState(true)
@@ -43,13 +48,25 @@ export function HomePage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <Title level={2} className={styles.title}>
-          🌸 发现精彩百合文学
-        </Title>
-        <p className={styles.subtitle}>
-          在这里，收藏与分享你喜爱的百合故事
-        </p>
+      <div className={styles.pageHeader}>
+        <div className={styles.headerLeft}>
+          <Title level={2} className={styles.title}>
+            🌸 发现精彩百合文学
+          </Title>
+          <p className={styles.subtitle}>
+            在这里，收藏与分享你喜爱的百合故事
+          </p>
+        </div>
+        {isLoggedIn && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/create')}
+            className={styles.createButton}
+          >
+            新增文章
+          </Button>
+        )}
       </div>
 
       <TagCloud tags={tags} />

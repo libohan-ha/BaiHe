@@ -1,11 +1,39 @@
-import type { Article, Tag, User, PaginatedResponse, GalleryImage, ImageTag } from '../types'
+import type { AICharacter, Article, ChatMessage, Conversation, CreateCharacterData, GalleryImage, ImageTag, PaginatedResponse, Tag, UpdateCharacterData, User } from '../types'
 
-// 开发环境使用代理，生产环境使用完整URL
-const BASE_URL = import.meta.env.PROD ? 'http://localhost:3000' : ''
+/**
+ * 获取后端服务器地址
+ * 开发环境：使用当前页面的 host + 端口 3000
+ * 生产环境：使用相对路径
+ */
+function getBackendUrl(): string {
+  // 如果配置了环境变量，优先使用
+  if (import.meta.env.VITE_BACKEND_URL) {
+    return import.meta.env.VITE_BACKEND_URL
+  }
+  
+  // 开发环境：根据当前访问地址动态获取后端地址
+  if (import.meta.env.DEV) {
+    const { protocol, hostname } = window.location
+    return `${protocol}//${hostname}:3000`
+  }
+  
+  // 生产环境：使用相对路径
+  return ''
+}
 
-// 后端服务器地址（用于图片等静态资源）
-// 始终使用完整地址以确保图片正确显示
-const BACKEND_URL = 'http://localhost:3000'
+/**
+ * API Base URL 配置
+ * 优先级：环境变量 > 自动判断
+ * - 开发环境：使用空字符串（通过 Vite proxy 代理到 localhost:3000）
+ * - 生产环境：使用相对路径 /api（通过 Nginx 反向代理到后端）
+ */
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '' : '')
+
+/**
+ * 后端服务器地址（用于图片等静态资源）
+ * 动态获取，支持局域网访问
+ */
+const BACKEND_URL = getBackendUrl()
 
 /**
  * 获取完整的图片URL
@@ -13,17 +41,17 @@ const BACKEND_URL = 'http://localhost:3000'
  */
 export function getImageUrl(url: string | undefined | null): string | undefined {
   if (!url) return undefined
-  
+
   // 如果已经是完整URL，直接返回
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url
   }
-  
+
   // 如果是相对路径，拼接后端地址
   if (url.startsWith('/')) {
     return `${BACKEND_URL}${url}`
   }
-  
+
   return url
 }
 
@@ -130,10 +158,10 @@ interface LoginResponse {
   token: string
 }
 
-export async function login(email: string, password: string): Promise<LoginResponse> {
+export async function login(identifier: string, password: string): Promise<LoginResponse> {
   return request<LoginResponse>('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ identifier, password }),
   })
 }
 
@@ -643,16 +671,20 @@ interface CreateImageData {
 }
 
 export async function createImage(data: CreateImageData): Promise<GalleryImage> {
+  // 将 tagIds 转换为 tags 发送给后端
+  const { tagIds, ...rest } = data
   return request<GalleryImage>('/api/images', {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify({ ...rest, tags: tagIds }),
   })
 }
 
 export async function updateImage(id: string, data: Partial<CreateImageData>): Promise<GalleryImage> {
+  // 将 tagIds 转换为 tags 发送给后端
+  const { tagIds, ...rest } = data
   return request<GalleryImage>(`/api/images/${id}`, {
     method: 'PUT',
-    body: JSON.stringify(data),
+    body: JSON.stringify({ ...rest, tags: tagIds }),
   })
 }
 
@@ -824,4 +856,280 @@ export async function deleteImageAdmin(imageId: string): Promise<void> {
   await request<null>(`/api/admin/images/${imageId}`, {
     method: 'DELETE',
   })
+}
+
+// ============ AI聊天接口 ============
+
+// AI角色相关
+interface CharactersResponse {
+  characters: AICharacter[]
+}
+
+export async function getAICharacters(): Promise<AICharacter[]> {
+  const result = await request<CharactersResponse>('/api/ai-chat/characters')
+  return result.characters
+}
+
+export async function getAICharacterById(id: string): Promise<AICharacter> {
+  return request<AICharacter>(`/api/ai-chat/characters/${id}`)
+}
+
+export async function createAICharacter(data: CreateCharacterData): Promise<AICharacter> {
+  return request<AICharacter>('/api/ai-chat/characters', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function updateAICharacter(id: string, data: UpdateCharacterData): Promise<AICharacter> {
+  return request<AICharacter>(`/api/ai-chat/characters/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function deleteAICharacter(id: string): Promise<void> {
+  await request<null>(`/api/ai-chat/characters/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+// 对话相关
+interface ConversationsResponse {
+  conversations: Conversation[]
+}
+
+export async function getConversations(characterId: string): Promise<Conversation[]> {
+  const result = await request<ConversationsResponse>(`/api/ai-chat/characters/${characterId}/conversations`)
+  return result.conversations
+}
+
+export async function createConversation(characterId: string, title?: string): Promise<Conversation> {
+  return request<Conversation>(`/api/ai-chat/characters/${characterId}/conversations`, {
+    method: 'POST',
+    body: JSON.stringify({ title }),
+  })
+}
+
+export async function updateConversation(id: string, title: string): Promise<Conversation> {
+  return request<Conversation>(`/api/ai-chat/conversations/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ title }),
+  })
+}
+
+export async function deleteConversation(id: string): Promise<void> {
+  await request<null>(`/api/ai-chat/conversations/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+// 消息相关
+interface MessagesResponse {
+  messages: ChatMessage[]
+}
+
+export async function getChatMessages(conversationId: string): Promise<ChatMessage[]> {
+  const result = await request<MessagesResponse>(`/api/ai-chat/conversations/${conversationId}/messages`)
+  return result.messages
+}
+
+export async function sendChatMessage(conversationId: string, content: string, images?: string[]): Promise<ChatMessage> {
+  return request<ChatMessage>(`/api/ai-chat/conversations/${conversationId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ content, images }),
+  })
+}
+
+export async function saveAssistantMessage(conversationId: string, content: string): Promise<ChatMessage> {
+  return request<ChatMessage>(`/api/ai-chat/conversations/${conversationId}/assistant-message`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  })
+}
+
+// 上传AI角色相关图片 (头像/背景)
+export async function uploadAIChatImage(file: File, type: 'avatar' | 'background'): Promise<UploadResponse> {
+  const token = getToken()
+
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('type', type === 'avatar' ? 'avatar' : 'gallery')
+
+  const response = await fetch(`${BASE_URL}/api/upload`, {
+    method: 'POST',
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    body: formData,
+  })
+
+  const result: ApiResponse<UploadResponse> = await response.json()
+
+  if (result.code !== 200 && result.code !== 201) {
+    throw new Error(result.message || '上传失败')
+  }
+
+  return result.data
+}
+
+// 上传聊天图片 (支持10MB)
+export async function uploadChatImage(file: File): Promise<UploadResponse> {
+  const token = getToken()
+
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await fetch(`${BASE_URL}/api/upload/chat`, {
+    method: 'POST',
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    body: formData,
+  })
+
+  const result: ApiResponse<UploadResponse> = await response.json()
+
+  if (result.code !== 200 && result.code !== 201) {
+    throw new Error(result.message || '上传失败')
+  }
+
+  return result.data
+}
+
+// ============ 图片压缩和转换工具函数 ============
+
+// 压缩阈值 3.5MB
+const IMAGE_COMPRESS_THRESHOLD = 3.5 * 1024 * 1024
+
+/**
+ * 压缩图片
+ * 如果图片小于阈值，直接返回原图
+ * 否则通过 Canvas 压缩
+ */
+export async function compressImage(file: File, maxSizeBytes: number = IMAGE_COMPRESS_THRESHOLD): Promise<File> {
+  // 如果图片已经足够小，直接返回
+  if (file.size <= maxSizeBytes) return file
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let { width, height } = img
+
+        // 如果尺寸 > 2048px，先缩小尺寸
+        const maxDimension = 2048
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = (height * maxDimension) / width
+            width = maxDimension
+          } else {
+            width = (width * maxDimension) / height
+            height = maxDimension
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          reject(new Error('无法创建 Canvas 上下文'))
+          return
+        }
+
+        ctx.drawImage(img, 0, 0, width, height)
+
+        // 逐步降低质量直到文件大小合适
+        let quality = 0.9
+        const tryCompress = () => {
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error('压缩失败'))
+                return
+              }
+
+              if (blob.size <= maxSizeBytes || quality <= 0.1) {
+                const compressedFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now(),
+                })
+                resolve(compressedFile)
+              } else {
+                quality -= 0.1
+                tryCompress()
+              }
+            },
+            'image/jpeg',
+            quality
+          )
+        }
+
+        tryCompress()
+      }
+      img.onerror = () => reject(new Error('图片加载失败'))
+      img.src = e.target?.result as string
+    }
+    reader.onerror = () => reject(new Error('文件读取失败'))
+    reader.readAsDataURL(file)
+  })
+}
+
+/**
+ * 将图片 URL 转换为 base64
+ * 用于发送给 AI API
+ */
+export async function imageUrlToBase64(imageUrl: string): Promise<string> {
+  // 获取完整 URL
+  const fullUrl = getImageUrl(imageUrl)
+  if (!fullUrl) throw new Error('无效的图片 URL')
+
+  const response = await fetch(fullUrl)
+  const blob = await response.blob()
+  
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const base64 = reader.result as string
+      resolve(base64)
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+}
+
+/**
+ * 构建多模态消息格式（用于发送给 AI API）
+ * 将包含图片的消息转换为 OpenAI 多模态格式
+ */
+export async function formatMessageWithImages(
+  content: string,
+  imageUrls?: string[]
+): Promise<string | Array<{ type: string; text?: string; image_url?: { url: string } }>> {
+  // 没有图片，返回普通文本
+  if (!imageUrls || imageUrls.length === 0) {
+    return content
+  }
+
+  // 有图片，构建多模态内容数组
+  const contentParts: Array<{ type: string; text?: string; image_url?: { url: string } }> = []
+
+  // 添加文本
+  if (content.trim()) {
+    contentParts.push({ type: 'text', text: content })
+  }
+
+  // 添加图片（转换为 base64）
+  for (const imageUrl of imageUrls) {
+    try {
+      const base64Url = await imageUrlToBase64(imageUrl)
+      contentParts.push({
+        type: 'image_url',
+        image_url: { url: base64Url },
+      })
+    } catch (err) {
+      console.error('图片转换失败:', imageUrl, err)
+    }
+  }
+
+  return contentParts
 }
