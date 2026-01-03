@@ -41,6 +41,17 @@
   background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important;
 }
 
+.transferButton {
+  border-color: #8b5cf6 !important;
+  color: #8b5cf6 !important;
+}
+
+.transferButton:hover {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+  border-color: #8b5cf6 !important;
+  color: white !important;
+}
+
 .content {
   display: grid;
   grid-template-columns: 1fr 400px;

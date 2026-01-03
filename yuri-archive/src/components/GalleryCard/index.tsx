@@ -1,34 +1,34 @@
 import { useState } from 'react'
-import { Card, Tag, Avatar, Typography, Tooltip, message } from 'antd'
-import { EyeOutlined, UserOutlined, LockOutlined } from '@ant-design/icons'
+import { Card, Tag, Avatar, Typography, Checkbox, message } from 'antd'
+import { EyeOutlined, UserOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import type { GalleryCardProps } from '../../types'
-import { getImageUrl, transferToPrivateGallery } from '../../services/api'
-import { useUserStore } from '../../store/userStore'
+import { getImageUrl } from '../../services/api'
 import styles from './GalleryCard.module.css'
 
 const { Text } = Typography
 
 interface ExtendedGalleryCardProps extends GalleryCardProps {
-  showTransferButton?: boolean
-  onTransferSuccess?: () => void
+  selectable?: boolean
+  selected?: boolean
+  onSelect?: (imageId: string, selected: boolean) => void
 }
 
 export function GalleryCard({
   image,
   onTagClick,
   onImageClick,
-  showTransferButton = true,
-  onTransferSuccess
+  selectable = false,
+  selected = false,
+  onSelect
 }: ExtendedGalleryCardProps) {
   const navigate = useNavigate()
-  const { currentUser, isLoggedIn } = useUserStore()
-  const [transferring, setTransferring] = useState(false)
-
-  // 判断是否是图片的上传者
-  const isOwner = isLoggedIn && currentUser && currentUser.id === image.authorId
 
   const handleClick = () => {
+    if (selectable && onSelect) {
+      onSelect(image.id, !selected)
+      return
+    }
     if (onImageClick) {
       onImageClick(image.id)
     } else {
@@ -38,6 +38,7 @@ export function GalleryCard({
 
   const handleTagClick = (e: React.MouseEvent, tagId: string) => {
     e.stopPropagation()
+    if (selectable) return // 选择模式下不处理标签点击
     if (onTagClick) {
       onTagClick(tagId)
     } else {
@@ -47,43 +48,23 @@ export function GalleryCard({
 
   const handleAuthorClick = (e: React.MouseEvent) => {
     e.stopPropagation()
+    if (selectable) return // 选择模式下不处理作者点击
     if (image.author?.id || image.authorId) {
       navigate(`/user/${image.author?.id || image.authorId}`)
     }
   }
 
-  const handleTransfer = async (e: React.MouseEvent) => {
+  const handleCheckboxChange = (e: React.MouseEvent) => {
     e.stopPropagation()
-    
-    if (!isLoggedIn) {
-      message.warning('请先登录')
-      navigate('/login')
-      return
-    }
-
-    if (!isOwner) {
-      message.warning('只能转移自己上传的图片')
-      return
-    }
-
-    setTransferring(true)
-    try {
-      await transferToPrivateGallery(image.id)
-      message.success('已转移到隐私相册')
-      if (onTransferSuccess) {
-        onTransferSuccess()
-      }
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : '转移失败')
-    } finally {
-      setTransferring(false)
+    if (onSelect) {
+      onSelect(image.id, !selected)
     }
   }
 
   return (
     <Card
       hoverable
-      className={styles.card}
+      className={`${styles.card} ${selected ? styles.selected : ''}`}
       onClick={handleClick}
       cover={
         <div className={styles.imageContainer}>
@@ -96,16 +77,11 @@ export function GalleryCard({
             <EyeOutlined className={styles.viewIcon} />
             <span>{image.views}</span>
           </div>
-          {/* 转移到隐私相册按钮 - 只有上传者可以看到 */}
-          {showTransferButton && isOwner && (
-            <Tooltip title="转移到隐私相册">
-              <div
-                className={`${styles.transferButton} ${transferring ? styles.transferring : ''}`}
-                onClick={handleTransfer}
-              >
-                <LockOutlined />
-              </div>
-            </Tooltip>
+          {/* 选择模式下显示复选框 */}
+          {selectable && (
+            <div className={styles.checkboxWrapper} onClick={handleCheckboxChange}>
+              <Checkbox checked={selected} />
+            </div>
           )}
         </div>
       }

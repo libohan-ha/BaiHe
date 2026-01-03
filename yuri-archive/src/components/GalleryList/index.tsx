@@ -3,13 +3,31 @@ import { GalleryCard } from '../GalleryCard'
 import type { GalleryListProps } from '../../types'
 import styles from './GalleryList.module.css'
 
+interface ExtendedGalleryListProps extends GalleryListProps {
+  selectable?: boolean
+  selectedIds?: string[]
+  onSelectionChange?: (ids: string[]) => void
+}
+
 export function GalleryList({
   images,
   loading = false,
   pagination,
   onTagClick,
   onImageClick,
-}: GalleryListProps) {
+  selectable = false,
+  selectedIds = [],
+  onSelectionChange,
+}: ExtendedGalleryListProps) {
+
+  const handleSelect = (imageId: string, selected: boolean) => {
+    if (!onSelectionChange) return
+    if (selected) {
+      onSelectionChange([...selectedIds, imageId])
+    } else {
+      onSelectionChange(selectedIds.filter(id => id !== imageId))
+    }
+  }
   if (loading) {
     return (
       <div className={styles.loading}>
@@ -37,6 +55,9 @@ export function GalleryList({
               image={image}
               onTagClick={onTagClick}
               onImageClick={onImageClick}
+              selectable={selectable}
+              selected={selectedIds.includes(image.id)}
+              onSelect={handleSelect}
             />
           </Col>
         ))}

@@ -1,13 +1,19 @@
 .card {
   border-radius: 12px;
   overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.2s ease;
   height: 100%;
+  border: 2px solid transparent;
 }
 
 .card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 24px rgba(168, 85, 247, 0.15);
+}
+
+.card.selected {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
 }
 
 .imageContainer {
@@ -47,46 +53,33 @@
   font-size: 12px;
 }
 
-.transferButton {
+.checkboxWrapper {
   position: absolute;
   top: 8px;
-  right: 8px;
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  color: white;
-  border-radius: 50%;
+  left: 8px;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  font-size: 14px;
-  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
 }
 
-.imageContainer:hover .transferButton {
-  opacity: 1;
-}
-
-.transferButton:hover {
+.checkboxWrapper:hover {
   transform: scale(1.1);
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
 }
 
-.transferButton.transferring {
-  opacity: 1;
-  animation: spin 1s linear infinite;
+.checkboxWrapper :global(.ant-checkbox-inner) {
+  border-color: #8b5cf6;
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.checkboxWrapper :global(.ant-checkbox-checked .ant-checkbox-inner) {
+  background-color: #8b5cf6;
+  border-color: #8b5cf6;
 }
 
 .content {

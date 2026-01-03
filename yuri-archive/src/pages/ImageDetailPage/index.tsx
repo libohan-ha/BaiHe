@@ -19,9 +19,10 @@ import {
   EyeOutlined,
   UserOutlined,
   CalendarOutlined,
+  LockOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import { getImageById, deleteImage, addImageCollection, removeImageCollection, getImageCollections } from '../../services/api'
+import { getImageById, deleteImage, addImageCollection, removeImageCollection, getImageCollections, transferToPrivateGallery } from '../../services/api'
 import { getImageUrl } from '../../services/api'
 import { useUserStore } from '../../store/userStore'
 import { CommentSection } from '../../components'
@@ -41,6 +42,7 @@ export function ImageDetailPage() {
   const [collectionId, setCollectionId] = useState<string | null>(null)
   const [collectLoading, setCollectLoading] = useState(false)
   const [previewVisible, setPreviewVisible] = useState(false)
+  const [transferring, setTransferring] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -135,10 +137,25 @@ export function ImageDetailPage() {
     }
   }
 
+  const handleTransfer = async () => {
+    if (!id) return
+    setTransferring(true)
+    try {
+      const result = await transferToPrivateGallery(id)
+      message.success('已转移到隐私相册')
+      navigate(`/private-image/${result.id}`)
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '转移失败')
+    } finally {
+      setTransferring(false)
+    }
+  }
+
   const isOwner = currentUser && image && currentUser.id === image.authorId
   const isAdmin = currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN')
   const canEdit = isOwner || isAdmin
   const canDelete = isOwner || isAdmin
+  const canTransfer = isLoggedIn // 所有登录用户都可以转移
 
   if (loading) {
     return (
@@ -173,6 +190,17 @@ export function ImageDetailPage() {
           >
             {isCollected ? '已收藏' : '收藏'}
           </Button>
+          {canTransfer && (
+            <Button
+              type="default"
+              icon={<LockOutlined />}
+              onClick={handleTransfer}
+              loading={transferring}
+              className={styles.transferButton}
+            >
+              保存到隐私相册
+            </Button>
+          )}
           {canEdit && (
             <Button
               type="default"

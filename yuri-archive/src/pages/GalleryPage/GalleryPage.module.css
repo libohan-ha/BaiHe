@@ -27,6 +27,12 @@
   font-size: 14px;
 }
 
+.headerButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .uploadButton {
   background: linear-gradient(135deg, #c084fc 0%, #a855f7 100%);
   border: none;
@@ -37,6 +43,37 @@
 
 .uploadButton:hover {
   background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%) !important;
+}
+
+.transferModeButton {
+  border-color: #8b5cf6 !important;
+  color: #8b5cf6 !important;
+  height: 40px;
+  padding: 0 20px;
+}
+
+.transferModeButton:hover {
+  background: #f5f3ff !important;
+  border-color: #7c3aed !important;
+  color: #7c3aed !important;
+}
+
+.selectInfo {
+  color: #8b5cf6;
+  font-weight: 500;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+}
+
+.confirmButton {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  border: none;
+  height: 40px;
+}
+
+.confirmButton:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
 }
 
 .filterInfo {
@@ -68,8 +105,22 @@
     gap: 16px;
   }
 
-  .uploadButton {
+  .headerButtons {
     width: 100%;
+    justify-content: center;
+  }
+
+  .uploadButton,
+  .transferModeButton,
+  .confirmButton {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .selectInfo {
+    width: 100%;
+    justify-content: center;
+    padding: 8px 0;
   }
 
   .title {

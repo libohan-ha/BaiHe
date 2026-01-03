@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Typography, message, Button } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
+import { Typography, message, Button, Space } from 'antd'
+import { PlusOutlined, LockOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { GalleryList } from '../../components/GalleryList'
 import { ImageTagCloud } from '../../components/ImageTagCloud'
-import { getImages, getPopularImageTags } from '../../services/api'
+import { getImages, getPopularImageTags, batchTransferToPrivateGallery } from '../../services/api'
 import { useUserStore } from '../../store/userStore'
 import type { GalleryImage, ImageTag } from '../../types'
 import styles from './GalleryPage.module.css'
@@ -23,12 +23,24 @@ export function GalleryPage() {
   const navigate = useNavigate()
   const { isLoggedIn } = useUserStore()
 
+  // 选择模式状态
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [transferring, setTransferring] = useState(false)
+
   const tagId = searchParams.get('tag')
   const searchKeyword = searchParams.get('search')
 
   useEffect(() => {
     loadData()
   }, [page, tagId, searchKeyword])
+
+  // 退出选择模式时清空选择
+  useEffect(() => {
+    if (!selectMode) {
+      setSelectedIds([])
+    }
+  }, [selectMode])
 
   const loadData = async () => {
     setLoading(true)
@@ -71,6 +83,50 @@ export function GalleryPage() {
     navigate('/upload-image')
   }
 
+  // 进入选择模式
+  const handleEnterSelectMode = () => {
+    if (!isLoggedIn) {
+      message.warning('请先登录')
+      navigate('/login')
+      return
+    }
+    setSelectMode(true)
+  }
+
+  // 退出选择模式
+  const handleExitSelectMode = () => {
+    setSelectMode(false)
+  }
+
+  // 确认转移
+  const handleConfirmTransfer = async () => {
+    if (selectedIds.length === 0) {
+      message.warning('请至少选择一张图片')
+      return
+    }
+
+    setTransferring(true)
+    try {
+      const result = await batchTransferToPrivateGallery(selectedIds)
+      const successCount = result.success.length
+      const failedCount = result.failed.length
+
+      if (successCount > 0 && failedCount === 0) {
+        message.success(`成功转移 ${successCount} 张图片到隐私相册`)
+      } else if (successCount > 0 && failedCount > 0) {
+        message.warning(`成功转移 ${successCount} 张，${failedCount} 张失败`)
+      } else {
+        message.error('转移失败')
+      }
+
+      setSelectMode(false)
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '转移失败')
+    } finally {
+      setTransferring(false)
+    }
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -82,14 +138,51 @@ export function GalleryPage() {
             发现和分享精美的百合插画作品
           </p>
         </div>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleUpload}
-          className={styles.uploadButton}
-        >
-          上传图片
-        </Button>
+        <Space className={styles.headerButtons}>
+          {!selectMode ? (
+            <>
+              {isLoggedIn && (
+                <Button
+                  icon={<LockOutlined />}
+                  onClick={handleEnterSelectMode}
+                  className={styles.transferModeButton}
+                >
+                  转移到隐私相册
+                </Button>
+              )}
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleUpload}
+                className={styles.uploadButton}
+              >
+                上传图片
+              </Button>
+            </>
+          ) : (
+            <>
+              <span className={styles.selectInfo}>
+                已选择 {selectedIds.length} 张图片
+              </span>
+              <Button
+                type="primary"
+                icon={<CheckOutlined />}
+                onClick={handleConfirmTransfer}
+                loading={transferring}
+                disabled={selectedIds.length === 0}
+                className={styles.confirmButton}
+              >
+                确认转移
+              </Button>
+              <Button
+                icon={<CloseOutlined />}
+                onClick={handleExitSelectMode}
+              >
+                取消
+              </Button>
+            </>
+          )}
+        </Space>
       </div>
 
       <ImageTagCloud tags={tags} onTagClick={handleTagClick} />
@@ -119,6 +212,9 @@ export function GalleryPage() {
           onChange: handlePageChange,
         }}
         onTagClick={handleTagClick}
+        selectable={selectMode}
+        selectedIds={selectedIds}
+        onSelectionChange={setSelectedIds}
       />
     </div>
   )

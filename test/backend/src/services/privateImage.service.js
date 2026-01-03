@@ -345,7 +345,9 @@ const deletePrivateImage = async (id, userId) => {
 };
 
 /**
- * 从公开画廊转移单张图片到隐私相册
+ * 从公开画廊复制单张图片到隐私相册
+ * 注意：这是"复制"而不是"移动"，原图片会保留在画廊中
+ * 所有登录用户都可以将任何图片复制到自己的隐私相册
  */
 const transferFromGallery = async (imageId, userId) => {
   // 1. 获取公开图片
@@ -365,12 +367,19 @@ const transferFromGallery = async (imageId, userId) => {
     throw createError(404, '图片不存在');
   }
 
-  // 2. 验证是否为图片上传者
-  if (publicImage.uploaderId !== userId) {
-    throw createError(403, '只能转移自己上传的图片');
+  // 2. 检查是否已经复制过（避免重复复制）
+  const existingPrivateImage = await prisma.privateImage.findFirst({
+    where: {
+      ownerId: userId,
+      url: publicImage.url
+    }
+  });
+
+  if (existingPrivateImage) {
+    throw createError(400, '该图片已在您的隐私相册中');
   }
 
-  // 3. 创建隐私图片，同时同步标签
+  // 3. 创建隐私图片副本，同时同步标签
   const tagNames = publicImage.tags.map(tag => tag.name);
   
   const privateImage = await prisma.privateImage.create({
@@ -402,10 +411,7 @@ const transferFromGallery = async (imageId, userId) => {
     }
   });
 
-  // 4. 删除公开图片（包括其收藏和评论会级联删除）
-  await prisma.image.delete({
-    where: { id: imageId }
-  });
+  // 注意：不删除原图片，保留在公开画廊中
 
   return privateImage;
 };
