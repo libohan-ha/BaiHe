@@ -112,9 +112,8 @@ export async function uploadAvatar(file: File): Promise<UploadResponse> {
   
   const formData = new FormData()
   formData.append('file', file)
-  formData.append('type', 'avatar')
 
-  const response = await fetch(`${BASE_URL}/api/upload`, {
+  const response = await fetch(`${BASE_URL}/api/upload/avatar`, {
     method: 'POST',
     headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     body: formData,
@@ -134,9 +133,8 @@ export async function uploadCover(file: File): Promise<UploadResponse> {
   
   const formData = new FormData()
   formData.append('file', file)
-  formData.append('type', 'cover')
 
-  const response = await fetch(`${BASE_URL}/api/upload`, {
+  const response = await fetch(`${BASE_URL}/api/upload/cover`, {
     method: 'POST',
     headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     body: formData,
@@ -954,9 +952,11 @@ export async function uploadAIChatImage(file: File, type: 'avatar' | 'background
 
   const formData = new FormData()
   formData.append('file', file)
-  formData.append('type', type === 'avatar' ? 'avatar' : 'gallery')
 
-  const response = await fetch(`${BASE_URL}/api/upload`, {
+  // 头像用 /api/upload/avatar，背景用 /api/upload/gallery
+  const endpoint = type === 'avatar' ? '/api/upload/avatar' : '/api/upload/gallery'
+
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
     method: 'POST',
     headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     body: formData,
