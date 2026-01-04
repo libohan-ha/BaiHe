@@ -1,34 +1,34 @@
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
 import {
-  Typography,
-  Button,
-  Tag,
+  ArrowLeftOutlined,
+  CalendarOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  HeartFilled,
+  HeartOutlined,
+  LockOutlined,
+  UserOutlined,
+} from '@ant-design/icons'
+import {
   Avatar,
-  Spin,
+  Button,
+  Empty,
   message,
   Modal,
   Popconfirm,
-  Empty,
+  Spin,
+  Tag,
+  Typography,
 } from 'antd'
-import {
-  ArrowLeftOutlined,
-  HeartOutlined,
-  HeartFilled,
-  EditOutlined,
-  DeleteOutlined,
-  UserOutlined,
-  CalendarOutlined,
-  LockOutlined,
-} from '@ant-design/icons'
 import dayjs from 'dayjs'
-import { 
-  getPrivateImageById, 
-  deletePrivateImage, 
-  addPrivateImageCollection, 
-  removePrivateImageCollection,
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import {
+  addPrivateImageCollection,
   checkPrivateImageCollection,
-  getImageUrl 
+  deletePrivateImage,
+  getImageUrl,
+  getPrivateImageById,
+  removePrivateImageCollection
 } from '../../services/api'
 import { useUserStore } from '../../store/userStore'
 import type { PrivateImage } from '../../types'
@@ -39,7 +39,7 @@ const { Title, Text, Paragraph } = Typography
 export function PrivateImageDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { currentUser, isLoggedIn } = useUserStore()
+  const { isLoggedIn } = useUserStore()
   
   const [image, setImage] = useState<PrivateImage | null>(null)
   const [loading, setLoading] = useState(true)
