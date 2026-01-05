@@ -143,7 +143,7 @@
 
 .messageTime {
   font-size: 11px;
-  color: #999;
+  color: #fff;
 }
 
 .copyButton {
@@ -151,15 +151,15 @@
   border: none;
   padding: 2px 6px;
   cursor: pointer;
-  color: #bbb;
+  color: #fff;
   font-size: 12px;
   border-radius: 4px;
   transition: all 0.2s;
 }
 
 .copyButton:hover {
-  color: #a855f7;
-  background: rgba(168, 85, 247, 0.1);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
 }
 
 /* 输入区域 */

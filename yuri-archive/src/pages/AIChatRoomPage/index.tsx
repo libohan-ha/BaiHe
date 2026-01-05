@@ -16,6 +16,7 @@ import type { UploadProps } from 'antd'
 import { Avatar, Button, Drawer, Form, Input, message, Modal, Select, Slider, Spin, Upload } from 'antd'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { ImagePreview } from '../../components'
 import {
   compressImage,
   createConversation,
@@ -33,7 +34,6 @@ import {
   uploadChatImage
 } from '../../services/api'
 import { useAIChatStore, useUserStore } from '../../store'
-import { ImagePreview } from '../../components'
 import type { AICharacter, ChatMessage, Conversation } from '../../types'
 import styles from './AIChatRoomPage.module.css'
 
@@ -462,11 +462,35 @@ export function AIChatRoomPage() {
     return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
   }
 
-  // 复制消息内容
+  // 复制消息内容 - 使用 fallback 方法以支持非 HTTPS 环境
   const handleCopyMessage = async (content: string) => {
     try {
-      await navigator.clipboard.writeText(content)
-      message.success('已复制到剪贴板')
+      // 优先使用现代 Clipboard API
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(content)
+        message.success('已复制到剪贴板')
+        return
+      }
+      
+      // Fallback: 使用传统的 execCommand 方法（支持 HTTP 环境）
+      const textArea = document.createElement('textarea')
+      textArea.value = content
+      // 避免滚动到底部
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-9999px'
+      textArea.style.top = '0'
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      
+      const successful = document.execCommand('copy')
+      document.body.removeChild(textArea)
+      
+      if (successful) {
+        message.success('已复制到剪贴板')
+      } else {
+        message.error('复制失败')
+      }
     } catch (err) {
       message.error('复制失败')
     }
