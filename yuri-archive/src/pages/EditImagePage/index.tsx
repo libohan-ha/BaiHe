@@ -10,6 +10,7 @@ import {
   Typography,
   Card,
   Spin,
+  Modal,
 } from 'antd'
 import { PlusOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import type { UploadFile, UploadProps } from 'antd'
@@ -17,6 +18,7 @@ import { getImageById, updateImage, uploadGalleryImage, getImageTags, getImageUr
 import { useUserStore } from '../../store/userStore'
 import type { ImageTag, GalleryImage } from '../../types'
 import styles from './EditImagePage.module.css'
+import previewStyles from '../../components/ImagePreview/ImagePreview.module.css'
 
 const { Title } = Typography
 const { TextArea } = Input
@@ -40,6 +42,7 @@ export function EditImagePage() {
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const [imageUrl, setImageUrl] = useState<string>('')
   const [uploading, setUploading] = useState(false)
+  const [previewVisible, setPreviewVisible] = useState(false)
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -121,6 +124,12 @@ export function EditImagePage() {
     setFileList(newFileList)
   }
 
+  const handlePreview = () => {
+    if (imageUrl) {
+      setPreviewVisible(true)
+    }
+  }
+
   const handleSubmit = async (values: FormValues) => {
     if (!id || !imageUrl) {
       message.error('请先上传图片')
@@ -200,12 +209,29 @@ export function EditImagePage() {
               fileList={fileList}
               customRequest={handleUpload}
               onChange={handleChange}
+              onPreview={handlePreview}
               maxCount={1}
               accept="image/*"
               className={styles.upload}
             >
               {fileList.length >= 1 ? null : uploadButton}
             </Upload>
+            <Modal
+              open={previewVisible}
+              footer={null}
+              onCancel={() => setPreviewVisible(false)}
+              width="90%"
+              style={{ maxWidth: 1200 }}
+              centered
+              className={previewStyles.previewModal}
+              destroyOnClose
+            >
+              <img
+                src={getImageUrl(imageUrl)}
+                alt="预览"
+                className={previewStyles.fullImage}
+              />
+            </Modal>
             {uploading && <span className={styles.uploadingText}>上传中...</span>}
           </Form.Item>
 
