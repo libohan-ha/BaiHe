@@ -14,3 +14,5 @@ export { CommentSection } from './CommentSection'
 export { CollectionSearch } from './CollectionSearch'
 // BGM 播放器组件
 export { BGMPlayer } from './BGMPlayer'
+// 图片预览组件
+export { ImagePreview } from './ImagePreview'

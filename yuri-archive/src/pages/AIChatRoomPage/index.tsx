@@ -32,6 +32,7 @@ import {
   uploadChatImage
 } from '../../services/api'
 import { useAIChatStore, useUserStore } from '../../store'
+import { ImagePreview } from '../../components'
 import type { AICharacter, ChatMessage, Conversation } from '../../types'
 import styles from './AIChatRoomPage.module.css'
 
@@ -640,16 +641,15 @@ export function AIChatRoomPage() {
                 />
                 <div>
                   <div className={`${styles.messageBubble} ${styles[msg.role]}`} style={bubbleStyle(msg.role)}>
-                    {/* 显示消息中的图片 */}
+                    {/* 显示消息中的图片 - 点击弹窗预览 */}
                     {msg.images && msg.images.length > 0 && (
                       <div className={styles.messageImages}>
                         {msg.images.map((imgUrl, idx) => (
-                          <img
+                          <ImagePreview
                             key={idx}
-                            src={getImageUrl(imgUrl)}
+                            src={imgUrl}
                             alt={`图片 ${idx + 1}`}
                             className={styles.messageImage}
-                            onClick={() => window.open(getImageUrl(imgUrl), '_blank')}
                           />
                         ))}
                       </div>

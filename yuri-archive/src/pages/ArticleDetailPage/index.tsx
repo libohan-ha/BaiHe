@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Typography, Tag, Avatar, Button, Space, Breadcrumb, Spin, message, Popconfirm } from 'antd'
 import { HeartOutlined, HeartFilled, ArrowLeftOutlined, EyeOutlined, ClockCircleOutlined, UserOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import { MarkdownRenderer, CommentSection } from '../../components'
+import { MarkdownRenderer, CommentSection, ImagePreview } from '../../components'
 import { getArticleById, addCollection, removeCollection, getCollections, deleteArticle, getImageUrl } from '../../services/api'
 import { useUserStore } from '../../store'
 import type { Article } from '../../types'
@@ -127,7 +127,11 @@ export function ArticleDetailPage() {
       <article className={styles.article}>
         {article.coverUrl && (
           <div className={styles.cover}>
-            <img src={getImageUrl(article.coverUrl)} alt={article.title} />
+            <ImagePreview
+              src={article.coverUrl}
+              alt={article.title}
+              className={styles.coverImage}
+            />
           </div>
         )}
 

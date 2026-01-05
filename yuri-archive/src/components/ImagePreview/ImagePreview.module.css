@@ -1,0 +1,51 @@
+/* 缩略图样式 */
+.thumbnail {
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s;
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.thumbnail:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+/* 预览弹窗样式 */
+.previewModal :global(.ant-modal-content) {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.previewModal :global(.ant-modal-body) {
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.previewModal :global(.ant-modal-close) {
+  color: white;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  right: 10px;
+  top: 10px;
+}
+
+.previewModal :global(.ant-modal-close:hover) {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* 大图样式 */
+.fullImage {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
