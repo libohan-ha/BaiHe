@@ -121,15 +121,45 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
+.messageContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.messageFooter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.messageFooter.user {
+  flex-direction: row-reverse;
+}
+
+.messageFooter.assistant {
+  flex-direction: row;
+}
+
 .messageTime {
   font-size: 11px;
   color: #999;
-  margin-top: 4px;
-  text-align: right;
 }
 
-.messageWrapper.assistant .messageTime {
-  text-align: left;
+.copyButton {
+  background: transparent;
+  border: none;
+  padding: 2px 6px;
+  cursor: pointer;
+  color: #bbb;
+  font-size: 12px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.copyButton:hover {
+  color: #a855f7;
+  background: rgba(168, 85, 247, 0.1);
 }
 
 /* 输入区域 */
@@ -521,16 +551,10 @@
 .historyItemActions {
   display: flex;
   gap: 4px;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.historyItem:hover .historyItemActions {
-  opacity: 1;
 }
 
 .historyItemEdit {
-  color: #666;
+  color: #bbb;
 }
 
 .historyItemEdit:hover {
@@ -538,7 +562,11 @@
 }
 
 .historyItemDelete {
-  color: #999;
+  color: #bbb;
+}
+
+.historyItemDelete:hover {
+  color: #ff4d4f;
 }
 
 /* 编辑标题样式 */

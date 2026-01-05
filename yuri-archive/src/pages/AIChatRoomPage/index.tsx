@@ -2,6 +2,7 @@ import {
   ArrowLeftOutlined,
   CheckOutlined,
   CloseOutlined,
+  CopyOutlined,
   DeleteOutlined,
   EditOutlined,
   HistoryOutlined,
@@ -461,6 +462,16 @@ export function AIChatRoomPage() {
     return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
   }
 
+  // 复制消息内容
+  const handleCopyMessage = async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content)
+      message.success('已复制到剪贴板')
+    } catch (err) {
+      message.error('复制失败')
+    }
+  }
+
   const openEditModal = () => {
     if (character) {
       form.setFieldsValue({
@@ -639,7 +650,7 @@ export function AIChatRoomPage() {
                   icon={msg.role === 'user' ? null : <RobotOutlined />}
                   className={styles.messageAvatar}
                 />
-                <div>
+                <div className={styles.messageContent}>
                   <div className={`${styles.messageBubble} ${styles[msg.role]}`} style={bubbleStyle(msg.role)}>
                     {/* 显示消息中的图片 - 点击弹窗预览 */}
                     {msg.images && msg.images.length > 0 && (
@@ -656,7 +667,16 @@ export function AIChatRoomPage() {
                     )}
                     {msg.content}
                   </div>
-                  <div className={styles.messageTime}>{formatTime(msg.createdAt)}</div>
+                  <div className={`${styles.messageFooter} ${styles[msg.role]}`}>
+                    <span className={styles.messageTime}>{formatTime(msg.createdAt)}</span>
+                    <button
+                      className={styles.copyButton}
+                      onClick={() => handleCopyMessage(msg.content)}
+                      title="复制"
+                    >
+                      <CopyOutlined />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
