@@ -56,9 +56,11 @@ export function EditArticlePage() {
         getTags()
       ])
       
-      // 检查是否是作者
+      // 检查是否是作者或管理员
       const authorId = articleData.authorId || articleData.author?.id
-      if (currentUser && authorId !== currentUser.id) {
+      const isAuthor = currentUser && authorId === currentUser.id
+      const isAdmin = currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN')
+      if (!isAuthor && !isAdmin) {
         message.error('无权编辑此文章')
         navigate('/')
         return

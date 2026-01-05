@@ -24,6 +24,10 @@ export function ArticleDetailPage() {
 
   // 判断是否是作者
   const isAuthor = currentUser && article && (currentUser.id === article.authorId || currentUser.id === article.author?.id)
+  // 判断是否是管理员
+  const isAdmin = currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN')
+  // 可编辑/删除权限
+  const canEditOrDelete = isAuthor || isAdmin
 
   useEffect(() => {
     if (id) {
@@ -191,7 +195,7 @@ export function ArticleDetailPage() {
             >
               {collected ? '已收藏' : '收藏'}
             </Button>
-            {isAuthor && (
+            {canEditOrDelete && (
               <>
                 <Button
                   icon={<EditOutlined />}
