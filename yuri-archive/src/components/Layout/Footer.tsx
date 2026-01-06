@@ -11,7 +11,7 @@ export function Footer() {
     <AntFooter className={styles.footer}>
       <div className={styles.container}>
         <div className={styles.copyright}>
-          <span>© {currentYear} 百合文学档案馆</span>
+          <span>© {currentYear} 文学档案馆</span>
           <span className={styles.divider}>|</span>
           <span>
             Made with <HeartFilled className={styles.heart} /> for Yuri lovers

@@ -179,7 +179,7 @@ export function Header({ sidebarCollapsed = false, onToggleSidebar }: HeaderProp
               />
               <Link to="/" className={styles.logo}>
                 <span className={styles.logoIcon}>🌸</span>
-                <span className={styles.logoText}>百合文学档案馆</span>
+                <span className={styles.logoText}>yuri</span>
               </Link>
             </>
           )}

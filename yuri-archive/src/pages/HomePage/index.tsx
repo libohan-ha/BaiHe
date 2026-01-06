@@ -51,10 +51,10 @@ export function HomePage() {
       <div className={styles.pageHeader}>
         <div className={styles.headerLeft}>
           <Title level={2} className={styles.title}>
-            🌸 发现精彩百合文学
+            🌸 发现精彩文学
           </Title>
           <p className={styles.subtitle}>
-            在这里，收藏与分享你喜爱的百合故事
+            在这里，收藏与分享你喜爱的故事
           </p>
         </div>
         {isLoggedIn && (
