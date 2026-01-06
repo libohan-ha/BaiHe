@@ -184,34 +184,99 @@ const addMessage = async (conversationId, content, role, userId, images = []) =>
   }
   
   const message = await prisma.chatMessage.create({
-    data: {
-      content,
-      role,
-      images,
-      conversationId
+      data: {
+        content,
+        role,
+        images,
+        conversationId
+      }
+    });
+    
+    // 更新对话的更新时间
+    await prisma.conversation.update({
+      where: { id: conversationId },
+      data: { updatedAt: new Date() }
+    });
+    
+    return message;
+  };
+  
+  // 获取指定消息之前的所有消息（用于重新生成AI回复）
+  const getMessagesBeforeId = async (conversationId, messageId, userId) => {
+    // 验证对话属于当前用户
+    const conversation = await prisma.conversation.findFirst({
+      where: { id: conversationId, userId },
+      include: { character: true }
+    });
+    
+    if (!conversation) {
+      throw createError(404, '对话不存在');
     }
-  });
+    
+    // 获取目标消息
+    const targetMessage = await prisma.chatMessage.findFirst({
+      where: { id: messageId, conversationId }
+    });
+    
+    if (!targetMessage) {
+      throw createError(404, '消息不存在');
+    }
+    
+    if (targetMessage.role !== 'assistant') {
+      throw createError(400, '只能重新生成AI回复');
+    }
+    
+    // 获取该消息之前的所有消息（不包括当前消息）
+    const messages = await prisma.chatMessage.findMany({
+      where: {
+        conversationId,
+        createdAt: { lt: targetMessage.createdAt }
+      },
+      orderBy: { createdAt: 'asc' }
+    });
+    
+    return { messages, character: conversation.character };
+  };
   
-  // 更新对话的更新时间
-  await prisma.conversation.update({
-    where: { id: conversationId },
-    data: { updatedAt: new Date() }
-  });
+  // 更新消息内容
+  const updateMessageContent = async (messageId, content, userId) => {
+    // 先获取消息所在的对话
+    const message = await prisma.chatMessage.findUnique({
+      where: { id: messageId },
+      include: { conversation: true }
+    });
+    
+    if (!message) {
+      throw createError(404, '消息不存在');
+    }
+    
+    // 验证对话属于当前用户
+    if (message.conversation.userId !== userId) {
+      throw createError(403, '无权限操作此消息');
+    }
+    
+    // 更新消息内容
+    const updatedMessage = await prisma.chatMessage.update({
+      where: { id: messageId },
+      data: { content }
+    });
+    
+    return updatedMessage;
+  };
   
-  return message;
-};
-
-module.exports = {
-  getCharacters,
-  getCharacterById,
-  createCharacter,
-  updateCharacter,
-  deleteCharacter,
-  getConversations,
-  createConversation,
-  updateConversation,
-  deleteConversation,
-  getMessages,
-  addMessage
-};
+  module.exports = {
+    getCharacters,
+    getCharacterById,
+    createCharacter,
+    updateCharacter,
+    deleteCharacter,
+    getConversations,
+    createConversation,
+    updateConversation,
+    deleteConversation,
+    getMessages,
+    addMessage,
+    getMessagesBeforeId,
+    updateMessageContent
+  };
 

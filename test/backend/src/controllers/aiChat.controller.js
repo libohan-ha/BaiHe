@@ -247,6 +247,94 @@ const saveAssistantMessage = async (req, res, next) => {
   }
 };
 
+// 重新生成AI回复 - 支持流式响应
+const regenerateAssistantMessage = async (req, res, next) => {
+  try {
+    const { conversationId, messageId } = req.params;
+    const { apiUrl, apiKey, model } = req.body;
+
+    if (!apiUrl || !apiKey || !model) {
+      return res.status(400).json(error('缺少必要参数', 400));
+    }
+
+    // 获取该消息之前的历史记录和角色信息
+    const { messages, character } = await aiChatService.getMessagesBeforeId(conversationId, messageId, req.user.id);
+
+    // 修复 API URL
+    const fixedUrl = fixProxyUrl(apiUrl);
+    console.log('重新生成AI回复:', apiUrl, '->', fixedUrl);
+
+    // 调用 AI API
+    const response = await fetch(fixedUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: character?.prompt || '你是一个友好的AI助手。' },
+          ...messages.map(m => ({ role: m.role, content: m.content }))
+        ],
+        stream: true
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return res.status(response.status).json(error(errorData.error?.message || 'AI请求失败', response.status));
+    }
+
+    // 流式响应
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Message-Id', messageId);
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullContent = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value, { stream: true });
+        res.write(chunk);
+
+        // 解析流式响应内容
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim();
+            if (data === '[DONE]') continue;
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content || '';
+              if (content) {
+                fullContent += content;
+              }
+            } catch {
+              // 忽略解析错误
+            }
+          }
+        }
+      }
+    } finally {
+      // 流式响应结束后，更新数据库中的消息内容
+      if (fullContent) {
+        await aiChatService.updateMessageContent(messageId, fullContent, req.user.id);
+      }
+      res.end();
+    }
+  } catch (err) {
+    console.error('重新生成AI回复失败:', err);
+    next(err);
+  }
+};
+
 module.exports = {
   getCharacters,
   getCharacterById,
@@ -260,6 +348,7 @@ module.exports = {
   getMessages,
   sendMessage,
   saveAssistantMessage,
-  proxyAIRequest
+  proxyAIRequest,
+  regenerateAssistantMessage
 };
 

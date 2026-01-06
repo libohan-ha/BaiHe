@@ -8,6 +8,7 @@ import {
   HistoryOutlined,
   PictureOutlined,
   PlusOutlined,
+  ReloadOutlined,
   RobotOutlined,
   SendOutlined,
   UploadOutlined
@@ -26,6 +27,7 @@ import {
   getChatMessages,
   getConversations,
   getImageUrl,
+  regenerateAssistantMessage,
   saveAssistantMessage,
   sendChatMessage,
   updateAICharacter,
@@ -105,6 +107,7 @@ export function AIChatRoomPage() {
   const [streamingContent, setStreamingContent] = useState('')
   const [selectedImages, setSelectedImages] = useState<string[]>([])  // 待发送的图片URL列表
   const [imageUploading, setImageUploading] = useState(false)
+  const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null)
   const [editModalVisible, setEditModalVisible] = useState(false)
   const [historyDrawerVisible, setHistoryDrawerVisible] = useState(false)
   const [editingConvId, setEditingConvId] = useState<string | null>(null)
@@ -496,6 +499,96 @@ export function AIChatRoomPage() {
     }
   }
 
+  // 获取最新的AI消息ID
+  const getLatestAssistantMessageId = () => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'assistant') {
+        return messages[i].id
+      }
+    }
+    return null
+  }
+
+  // 重新生成AI回复
+  const handleRegenerateMessage = async (messageId: string) => {
+    if (regeneratingMessageId || sending || !currentConversation) return
+
+    // 获取 API 配置
+    const apiConfig = getApiConfig(settings, character?.modelName)
+    
+    if (!apiConfig.apiKey) {
+      const providerName = apiConfig.provider === 'claude' ? 'Claude' : 'DeepSeek'
+      message.warning(`请先在AI聊天页面设置 ${providerName} API Key`)
+      return
+    }
+
+    // 立即清空该消息的内容，显示等待动画
+    setMessages(prev => prev.map(msg =>
+      msg.id === messageId ? { ...msg, content: '' } : msg
+    ))
+    setRegeneratingMessageId(messageId)
+    setStreamingContent('')
+
+    try {
+      // 调用重新生成API
+      const response = await regenerateAssistantMessage(
+        currentConversation.id,
+        messageId,
+        {
+          apiUrl: apiConfig.url,
+          apiKey: apiConfig.apiKey,
+          model: apiConfig.model
+        }
+      )
+
+      // 流式读取响应
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+      let fullContent = ''
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value, { stream: true })
+          const lines = chunk.split('\n')
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6).trim()
+              if (data === '[DONE]') continue
+
+              try {
+                const parsed = JSON.parse(data)
+                const content = parsed.choices?.[0]?.delta?.content || ''
+                if (content) {
+                  fullContent += content
+                  setStreamingContent(fullContent)
+                }
+              } catch {
+                // 忽略解析错误
+              }
+            }
+          }
+        }
+      }
+
+      // 更新本地消息列表
+      if (fullContent) {
+        setMessages(prev => prev.map(msg =>
+          msg.id === messageId ? { ...msg, content: fullContent } : msg
+        ))
+      }
+      setStreamingContent('')
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '重新生成失败')
+      setStreamingContent('')
+    } finally {
+      setRegeneratingMessageId(null)
+    }
+  }
+
   const openEditModal = () => {
     if (character) {
       form.setFieldsValue({
@@ -672,7 +765,7 @@ export function AIChatRoomPage() {
                   size={36}
                   src={getImageUrl(msg.role === 'user' ? (character.userAvatarUrl || currentUser?.avatarUrl) : character.avatarUrl)}
                   icon={msg.role === 'user' ? null : <RobotOutlined />}
-                  className={styles.messageAvatar}
+                  className={msg.id === regeneratingMessageId ? styles.streamingAvatar : styles.messageAvatar}
                 />
                 <div className={styles.messageContent}>
                   <div className={`${styles.messageBubble} ${styles[msg.role]}`} style={bubbleStyle(msg.role)}>
@@ -689,7 +782,19 @@ export function AIChatRoomPage() {
                         ))}
                       </div>
                     )}
-                    {msg.content}
+                    {/* 重新生成时显示等待动画或流式内容 */}
+                    {msg.id === regeneratingMessageId ? (
+                      streamingContent ? (
+                        <>
+                          {streamingContent}
+                          <span className={styles.cursor}>|</span>
+                        </>
+                      ) : (
+                        <div className={styles.typing}><span></span><span></span><span></span></div>
+                      )
+                    ) : (
+                      msg.content
+                    )}
                   </div>
                   <div className={`${styles.messageFooter} ${styles[msg.role]}`}>
                     <span className={styles.messageTime}>{formatTime(msg.createdAt)}</span>
@@ -700,10 +805,21 @@ export function AIChatRoomPage() {
                     >
                       <CopyOutlined />
                     </button>
+                    {/* 只有最新的AI回复显示重新生成按钮 */}
+                    {msg.role === 'assistant' && msg.id === getLatestAssistantMessageId() && !sending && !regeneratingMessageId && (
+                      <button
+                        className={styles.regenerateButton}
+                        onClick={() => handleRegenerateMessage(msg.id)}
+                        title="重新生成"
+                      >
+                        <ReloadOutlined />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
             ))}
+            {/* 只有发送新消息时才显示新的等待气泡 */}
             {sending && (
               <div className={`${styles.messageWrapper} ${styles.assistant}`}>
                 <Avatar

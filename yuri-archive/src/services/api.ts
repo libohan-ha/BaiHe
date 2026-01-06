@@ -946,6 +946,31 @@ export async function saveAssistantMessage(conversationId: string, content: stri
   })
 }
 
+// 重新生成AI回复 (返回流式响应)
+export async function regenerateAssistantMessage(
+  conversationId: string,
+  messageId: string,
+  apiConfig: { apiUrl: string; apiKey: string; model: string }
+): Promise<Response> {
+  const token = localStorage.getItem('token')
+  
+  const response = await fetch(`${BASE_URL}/api/ai-chat/conversations/${conversationId}/messages/${messageId}/regenerate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify(apiConfig)
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.message || '重新生成失败')
+  }
+
+  return response
+}
+
 // 上传AI角色相关图片 (头像/背景)
 export async function uploadAIChatImage(file: File, type: 'avatar' | 'background'): Promise<UploadResponse> {
   const token = getToken()
