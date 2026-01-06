@@ -1,25 +1,4 @@
-import type { AICharacter, Article, ChatMessage, Conversation, CreateCharacterData, GalleryImage, ImageTag, PaginatedResponse, Tag, UpdateCharacterData, User, PrivateImage, PrivateImageTag, PrivateImageStats, BatchTransferResult } from '../types'
-
-/**
- * 获取后端服务器地址
- * 开发环境：使用当前页面的 host + 端口 3000
- * 生产环境：使用相对路径
- */
-function getBackendUrl(): string {
-  // 如果配置了环境变量，优先使用
-  if (import.meta.env.VITE_BACKEND_URL) {
-    return import.meta.env.VITE_BACKEND_URL
-  }
-  
-  // 开发环境：根据当前访问地址动态获取后端地址
-  if (import.meta.env.DEV) {
-    const { protocol, hostname } = window.location
-    return `${protocol}//${hostname}:3000`
-  }
-  
-  // 生产环境：使用相对路径
-  return ''
-}
+import type { AICharacter, Article, BatchTransferResult, ChatMessage, Conversation, CreateCharacterData, GalleryImage, ImageTag, PaginatedResponse, PrivateImage, PrivateImageStats, PrivateImageTag, Tag, UpdateCharacterData, User } from '../types'
 
 /**
  * API Base URL 配置
@@ -28,12 +7,6 @@ function getBackendUrl(): string {
  * - 生产环境：使用相对路径 /api（通过 Nginx 反向代理到后端）
  */
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '' : '')
-
-/**
- * 后端服务器地址（用于图片等静态资源）
- * 动态获取，支持局域网访问
- */
-const BACKEND_URL = getBackendUrl()
 
 /**
  * 获取完整的图片URL

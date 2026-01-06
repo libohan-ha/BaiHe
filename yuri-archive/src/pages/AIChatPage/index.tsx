@@ -176,19 +176,25 @@ export function AIChatPage() {
 
   const handleSettingsSave = (values: {
     provider: AIProvider
-    deepseekApiKey: string
-    claudeApiKey: string
-    claudeBaseUrl: string
-    claudeModel: string
+    deepseekApiKey?: string
+    claudeApiKey?: string
+    claudeBaseUrl?: string
+    claudeModel?: string
   }) => {
+    // 保留未更改的字段值，避免条件渲染导致字段被覆盖
+    const newDeepseekApiKey = values.deepseekApiKey !== undefined ? values.deepseekApiKey : settings.deepseekApiKey
+    const newClaudeApiKey = values.claudeApiKey !== undefined ? values.claudeApiKey : settings.claudeApiKey
+    const newClaudeBaseUrl = values.claudeBaseUrl !== undefined ? values.claudeBaseUrl : settings.claudeBaseUrl
+    const newClaudeModel = values.claudeModel !== undefined ? values.claudeModel : settings.claudeModel
+    
     setSettings({
       provider: values.provider,
-      deepseekApiKey: values.deepseekApiKey,
-      claudeApiKey: values.claudeApiKey,
-      claudeBaseUrl: values.claudeBaseUrl,
-      claudeModel: values.claudeModel,
+      deepseekApiKey: newDeepseekApiKey,
+      claudeApiKey: newClaudeApiKey,
+      claudeBaseUrl: newClaudeBaseUrl,
+      claudeModel: newClaudeModel,
       // 兼容旧版本
-      apiKey: values.provider === 'deepseek' ? values.deepseekApiKey : values.claudeApiKey
+      apiKey: values.provider === 'deepseek' ? newDeepseekApiKey : newClaudeApiKey
     })
     message.success('设置已保存')
     setSettingsVisible(false)
@@ -197,7 +203,7 @@ export function AIChatPage() {
   const openSettings = () => {
     settingsForm.setFieldsValue({
       provider: settings.provider || 'deepseek',
-      deepseekApiKey: settings.deepseekApiKey || settings.apiKey || '',
+      deepseekApiKey: settings.deepseekApiKey || '',
       claudeApiKey: settings.claudeApiKey || '',
       claudeBaseUrl: settings.claudeBaseUrl || 'http://127.0.0.1:8045/v1',
       claudeModel: settings.claudeModel || 'claude-opus-4-5-thinking'
