@@ -130,7 +130,7 @@ export function AIChatRoomPage() {
   useEffect(() => {
     if (!isLoggedIn) {
       message.warning('请先登录')
-      navigate('/login')
+      navigate('/login', { replace: true })
       return
     }
     if (characterId) {
@@ -215,7 +215,7 @@ export function AIChatRoomPage() {
       }
     } catch (err) {
       message.error(err instanceof Error ? err.message : '加载失败')
-      navigate('/ai-chat')
+      navigate('/ai-chat', { replace: true })
     } finally {
       setLoading(false)
     }
@@ -882,7 +882,7 @@ export function AIChatRoomPage() {
           const { deleteAICharacter } = await import('../../services/api')
           await deleteAICharacter(characterId!)
           message.success('删除成功')
-          navigate('/ai-chat')
+          navigate('/ai-chat', { replace: true })
         } catch (err) {
           message.error('删除失败')
         }
@@ -913,7 +913,7 @@ export function AIChatRoomPage() {
       {/* 头部 */}
       <div className={styles.chatHeader}>
         <div className={styles.headerLeft}>
-          <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate('/ai-chat')} className={styles.backButton} />
+          <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate('/ai-chat', { replace: true })} className={styles.backButton} />
           <div className={styles.characterInfo}>
             <Avatar size={40} src={getImageUrl(character.avatarUrl)} icon={<RobotOutlined />} />
             <div>
