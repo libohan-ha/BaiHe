@@ -125,6 +125,7 @@ export function AIChatRoomPage() {
   const chatAreaRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
+  const isNearBottomRef = useRef(true) // 跟踪用户是否在底部附近
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -141,16 +142,44 @@ export function AIChatRoomPage() {
     scrollToBottom()
   }, [messages])
 
-  // 流式响应时也滚动到底部
+  // 流式响应时也滚动到底部（仅当用户在底部附近时）
   useEffect(() => {
     if (streamingContent) {
       scrollToBottom()
     }
   }, [streamingContent])
 
+  // 监听滚动事件，判断用户是否在底部附近
+  useEffect(() => {
+    const chatArea = chatAreaRef.current
+    if (!chatArea) return
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = chatArea
+      // 距离底部150px以内视为"在底部附近"
+      const threshold = 150
+      isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < threshold
+    }
+
+    // 初始化时检查一次滚动位置
+    handleScroll()
+
+    chatArea.addEventListener('scroll', handleScroll, { passive: true })
+    return () => chatArea.removeEventListener('scroll', handleScroll)
+  }, [loading, messages.length]) // 当加载完成或消息数量变化时重新绑定
+
+  // 智能滚动：只有当用户在底部附近时才自动滚动
   const scrollToBottom = () => {
+    if (chatAreaRef.current && isNearBottomRef.current) {
+      chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight
+    }
+  }
+
+  // 强制滚动到底部（用于发送新消息后）
+  const forceScrollToBottom = () => {
     if (chatAreaRef.current) {
       chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight
+      isNearBottomRef.current = true
     }
   }
 
@@ -362,6 +391,9 @@ export function AIChatRoomPage() {
     setStreamingContent('')
 
     try {
+      // 发送消息时强制滚动到底部
+      forceScrollToBottom()
+      
       // 保存用户消息（包含图片）
       const userMsg = await sendChatMessage(currentConversation.id, userContent, imagesToSend.length > 0 ? imagesToSend : undefined)
       setMessages(prev => [...prev, userMsg])
