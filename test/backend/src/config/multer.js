@@ -23,8 +23,8 @@ Object.values(UPLOAD_DIRS).forEach(ensureDir);
 // 允许的文件类型
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 
-// 最大文件大小 (5MB)
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+// 最大文件大小 (50MB) - 不限制太多，让前端压缩处理
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 // 生成随机字符串
 const generateRandomString = (length = 8) => {
@@ -80,11 +80,11 @@ const uploadGallery = multer({
   limits: { fileSize: MAX_FILE_SIZE }
 });
 
-// 聊天图片上传 (10MB 限制)
+// 聊天图片上传 (50MB 限制)
 const uploadChat = multer({
   storage: createStorage('chat'),
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }
+  limits: { fileSize: 50 * 1024 * 1024 }
 });
 
 // 通用上传（默认为 avatar）
