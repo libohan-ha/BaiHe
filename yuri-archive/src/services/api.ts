@@ -37,7 +37,8 @@ const BACKEND_URL = getBackendUrl()
 
 /**
  * 获取完整的图片URL
- * 如果是相对路径，则拼接后端服务器地址
+ * 开发环境：直接使用相对路径（通过 Vite proxy 代理到后端）
+ * 生产环境：使用相对路径（通过 Nginx 反向代理到后端）
  */
 export function getImageUrl(url: string | undefined | null): string | undefined {
   if (!url) return undefined
@@ -47,9 +48,10 @@ export function getImageUrl(url: string | undefined | null): string | undefined 
     return url
   }
 
-  // 如果是相对路径，拼接后端地址
+  // 相对路径直接返回，让 Vite proxy 或 Nginx 处理
+  // 这样无论是本地访问还是局域网访问都能正确加载图片
   if (url.startsWith('/')) {
-    return `${BACKEND_URL}${url}`
+    return url
   }
 
   return url
