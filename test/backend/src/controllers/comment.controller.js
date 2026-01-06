@@ -35,7 +35,7 @@ const deleteComment = async (req, res, next) => {
       return res.status(400).json(error('评论ID无效', 400));
     }
 
-    const isAdmin = req.user.role === 'ADMIN';
+    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
     const result = await commentService.deleteComment(req.user.id, id, isAdmin);
     if (!result) {
       return res.status(404).json(error('评论不存在或无权删除', 404));
