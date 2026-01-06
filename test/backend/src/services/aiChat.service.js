@@ -264,6 +264,57 @@ const addMessage = async (conversationId, content, role, userId, images = []) =>
     return updatedMessage;
   };
   
+  // 编辑用户消息并截断历史（删除该消息之后的所有消息）
+  const editMessageAndTruncate = async (messageId, newContent, userId) => {
+    // 获取消息及其对话
+    const message = await prisma.chatMessage.findUnique({
+      where: { id: messageId },
+      include: { conversation: { include: { character: true } } }
+    });
+    
+    if (!message) {
+      throw createError(404, '消息不存在');
+    }
+    
+    // 验证对话属于当前用户
+    if (message.conversation.userId !== userId) {
+      throw createError(403, '无权限操作此消息');
+    }
+    
+    // 只能编辑用户消息
+    if (message.role !== 'user') {
+      throw createError(400, '只能编辑用户消息');
+    }
+    
+    const conversationId = message.conversationId;
+    
+    // 删除该消息之后的所有消息
+    await prisma.chatMessage.deleteMany({
+      where: {
+        conversationId,
+        createdAt: { gt: message.createdAt }
+      }
+    });
+    
+    // 更新当前消息的内容
+    const updatedMessage = await prisma.chatMessage.update({
+      where: { id: messageId },
+      data: { content: newContent }
+    });
+    
+    // 获取更新后的所有消息（用于返回给前端）
+    const remainingMessages = await prisma.chatMessage.findMany({
+      where: { conversationId },
+      orderBy: { createdAt: 'asc' }
+    });
+    
+    return {
+      updatedMessage,
+      messages: remainingMessages,
+      character: message.conversation.character
+    };
+  };
+  
   module.exports = {
     getCharacters,
     getCharacterById,
@@ -277,6 +328,7 @@ const addMessage = async (conversationId, content, role, userId, images = []) =>
     getMessages,
     addMessage,
     getMessagesBeforeId,
-    updateMessageContent
+    updateMessageContent,
+    editMessageAndTruncate
   };
 

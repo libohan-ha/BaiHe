@@ -178,6 +178,99 @@
   background: rgba(255, 255, 255, 0.15);
 }
 
+/* 用户消息编辑按钮 */
+.editMessageButton {
+  background: transparent;
+  border: none;
+  padding: 2px 6px;
+  cursor: pointer;
+  color: #fff;
+  font-size: 12px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.editMessageButton:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* 编辑消息模式 */
+.editMessageWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: 200px;
+}
+
+.editMessageInput {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  font-family: inherit;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+}
+
+.editMessageInput:focus {
+  outline: none;
+  border-color: #52c41a;
+  box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.2);
+}
+
+.editMessageActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.editMessageBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  background: #52c41a;
+  color: #fff;
+  transition: all 0.2s;
+}
+
+.editMessageBtn:hover:not(:disabled) {
+  background: #73d13d;
+}
+
+.editMessageBtn:disabled {
+  background: #d9d9d9;
+  cursor: not-allowed;
+}
+
+.editMessageCancelBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  background: #fff;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.editMessageCancelBtn:hover {
+  border-color: #999;
+  color: #333;
+}
+
 /* 输入区域 */
 .inputArea {
   padding: 16px 20px;

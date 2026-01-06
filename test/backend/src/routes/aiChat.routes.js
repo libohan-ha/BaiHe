@@ -15,7 +15,8 @@ const {
   sendMessage,
   saveAssistantMessage,
   proxyAIRequest,
-  regenerateAssistantMessage
+  regenerateAssistantMessage,
+  editAndRegenerateMessage
 } = require('../controllers/aiChat.controller');
 
 const router = require('express').Router();
@@ -92,6 +93,15 @@ router.post('/conversations/:conversationId/messages/:messageId/regenerate', [
   body('model').notEmpty().withMessage('模型名称不能为空'),
   validator
 ], regenerateAssistantMessage);
+
+// 编辑消息并重新生成AI回复
+router.post('/conversations/:conversationId/messages/:messageId/edit-and-regenerate', [
+  body('content').notEmpty().withMessage('消息内容不能为空'),
+  body('apiUrl').notEmpty().withMessage('API URL 不能为空'),
+  body('apiKey').notEmpty().withMessage('API Key 不能为空'),
+  body('model').notEmpty().withMessage('模型名称不能为空'),
+  validator
+], editAndRegenerateMessage);
 
 module.exports = router;
 

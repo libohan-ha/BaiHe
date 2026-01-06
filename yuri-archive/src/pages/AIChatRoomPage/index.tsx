@@ -22,6 +22,7 @@ import {
   compressImage,
   createConversation,
   deleteConversation,
+  editAndRegenerateMessage,
   formatMessageWithImages,
   getAICharacterById,
   getChatMessages,
@@ -108,6 +109,8 @@ export function AIChatRoomPage() {
   const [selectedImages, setSelectedImages] = useState<string[]>([])  // 待发送的图片URL列表
   const [imageUploading, setImageUploading] = useState(false)
   const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null)
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [editingMessageContent, setEditingMessageContent] = useState('')
   const [editModalVisible, setEditModalVisible] = useState(false)
   const [historyDrawerVisible, setHistoryDrawerVisible] = useState(false)
   const [editingConvId, setEditingConvId] = useState<string | null>(null)
@@ -460,6 +463,45 @@ export function AIChatRoomPage() {
     }
   }
 
+  // 处理粘贴事件 - 支持从剪贴板粘贴图片
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+
+    const imageItems: DataTransferItem[] = []
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        imageItems.push(item)
+      }
+    }
+
+    // 如果没有图片，让默认的文本粘贴行为继续
+    if (imageItems.length === 0) return
+
+    // 有图片时阻止默认行为，处理图片上传
+    e.preventDefault()
+
+    setImageUploading(true)
+    try {
+      for (const item of imageItems) {
+        const file = item.getAsFile()
+        if (!file) continue
+
+        // 压缩大图片
+        const processedFile = await compressImage(file)
+
+        // 上传到服务器
+        const result = await uploadChatImage(processedFile)
+        setSelectedImages(prev => [...prev, result.url])
+      }
+      message.success('图片已添加')
+    } catch (err) {
+      message.error('图片上传失败')
+    } finally {
+      setImageUploading(false)
+    }
+  }
+
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr)
     return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
@@ -586,6 +628,132 @@ export function AIChatRoomPage() {
       setStreamingContent('')
     } finally {
       setRegeneratingMessageId(null)
+    }
+  }
+
+  // 开始编辑用户消息
+  const handleStartEditMessage = (msg: ChatMessage) => {
+    setEditingMessageId(msg.id)
+    setEditingMessageContent(msg.content)
+  }
+
+  // 取消编辑消息
+  const handleCancelEditMessage = () => {
+    setEditingMessageId(null)
+    setEditingMessageContent('')
+  }
+
+  // 编辑消息输入框的按键处理
+  const handleEditMessageKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Ctrl+Enter 或 Shift+Enter 换行
+    if (e.key === 'Enter' && (e.ctrlKey || e.shiftKey)) {
+      // 不阻止默认行为，允许换行
+      return
+    }
+    // 单独按 Enter 发送消息
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleSubmitEditMessage()
+    }
+  }
+
+  // 提交编辑消息并重新生成AI回复
+  const handleSubmitEditMessage = async () => {
+    if (!editingMessageId || !editingMessageContent.trim() || !currentConversation) return
+    if (sending || regeneratingMessageId) return
+
+    // 获取 API 配置
+    const apiConfig = getApiConfig(settings, character?.modelName)
+    
+    if (!apiConfig.apiKey) {
+      const providerName = apiConfig.provider === 'claude' ? 'Claude' : 'DeepSeek'
+      message.warning(`请先在AI聊天页面设置 ${providerName} API Key`)
+      return
+    }
+
+    const messageId = editingMessageId
+    const newContent = editingMessageContent.trim()
+    
+    // 清除编辑状态
+    setEditingMessageId(null)
+    setEditingMessageContent('')
+    
+    // 找到编辑的消息在列表中的位置，截断后面的消息并更新内容
+    const messageIndex = messages.findIndex(m => m.id === messageId)
+    if (messageIndex === -1) return
+    
+    // 截断消息列表并更新编辑的消息内容
+    const truncatedMessages = messages.slice(0, messageIndex + 1).map(m =>
+      m.id === messageId ? { ...m, content: newContent } : m
+    )
+    setMessages(truncatedMessages)
+    
+    // 设置发送状态（显示等待动画）
+    setSending(true)
+    setStreamingContent('')
+
+    try {
+      // 调用编辑并重新生成API
+      const response = await editAndRegenerateMessage(
+        currentConversation.id,
+        messageId,
+        newContent,
+        {
+          apiUrl: apiConfig.url,
+          apiKey: apiConfig.apiKey,
+          model: apiConfig.model
+        }
+      )
+
+      // 流式读取响应
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+      let fullContent = ''
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value, { stream: true })
+          const lines = chunk.split('\n')
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6).trim()
+              if (data === '[DONE]') continue
+
+              try {
+                const parsed = JSON.parse(data)
+                const content = parsed.choices?.[0]?.delta?.content || ''
+                if (content) {
+                  fullContent += content
+                  setStreamingContent(fullContent)
+                }
+              } catch {
+                // 忽略解析错误
+              }
+            }
+          }
+        }
+      }
+
+      // 重新加载对话以获取最新消息（包括新的AI回复）
+      const msgs = await getChatMessages(currentConversation.id)
+      setMessages(msgs)
+      setStreamingContent('')
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '编辑并重新生成失败')
+      // 失败时重新加载消息
+      try {
+        const msgs = await getChatMessages(currentConversation.id)
+        setMessages(msgs)
+      } catch {
+        // 忽略
+      }
+      setStreamingContent('')
+    } finally {
+      setSending(false)
     }
   }
 
@@ -782,8 +950,36 @@ export function AIChatRoomPage() {
                         ))}
                       </div>
                     )}
-                    {/* 重新生成时显示等待动画或流式内容 */}
-                    {msg.id === regeneratingMessageId ? (
+                    {/* 编辑模式 */}
+                    {msg.id === editingMessageId ? (
+                      <div className={styles.editMessageWrapper}>
+                        <textarea
+                          className={styles.editMessageInput}
+                          value={editingMessageContent}
+                          onChange={e => setEditingMessageContent(e.target.value)}
+                          onKeyDown={handleEditMessageKeyDown}
+                          autoFocus
+                          rows={3}
+                          placeholder="回车发送，Ctrl+Enter 换行"
+                        />
+                        <div className={styles.editMessageActions}>
+                          <button
+                            className={styles.editMessageBtn}
+                            onClick={handleSubmitEditMessage}
+                            disabled={!editingMessageContent.trim()}
+                          >
+                            <CheckOutlined /> 提交
+                          </button>
+                          <button
+                            className={styles.editMessageCancelBtn}
+                            onClick={handleCancelEditMessage}
+                          >
+                            <CloseOutlined /> 取消
+                          </button>
+                        </div>
+                      </div>
+                    ) : msg.id === regeneratingMessageId ? (
+                      /* 重新生成时显示等待动画或流式内容 */
                       streamingContent ? (
                         <>
                           {streamingContent}
@@ -805,8 +1001,18 @@ export function AIChatRoomPage() {
                     >
                       <CopyOutlined />
                     </button>
+                    {/* 用户消息显示编辑按钮 */}
+                    {msg.role === 'user' && !sending && !regeneratingMessageId && !editingMessageId && (
+                      <button
+                        className={styles.editMessageButton}
+                        onClick={() => handleStartEditMessage(msg)}
+                        title="编辑消息"
+                      >
+                        <EditOutlined />
+                      </button>
+                    )}
                     {/* 只有最新的AI回复显示重新生成按钮 */}
-                    {msg.role === 'assistant' && msg.id === getLatestAssistantMessageId() && !sending && !regeneratingMessageId && (
+                    {msg.role === 'assistant' && msg.id === getLatestAssistantMessageId() && !sending && !regeneratingMessageId && !editingMessageId && (
                       <button
                         className={styles.regenerateButton}
                         onClick={() => handleRegenerateMessage(msg.id)}
@@ -890,6 +1096,7 @@ export function AIChatRoomPage() {
               value={inputValue}
               onChange={e => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               placeholder={selectedImages.length > 0 ? "添加说明（可选）... (Ctrl+Enter 换行)" : "输入消息... (Ctrl+Enter 换行)"}
               disabled={!currentConversation || sending}
               rows={1}

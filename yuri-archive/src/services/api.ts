@@ -971,6 +971,32 @@ export async function regenerateAssistantMessage(
   return response
 }
 
+// 编辑用户消息并重新生成AI回复 (返回流式响应)
+export async function editAndRegenerateMessage(
+  conversationId: string,
+  messageId: string,
+  content: string,
+  apiConfig: { apiUrl: string; apiKey: string; model: string }
+): Promise<Response> {
+  const token = localStorage.getItem('token')
+  
+  const response = await fetch(`${BASE_URL}/api/ai-chat/conversations/${conversationId}/messages/${messageId}/edit-and-regenerate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify({ content, ...apiConfig })
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.message || '编辑并重新生成失败')
+  }
+
+  return response
+}
+
 // 上传AI角色相关图片 (头像/背景)
 export async function uploadAIChatImage(file: File, type: 'avatar' | 'background'): Promise<UploadResponse> {
   const token = getToken()
