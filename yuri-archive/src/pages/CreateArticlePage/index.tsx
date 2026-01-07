@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Form, Input, Button, Card, Typography, Select, Space, App, Upload } from 'antd'
-import { SaveOutlined, SendOutlined, ArrowLeftOutlined, PlusOutlined, LoadingOutlined, DeleteOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, DeleteOutlined, EyeOutlined, LoadingOutlined, PlusOutlined, SaveOutlined, SendOutlined } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
-import { createArticle, getTags, uploadCover, getImageUrl } from '../../services/api'
+import { App, Button, Card, Form, Input, Modal, Select, Space, Typography, Upload } from 'antd'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import previewStyles from '../../components/ImagePreview/ImagePreview.module.css'
+import { createArticle, getImageUrl, getTags, uploadCover } from '../../services/api'
 import { useUserStore } from '../../store'
 import type { Tag } from '../../types'
 import styles from './CreateArticlePage.module.css'
@@ -32,6 +33,7 @@ export function CreateArticlePage() {
   // 封面上传状态
   const [coverUploading, setCoverUploading] = useState(false)
   const [coverPreview, setCoverPreview] = useState<string>('')
+  const [previewVisible, setPreviewVisible] = useState(false)
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -252,6 +254,14 @@ export function CreateArticlePage() {
                     <div className={styles.coverActions}>
                       <Button
                         type="text"
+                        icon={<EyeOutlined />}
+                        onClick={(e) => { e.stopPropagation(); setPreviewVisible(true); }}
+                        className={styles.actionBtn}
+                      >
+                        预览
+                      </Button>
+                      <Button
+                        type="text"
                         icon={<DeleteOutlined />}
                         onClick={(e) => { e.stopPropagation(); handleRemoveCover(); }}
                         className={styles.removeBtn}
@@ -293,6 +303,24 @@ export function CreateArticlePage() {
           </Form.Item>
         </Form>
       </Card>
+
+      {/* 封面图片预览弹窗 */}
+      <Modal
+        open={previewVisible}
+        footer={null}
+        onCancel={() => setPreviewVisible(false)}
+        width="90%"
+        style={{ maxWidth: 1200 }}
+        centered
+        className={previewStyles.previewModal}
+        destroyOnClose
+      >
+        <img
+          src={coverPreview}
+          alt="封面预览"
+          className={previewStyles.fullImage}
+        />
+      </Modal>
     </div>
   )
 }

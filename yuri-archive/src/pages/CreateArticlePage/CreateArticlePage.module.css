@@ -24,7 +24,7 @@
 }
 
 .contentInput {
-  font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+  font-family: "Fira Code", "Monaco", "Consolas", monospace;
   font-size: 14px;
   line-height: 1.6;
 }
@@ -75,6 +75,15 @@
 
 .coverPreviewWrapper:hover .coverActions {
   opacity: 1;
+}
+
+.actionBtn {
+  color: #fff !important;
+  font-size: 12px;
+}
+
+.actionBtn:hover {
+  color: #a855f7 !important;
 }
 
 .removeBtn {
