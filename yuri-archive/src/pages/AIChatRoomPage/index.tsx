@@ -126,6 +126,20 @@ export function AIChatRoomPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const isNearBottomRef = useRef(true) // 跟踪用户是否在底部附近
+  const abortControllerRef = useRef<AbortController | null>(null) // 用于取消流式请求
+  const streamingContentRef = useRef<string>('') // 保存流式内容的引用
+  const currentConversationRef = useRef<Conversation | null>(null) // 保存当前对话的引用
+  const isSendingNewMessageRef = useRef(false) // 标记是否正在发送新消息（vs 重新生成）
+
+  // 同步 streamingContent 到 ref
+  useEffect(() => {
+    streamingContentRef.current = streamingContent
+  }, [streamingContent])
+
+  // 同步 currentConversation 到 ref
+  useEffect(() => {
+    currentConversationRef.current = currentConversation
+  }, [currentConversation])
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -135,6 +149,22 @@ export function AIChatRoomPage() {
     }
     if (characterId) {
       loadCharacter()
+    }
+
+    // 组件卸载时的清理
+    return () => {
+      // 取消正在进行的流式请求
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+      
+      // 如果有正在进行的流式内容且是发送新消息，保存到后端
+      if (streamingContentRef.current && currentConversationRef.current && isSendingNewMessageRef.current) {
+        // 使用同步方式尝试保存（不等待结果）
+        saveAssistantMessage(currentConversationRef.current.id, streamingContentRef.current).catch(() => {
+          // 忽略保存错误
+        })
+      }
     }
   }, [characterId, isLoggedIn])
 
@@ -389,6 +419,11 @@ export function AIChatRoomPage() {
     setSelectedImages([])
     setSending(true)
     setStreamingContent('')
+    isSendingNewMessageRef.current = true // 标记正在发送新消息
+
+    // 创建新的 AbortController
+    const abortController = new AbortController()
+    abortControllerRef.current = abortController
 
     try {
       // 发送消息时强制滚动到底部
@@ -421,7 +456,8 @@ export function AIChatRoomPage() {
             { role: 'user', content: formattedUserContent }
           ],
           stream: true  // 启用流式响应
-        })
+        }),
+        signal: abortController.signal
       })
 
       if (!response.ok) {
@@ -468,11 +504,19 @@ export function AIChatRoomPage() {
       const aiMsg = await saveAssistantMessage(currentConversation.id, aiContent)
       setMessages(prev => [...prev, aiMsg])
       setStreamingContent('')
+      isSendingNewMessageRef.current = false // 清除标记
     } catch (err) {
+      // 如果是用户取消请求，不显示错误
+      if (err instanceof Error && err.name === 'AbortError') {
+        // 请求被取消，内容会在组件卸载时保存
+        return
+      }
       message.error(err instanceof Error ? err.message : '发送失败')
       setStreamingContent('')
+      isSendingNewMessageRef.current = false
     } finally {
       setSending(false)
+      abortControllerRef.current = null
       // AI回复完成后自动聚焦输入框（仅PC端，移动端不自动聚焦避免弹出键盘）
       if (window.innerWidth >= 768) {
         setTimeout(() => {
