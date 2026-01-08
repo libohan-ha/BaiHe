@@ -112,11 +112,16 @@ const createPrivateImage = async (req, res, next) => {
 const updatePrivateImage = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description, thumbnailUrl, tags } = req.body;
+    let { title, description, url, imageUrl, thumbnailUrl, tags, tagIds } = req.body;
+
+    // 支持 imageUrl 和 url 两种字段名
+    url = url || imageUrl;
+    // 支持 tags 和 tagIds 两种字段名
+    tags = tags || tagIds;
 
     const image = await privateImageService.updatePrivateImage(
       id,
-      { title, description, thumbnailUrl, tags },
+      { title, description, url, thumbnailUrl, tags },
       req.user.id
     );
 

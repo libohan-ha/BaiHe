@@ -281,11 +281,12 @@ const updatePrivateImage = async (id, data, userId) => {
     throw createError(403, '无权修改此隐私图片');
   }
 
-  const { title, description, thumbnailUrl } = data;
+  const { title, description, url, thumbnailUrl } = data;
 
   const updateData = {};
   if (title !== undefined) updateData.title = title;
   if (description !== undefined) updateData.description = description;
+  if (url !== undefined) updateData.url = url;
   if (thumbnailUrl !== undefined) updateData.thumbnailUrl = thumbnailUrl;
 
   const tagsWasProvided =
