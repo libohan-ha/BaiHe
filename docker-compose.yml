@@ -36,9 +36,8 @@ services:
       NODE_ENV: production
       HOST: 0.0.0.0
     volumes:
-      - uploads_data:/app/uploads
-      # 同步本地uploads目录（可选，让本地和Docker共享上传文件）
-      # - ./test/backend/uploads:/app/uploads
+      # 同步本地uploads目录，让本地和Docker共享上传文件
+      - ./test/backend/uploads:/app/uploads
     # 移除对postgres服务的依赖
     # depends_on:
     #   postgres:

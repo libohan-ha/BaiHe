@@ -96,7 +96,16 @@ export function AIChatRoomPage() {
   const { characterId } = useParams<{ characterId: string }>()
   const navigate = useNavigate()
   const { isLoggedIn, currentUser } = useUserStore()
-  const { settings } = useAIChatStore()
+  const {
+    settings,
+    streamingContent,
+    streamingConversationId,
+    streamingMessageId,
+    isStreaming,
+    setStreamingState,
+    appendStreamingContent,
+    resetStreaming
+  } = useAIChatStore()
   
   const [character, setCharacter] = useState<AICharacter | null>(null)
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -105,7 +114,6 @@ export function AIChatRoomPage() {
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
-  const [streamingContent, setStreamingContent] = useState('')
   const [selectedImages, setSelectedImages] = useState<string[]>([])  // 待发送的图片URL列表
   const [imageUploading, setImageUploading] = useState(false)
   const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null)
@@ -174,10 +182,17 @@ export function AIChatRoomPage() {
 
   // 流式响应时也滚动到底部（仅当用户在底部附近时）
   useEffect(() => {
-    if (streamingContent) {
+    if (streamingContent && streamingConversationId === currentConversation?.id) {
       scrollToBottom()
     }
   }, [streamingContent])
+
+  // 跨路由保留流式状态：恢复发送禁用/显示动画
+  useEffect(() => {
+    if (isStreaming && streamingConversationId === currentConversation?.id) {
+      setSending(true)
+    }
+  }, [isStreaming])
 
   // 监听滚动事件，判断用户是否在底部附近
   useEffect(() => {
@@ -277,6 +292,11 @@ export function AIChatRoomPage() {
 
   // 切换到历史对话
   const handleSwitchConversation = async (conv: Conversation) => {
+    if (streamingConversationId && streamingConversationId !== conv.id) {
+      resetStreaming()
+      setRegeneratingMessageId(null)
+      setSending(false)
+    }
     await loadConversation(conv)
     setHistoryDrawerVisible(false)
   }
@@ -290,6 +310,9 @@ export function AIChatRoomPage() {
       okType: 'danger',
       onOk: async () => {
         try {
+          resetStreaming()
+          setRegeneratingMessageId(null)
+          setStreamingState({ isStreaming: false, conversationId: null, messageId: null })
           await deleteConversation(convId)
           const newConversations = conversations.filter(c => c.id !== convId)
           setConversations(newConversations)
@@ -418,12 +441,7 @@ export function AIChatRoomPage() {
     setInputValue('')
     setSelectedImages([])
     setSending(true)
-    setStreamingContent('')
-    isSendingNewMessageRef.current = true // 标记正在发送新消息
-
-    // 创建新的 AbortController
-    const abortController = new AbortController()
-    abortControllerRef.current = abortController
+    setStreamingState({ content: '', conversationId: currentConversation.id, isStreaming: true })
 
     try {
       // 发送消息时强制滚动到底部
@@ -456,8 +474,7 @@ export function AIChatRoomPage() {
             { role: 'user', content: formattedUserContent }
           ],
           stream: true  // 启用流式响应
-        }),
-        signal: abortController.signal
+        })
       })
 
       if (!response.ok) {
@@ -488,7 +505,7 @@ export function AIChatRoomPage() {
                 const content = parsed.choices?.[0]?.delta?.content || ''
                 if (content) {
                   fullContent += content
-                  setStreamingContent(fullContent)
+                  appendStreamingContent(content)
                 }
               } catch {
                 // 忽略解析错误
@@ -503,20 +520,18 @@ export function AIChatRoomPage() {
       // 保存AI回复
       const aiMsg = await saveAssistantMessage(currentConversation.id, aiContent)
       setMessages(prev => [...prev, aiMsg])
-      setStreamingContent('')
-      isSendingNewMessageRef.current = false // 清除标记
+      resetStreaming()
     } catch (err) {
       // 如果是用户取消请求，不显示错误
       if (err instanceof Error && err.name === 'AbortError') {
-        // 请求被取消，内容会在组件卸载时保存
+        // 请求被取消
         return
       }
       message.error(err instanceof Error ? err.message : '发送失败')
-      setStreamingContent('')
-      isSendingNewMessageRef.current = false
+      resetStreaming()
     } finally {
       setSending(false)
-      abortControllerRef.current = null
+      setStreamingState({ isStreaming: false, conversationId: null, messageId: null })
       // AI回复完成后自动聚焦输入框（仅PC端，移动端不自动聚焦避免弹出键盘）
       if (window.innerWidth >= 768) {
         setTimeout(() => {
@@ -645,7 +660,7 @@ export function AIChatRoomPage() {
       msg.id === messageId ? { ...msg, content: '' } : msg
     ))
     setRegeneratingMessageId(messageId)
-    setStreamingContent('')
+    setStreamingState({ content: '', conversationId: currentConversation.id, messageId, isStreaming: true })
 
     try {
       // 调用重新生成API
@@ -682,7 +697,7 @@ export function AIChatRoomPage() {
                 const content = parsed.choices?.[0]?.delta?.content || ''
                 if (content) {
                   fullContent += content
-                  setStreamingContent(fullContent)
+                  appendStreamingContent(content)
                 }
               } catch {
                 // 忽略解析错误
@@ -698,12 +713,13 @@ export function AIChatRoomPage() {
           msg.id === messageId ? { ...msg, content: fullContent } : msg
         ))
       }
-      setStreamingContent('')
+      resetStreaming()
     } catch (err) {
       message.error(err instanceof Error ? err.message : '重新生成失败')
-      setStreamingContent('')
+      resetStreaming()
     } finally {
       setRegeneratingMessageId(null)
+      setStreamingState({ isStreaming: false, conversationId: null, messageId: null })
     }
   }
 
@@ -766,7 +782,7 @@ export function AIChatRoomPage() {
     
     // 设置发送状态（显示等待动画）
     setSending(true)
-    setStreamingContent('')
+    setStreamingState({ content: '', conversationId: currentConversation.id, isStreaming: true })
 
     try {
       // 调用编辑并重新生成API
@@ -804,7 +820,7 @@ export function AIChatRoomPage() {
                 const content = parsed.choices?.[0]?.delta?.content || ''
                 if (content) {
                   fullContent += content
-                  setStreamingContent(fullContent)
+                  appendStreamingContent(content)
                 }
               } catch {
                 // 忽略解析错误
@@ -817,7 +833,7 @@ export function AIChatRoomPage() {
       // 重新加载对话以获取最新消息（包括新的AI回复）
       const msgs = await getChatMessages(currentConversation.id)
       setMessages(msgs)
-      setStreamingContent('')
+      resetStreaming()
     } catch (err) {
       message.error(err instanceof Error ? err.message : '编辑并重新生成失败')
       // 失败时重新加载消息
@@ -827,9 +843,10 @@ export function AIChatRoomPage() {
       } catch {
         // 忽略
       }
-      setStreamingContent('')
+      resetStreaming()
     } finally {
       setSending(false)
+      setStreamingState({ isStreaming: false, conversationId: null })
     }
   }
 
@@ -1005,12 +1022,12 @@ export function AIChatRoomPage() {
           <div className={styles.messagesContainer}>
             {messages.map(msg => (
               <div key={msg.id} className={`${styles.messageWrapper} ${styles[msg.role]}`}>
-                <Avatar
-                  size={36}
-                  src={getImageUrl(msg.role === 'user' ? (character.userAvatarUrl || currentUser?.avatarUrl) : character.avatarUrl)}
-                  icon={msg.role === 'user' ? null : <RobotOutlined />}
-                  className={msg.id === regeneratingMessageId ? styles.streamingAvatar : styles.messageAvatar}
-                />
+            <Avatar
+              size={36}
+              src={getImageUrl(msg.role === 'user' ? (character.userAvatarUrl || currentUser?.avatarUrl) : character.avatarUrl)}
+              icon={msg.role === 'user' ? null : <RobotOutlined />}
+              className={msg.id === streamingMessageId && streamingConversationId === currentConversation?.id ? styles.streamingAvatar : styles.messageAvatar}
+            />
                 <div className={styles.messageContent}>
                   <div className={`${styles.messageBubble} ${styles[msg.role]}`} style={bubbleStyle(msg.role)}>
                     {/* 显示消息中的图片 - 点击弹窗预览 */}
@@ -1054,8 +1071,7 @@ export function AIChatRoomPage() {
                           </button>
                         </div>
                       </div>
-                    ) : msg.id === regeneratingMessageId ? (
-                      /* 重新生成时显示等待动画或流式内容 */
+                    ) : (isStreaming && streamingConversationId === currentConversation?.id && streamingMessageId === msg.id) ? (
                       streamingContent ? (
                         <>
                           {streamingContent}
@@ -1064,6 +1080,8 @@ export function AIChatRoomPage() {
                       ) : (
                         <div className={styles.typing}><span></span><span></span><span></span></div>
                       )
+                    ) : msg.id === regeneratingMessageId ? (
+                      <div className={styles.typing}><span></span><span></span><span></span></div>
                     ) : (
                       msg.content
                     )}
@@ -1102,7 +1120,7 @@ export function AIChatRoomPage() {
               </div>
             ))}
             {/* 只有发送新消息时才显示新的等待气泡 */}
-            {sending && (
+            {sending && !streamingMessageId && !regeneratingMessageId && (
               <div className={`${styles.messageWrapper} ${styles.assistant}`}>
                 <Avatar
                   size={36}

@@ -49,9 +49,18 @@ interface AIChatStore {
   setMessages: (messages: ChatMessage[]) => void
   addMessage: (message: ChatMessage) => void
   
-  // 聊天状态
+  // 加载状态
   isLoading: boolean
   setIsLoading: (loading: boolean) => void
+
+  // 流式回复状态（跨路由保留）
+  streamingContent: string
+  streamingConversationId: string | null
+  streamingMessageId: string | null
+  isStreaming: boolean
+  setStreamingState: (payload: { content?: string; conversationId?: string | null; messageId?: string | null; isStreaming?: boolean }) => void
+  appendStreamingContent: (chunk: string) => void
+  resetStreaming: () => void
   
   // 重置
   reset: () => void
@@ -76,7 +85,11 @@ const initialState = {
   conversations: [],
   currentConversation: null,
   messages: [],
-  isLoading: false
+  isLoading: false,
+  streamingContent: '',
+  streamingConversationId: null,
+  streamingMessageId: null,
+  isStreaming: false
 }
 
 export const useAIChatStore = create<AIChatStore>()(
@@ -134,13 +147,35 @@ export const useAIChatStore = create<AIChatStore>()(
       })),
       
       setIsLoading: (isLoading) => set({ isLoading }),
+
+      setStreamingState: ({ content, conversationId, messageId, isStreaming }) => set((state) => ({
+        streamingContent: content !== undefined ? content : state.streamingContent,
+        streamingConversationId: conversationId !== undefined ? conversationId : state.streamingConversationId,
+        streamingMessageId: messageId !== undefined ? messageId : state.streamingMessageId,
+        isStreaming: isStreaming !== undefined ? isStreaming : state.isStreaming
+      })),
+
+      appendStreamingContent: (chunk) => set((state) => ({
+        streamingContent: state.streamingContent + chunk
+      })),
+
+      resetStreaming: () => set({
+        streamingContent: '',
+        streamingConversationId: null,
+        streamingMessageId: null,
+        isStreaming: false
+      }),
       
       reset: () => set({
         currentCharacter: null,
         conversations: [],
         currentConversation: null,
         messages: [],
-        isLoading: false
+        isLoading: false,
+        streamingContent: '',
+        streamingConversationId: null,
+        streamingMessageId: null,
+        isStreaming: false
       })
     }),
     {
@@ -151,4 +186,3 @@ export const useAIChatStore = create<AIChatStore>()(
     }
   )
 )
-
