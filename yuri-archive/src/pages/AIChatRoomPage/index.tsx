@@ -719,6 +719,7 @@ export function AIChatRoomPage() {
       resetStreaming()
     } finally {
       setRegeneratingMessageId(null)
+      setSending(false)
       setStreamingState({ isStreaming: false, conversationId: null, messageId: null })
     }
   }
@@ -1080,7 +1081,7 @@ export function AIChatRoomPage() {
                       ) : (
                         <div className={styles.typing}><span></span><span></span><span></span></div>
                       )
-                    ) : msg.id === regeneratingMessageId ? (
+                    ) : (isStreaming && msg.id === regeneratingMessageId) ? (
                       <div className={styles.typing}><span></span><span></span><span></span></div>
                     ) : (
                       msg.content
