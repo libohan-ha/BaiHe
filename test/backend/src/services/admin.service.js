@@ -1,10 +1,5 @@
 const prisma = require('../models/prisma');
-
-const createError = (statusCode, message) => {
-  const err = new Error(message);
-  err.statusCode = statusCode;
-  return err;
-};
+const { createError } = require('../utils/errors');
 
 const getAdmins = async (page = 1, pageSize = 10) => {
   const skip = (page - 1) * pageSize;

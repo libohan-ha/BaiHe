@@ -1,12 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const { UPLOAD_DIRS } = require('../config/multer');
-
-const createError = (statusCode, message) => {
-  const err = new Error(message);
-  err.statusCode = statusCode;
-  return err;
-};
+const { createError } = require('../utils/errors');
 
 /**
  * 处理上传后的文件信息
