@@ -29,5 +29,12 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
+    deps: {
+      optimizer: {
+        web: {
+          include: ['jsdom'],
+        },
+      },
+    },
   },
 })

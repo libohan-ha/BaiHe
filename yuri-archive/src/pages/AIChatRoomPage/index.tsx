@@ -1,27 +1,18 @@
 import {
   ArrowLeftOutlined,
-  CheckOutlined,
-  CloseOutlined,
-  CopyOutlined,
   DeleteOutlined,
   EditOutlined,
   HistoryOutlined,
-  PictureOutlined,
   PlusOutlined,
-  ReloadOutlined,
   RobotOutlined,
-  SendOutlined,
-  UploadOutlined
 } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
-import { Avatar, Button, Drawer, Form, Input, message, Modal, Select, Slider, Spin, Upload } from 'antd'
+import { Avatar, Button, Form, message, Modal, Spin } from 'antd'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ImagePreview } from '../../components'
+import { useChat, useImageUpload, useConversation } from './hooks'
+import { HistoryDrawer, InputArea, EditCharacterModal, MessageBubble } from './components'
 import {
-  compressImage,
-  createConversation,
-  deleteConversation,
   editAndRegenerateMessage,
   formatMessageWithImages,
   getAICharacterById,
@@ -32,9 +23,7 @@ import {
   saveAssistantMessage,
   sendChatMessage,
   updateAICharacter,
-  updateConversation,
   uploadAIChatImage,
-  uploadChatImage
 } from '../../services/api'
 import { useAIChatStore, useUserStore } from '../../store'
 import type { AICharacter, ChatMessage, Conversation } from '../../types'
@@ -108,17 +97,20 @@ export function AIChatRoomPage() {
   } = useAIChatStore()
   
   const [character, setCharacter] = useState<AICharacter | null>(null)
-  const [conversations, setConversations] = useState<Conversation[]>([])
-  const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null)
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(true)
-  const [sending, setSending] = useState(false)
-  const [selectedImages, setSelectedImages] = useState<string[]>([])  // 待发送的图片URL列表
-  const [imageUploading, setImageUploading] = useState(false)
-  const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null)
-  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
-  const [editingMessageContent, setEditingMessageContent] = useState('')
+
+  // 使用 useConversation hook
+  const {
+    conversations,
+    setConversations,
+    currentConversation,
+    messages,
+    setMessages,
+    switchConversation,
+    createNewConversation,
+    deleteConv,
+    updateTitle,
+  } = useConversation(characterId || '')
   const [editModalVisible, setEditModalVisible] = useState(false)
   const [historyDrawerVisible, setHistoryDrawerVisible] = useState(false)
   const [editingConvId, setEditingConvId] = useState<string | null>(null)
@@ -130,6 +122,33 @@ export function AIChatRoomPage() {
   const [userAvatarUploading, setUserAvatarUploading] = useState(false)
   const [backgroundUploading, setBackgroundUploading] = useState(false)
   const [form] = Form.useForm()
+
+  // 使用 useChat hook
+  const {
+    inputValue,
+    setInputValue,
+    sending,
+    setSending,
+    regeneratingMessageId,
+    setRegeneratingMessageId,
+    editingMessageId,
+    setEditingMessageId,
+    editingMessageContent,
+    setEditingMessageContent,
+    startEditMessage,
+    cancelEditMessage,
+    getLatestAssistantMessageId,
+  } = useChat()
+
+  // 使用 useImageUpload hook
+  const {
+    selectedImages,
+    setSelectedImages,
+    imageUploading,
+    handleImageUpload,
+    handleRemoveImage,
+  } = useImageUpload()
+
   const chatAreaRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -228,16 +247,6 @@ export function AIChatRoomPage() {
     }
   }
 
-  // 获取保存的对话ID
-  const getSavedConversationId = () => {
-    return localStorage.getItem(`ai-chat-conv-${characterId}`)
-  }
-
-  // 保存当前对话ID
-  const saveConversationId = (convId: string) => {
-    localStorage.setItem(`ai-chat-conv-${characterId}`, convId)
-  }
-
   const loadCharacter = async () => {
     setLoading(true)
     try {
@@ -247,16 +256,12 @@ export function AIChatRoomPage() {
       setConversations(convs)
       if (convs.length > 0) {
         // 优先恢复之前的对话
-        const savedConvId = getSavedConversationId()
+        const savedConvId = localStorage.getItem(`ai-chat-conv-${characterId}`)
         const savedConv = savedConvId ? convs.find(c => c.id === savedConvId) : null
-        await loadConversation(savedConv || convs[0])
+        await switchConversation(savedConv || convs[0])
       } else {
         // 如果没有对话，自动创建一个新对话
-        const newConv = await createConversation(characterId!)
-        setConversations([newConv])
-        setCurrentConversation(newConv)
-        setMessages([])
-        saveConversationId(newConv.id)
+        await createNewConversation()
       }
     } catch (err) {
       message.error(err instanceof Error ? err.message : '加载失败')
@@ -266,24 +271,9 @@ export function AIChatRoomPage() {
     }
   }
 
-  const loadConversation = async (conv: Conversation) => {
-    setCurrentConversation(conv)
-    saveConversationId(conv.id) // 保存当前对话ID
-    try {
-      const msgs = await getChatMessages(conv.id)
-      setMessages(msgs)
-    } catch (err) {
-      message.error('加载对话失败')
-    }
-  }
-
   const handleNewConversation = async () => {
     try {
-      const conv = await createConversation(characterId!)
-      setConversations([conv, ...conversations])
-      setCurrentConversation(conv)
-      setMessages([])
-      saveConversationId(conv.id) // 保存新对话ID
+      await createNewConversation()
       setHistoryDrawerVisible(false) // 创建新对话后关闭抽屉
     } catch (err) {
       message.error('创建对话失败')
@@ -297,7 +287,7 @@ export function AIChatRoomPage() {
       setRegeneratingMessageId(null)
       setSending(false)
     }
-    await loadConversation(conv)
+    await switchConversation(conv)
     setHistoryDrawerVisible(false)
   }
 
@@ -313,21 +303,7 @@ export function AIChatRoomPage() {
           resetStreaming()
           setRegeneratingMessageId(null)
           setStreamingState({ isStreaming: false, conversationId: null, messageId: null })
-          await deleteConversation(convId)
-          const newConversations = conversations.filter(c => c.id !== convId)
-          setConversations(newConversations)
-          
-          // 如果删除的是当前对话，切换到第一个对话或创建新对话
-          if (currentConversation?.id === convId) {
-            if (newConversations.length > 0) {
-              await loadConversation(newConversations[0])
-            } else {
-              const newConv = await createConversation(characterId!)
-              setConversations([newConv])
-              setCurrentConversation(newConv)
-              setMessages([])
-            }
-          }
+          await deleteConv(convId)
           message.success('删除成功')
         } catch (err) {
           message.error('删除失败')
@@ -349,13 +325,9 @@ export function AIChatRoomPage() {
       setEditingConvId(null)
       return
     }
-    
+
     try {
-      const updated = await updateConversation(convId, editingTitle.trim())
-      setConversations(conversations.map(c => c.id === convId ? { ...c, title: updated.title } : c))
-      if (currentConversation?.id === convId) {
-        setCurrentConversation({ ...currentConversation, title: updated.title })
-      }
+      await updateTitle(convId, editingTitle.trim())
       message.success('标题已更新')
     } catch (err) {
       message.error('更新失败')
@@ -370,58 +342,21 @@ export function AIChatRoomPage() {
     setEditingTitle('')
   }
 
-  // 格式化对话时间
-  const formatConversationTime = (dateStr: string) => {
-    const date = new Date(dateStr)
-    const now = new Date()
-    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
-    
-    if (diffDays === 0) {
-      return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-    } else if (diffDays === 1) {
-      return '昨天'
-    } else if (diffDays < 7) {
-      return `${diffDays}天前`
-    } else {
-      return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
-    }
-  }
-
-  // 处理图片选择
+  // 处理图片选择 - 包装 useImageUpload 的方法
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
 
-    setImageUploading(true)
     try {
-      for (const file of Array.from(files)) {
-        // 验证文件类型
-        if (!file.type.startsWith('image/')) {
-          message.warning('只支持上传图片文件')
-          continue
-        }
-
-        // 压缩大图片
-        const processedFile = await compressImage(file)
-
-        // 上传到服务器
-        const result = await uploadChatImage(processedFile)
-        setSelectedImages(prev => [...prev, result.url])
-      }
+      await handleImageUpload(Array.from(files))
     } catch (err) {
       message.error('图片上传失败')
     } finally {
-      setImageUploading(false)
       // 清空 input 以允许重复选择相同文件
       if (imageInputRef.current) {
         imageInputRef.current.value = ''
       }
     }
-  }
-
-  // 移除已选择的图片
-  const handleRemoveImage = (index: number) => {
-    setSelectedImages(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleSend = async () => {
@@ -572,30 +507,17 @@ export function AIChatRoomPage() {
     // 有图片时阻止默认行为，处理图片上传
     e.preventDefault()
 
-    setImageUploading(true)
     try {
+      const files: File[] = []
       for (const item of imageItems) {
         const file = item.getAsFile()
-        if (!file) continue
-
-        // 压缩大图片
-        const processedFile = await compressImage(file)
-
-        // 上传到服务器
-        const result = await uploadChatImage(processedFile)
-        setSelectedImages(prev => [...prev, result.url])
+        if (file) files.push(file)
       }
+      await handleImageUpload(files)
       message.success('图片已添加')
     } catch (err) {
       message.error('图片上传失败')
-    } finally {
-      setImageUploading(false)
     }
-  }
-
-  const formatTime = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
   }
 
   // 复制消息内容 - 使用 fallback 方法以支持非 HTTPS 环境
@@ -630,16 +552,6 @@ export function AIChatRoomPage() {
     } catch (err) {
       message.error('复制失败')
     }
-  }
-
-  // 获取最新的AI消息ID
-  const getLatestAssistantMessageId = () => {
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role === 'assistant') {
-        return messages[i].id
-      }
-    }
-    return null
   }
 
   // 重新生成AI回复
@@ -721,32 +633,6 @@ export function AIChatRoomPage() {
       setRegeneratingMessageId(null)
       setSending(false)
       setStreamingState({ isStreaming: false, conversationId: null, messageId: null })
-    }
-  }
-
-  // 开始编辑用户消息
-  const handleStartEditMessage = (msg: ChatMessage) => {
-    setEditingMessageId(msg.id)
-    setEditingMessageContent(msg.content)
-  }
-
-  // 取消编辑消息
-  const handleCancelEditMessage = () => {
-    setEditingMessageId(null)
-    setEditingMessageContent('')
-  }
-
-  // 编辑消息输入框的按键处理
-  const handleEditMessageKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Ctrl+Enter 或 Shift+Enter 换行
-    if (e.key === 'Enter' && (e.ctrlKey || e.shiftKey)) {
-      // 不阻止默认行为，允许换行
-      return
-    }
-    // 单独按 Enter 发送消息
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      handleSubmitEditMessage()
     }
   }
 
@@ -1022,103 +908,27 @@ export function AIChatRoomPage() {
         ) : (
           <div className={styles.messagesContainer}>
             {messages.map(msg => (
-              <div key={msg.id} className={`${styles.messageWrapper} ${styles[msg.role]}`}>
-            <Avatar
-              size={36}
-              src={getImageUrl(msg.role === 'user' ? (character.userAvatarUrl || currentUser?.avatarUrl) : character.avatarUrl)}
-              icon={msg.role === 'user' ? null : <RobotOutlined />}
-              className={msg.id === streamingMessageId && streamingConversationId === currentConversation?.id ? styles.streamingAvatar : styles.messageAvatar}
-            />
-                <div className={styles.messageContent}>
-                  <div className={`${styles.messageBubble} ${styles[msg.role]}`} style={bubbleStyle(msg.role)}>
-                    {/* 显示消息中的图片 - 点击弹窗预览 */}
-                    {msg.images && msg.images.length > 0 && (
-                      <div className={styles.messageImages}>
-                        {msg.images.map((imgUrl, idx) => (
-                          <ImagePreview
-                            key={idx}
-                            src={imgUrl}
-                            alt={`图片 ${idx + 1}`}
-                            className={styles.messageImage}
-                          />
-                        ))}
-                      </div>
-                    )}
-                    {/* 编辑模式 */}
-                    {msg.id === editingMessageId ? (
-                      <div className={styles.editMessageWrapper}>
-                        <textarea
-                          className={styles.editMessageInput}
-                          value={editingMessageContent}
-                          onChange={e => setEditingMessageContent(e.target.value)}
-                          onKeyDown={handleEditMessageKeyDown}
-                          autoFocus
-                          rows={3}
-                          placeholder="回车发送，Ctrl+Enter 换行"
-                        />
-                        <div className={styles.editMessageActions}>
-                          <button
-                            className={styles.editMessageBtn}
-                            onClick={handleSubmitEditMessage}
-                            disabled={!editingMessageContent.trim()}
-                          >
-                            <CheckOutlined /> 提交
-                          </button>
-                          <button
-                            className={styles.editMessageCancelBtn}
-                            onClick={handleCancelEditMessage}
-                          >
-                            <CloseOutlined /> 取消
-                          </button>
-                        </div>
-                      </div>
-                    ) : (isStreaming && streamingConversationId === currentConversation?.id && streamingMessageId === msg.id) ? (
-                      streamingContent ? (
-                        <>
-                          {streamingContent}
-                          <span className={styles.cursor}>|</span>
-                        </>
-                      ) : (
-                        <div className={styles.typing}><span></span><span></span><span></span></div>
-                      )
-                    ) : (isStreaming && msg.id === regeneratingMessageId) ? (
-                      <div className={styles.typing}><span></span><span></span><span></span></div>
-                    ) : (
-                      msg.content
-                    )}
-                  </div>
-                  <div className={`${styles.messageFooter} ${styles[msg.role]}`}>
-                    <span className={styles.messageTime}>{formatTime(msg.createdAt)}</span>
-                    <button
-                      className={styles.copyButton}
-                      onClick={() => handleCopyMessage(msg.content)}
-                      title="复制"
-                    >
-                      <CopyOutlined />
-                    </button>
-                    {/* 用户消息显示编辑按钮 */}
-                    {msg.role === 'user' && !sending && !regeneratingMessageId && !editingMessageId && (
-                      <button
-                        className={styles.editMessageButton}
-                        onClick={() => handleStartEditMessage(msg)}
-                        title="编辑消息"
-                      >
-                        <EditOutlined />
-                      </button>
-                    )}
-                    {/* 只有最新的AI回复显示重新生成按钮 */}
-                    {msg.role === 'assistant' && msg.id === getLatestAssistantMessageId() && !sending && !regeneratingMessageId && !editingMessageId && (
-                      <button
-                        className={styles.regenerateButton}
-                        onClick={() => handleRegenerateMessage(msg.id)}
-                        title="重新生成"
-                      >
-                        <ReloadOutlined />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <MessageBubble
+                key={msg.id}
+                message={msg}
+                isUser={msg.role === 'user'}
+                avatarUrl={msg.role === 'user' ? (character.userAvatarUrl || currentUser?.avatarUrl) : character.avatarUrl}
+                bubbleStyle={bubbleStyle(msg.role)}
+                isStreamingThis={isStreaming && streamingConversationId === currentConversation?.id && streamingMessageId === msg.id}
+                streamingContent={streamingContent}
+                isRegenerating={isStreaming && msg.id === regeneratingMessageId}
+                isEditing={msg.id === editingMessageId}
+                editingContent={editingMessageContent}
+                onEditingContentChange={setEditingMessageContent}
+                onSubmitEdit={handleSubmitEditMessage}
+                onCancelEdit={cancelEditMessage}
+                onCopy={() => handleCopyMessage(msg.content)}
+                onEdit={() => startEditMessage(msg)}
+                onRegenerate={() => handleRegenerateMessage(msg.id)}
+                canEdit={!sending && !regeneratingMessageId && !editingMessageId}
+                canRegenerate={!sending && !regeneratingMessageId && !editingMessageId}
+                isLatestAssistant={msg.id === getLatestAssistantMessageId(messages)}
+              />
             ))}
             {/* 只有发送新消息时才显示新的等待气泡 */}
             {sending && !streamingMessageId && !regeneratingMessageId && (
@@ -1148,244 +958,54 @@ export function AIChatRoomPage() {
       </div>
 
       {/* 输入区域 */}
-      <div className={styles.inputArea}>
-        {/* 已选择的图片预览 */}
-        {selectedImages.length > 0 && (
-          <div className={styles.selectedImagesPreview}>
-            {selectedImages.map((imgUrl, idx) => (
-              <div key={idx} className={styles.previewImageWrapper}>
-                <img src={getImageUrl(imgUrl)} alt={`预览 ${idx + 1}`} className={styles.previewImage} />
-                <button
-                  className={styles.removeImageBtn}
-                  onClick={() => handleRemoveImage(idx)}
-                  type="button"
-                >
-                  <CloseOutlined />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className={styles.inputContainer}>
-          {/* 隐藏的文件输入 */}
-          <input
-            ref={imageInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            style={{ display: 'none' }}
-            onChange={handleImageSelect}
-          />
-          {/* 图片上传按钮 */}
-          <button
-            className={styles.actionButton}
-            onClick={() => imageInputRef.current?.click()}
-            disabled={!currentConversation || sending || imageUploading}
-            type="button"
-          >
-            {imageUploading ? <Spin size="small" /> : <PictureOutlined style={{ fontSize: 20, color: '#666' }} />}
-          </button>
-          <div className={styles.inputWrapper}>
-            <textarea
-              ref={inputRef}
-              value={inputValue}
-              onChange={e => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onPaste={handlePaste}
-              placeholder={selectedImages.length > 0 ? "添加说明（可选）... (Ctrl+Enter 换行)" : "输入消息... (Ctrl+Enter 换行)"}
-              disabled={!currentConversation || sending}
-              rows={1}
-            />
-          </div>
-          <button
-            className={styles.sendButton}
-            onClick={handleSend}
-            disabled={(!inputValue.trim() && selectedImages.length === 0) || sending || !currentConversation}
-          >
-            <SendOutlined style={{ color: '#fff', fontSize: 18 }} />
-          </button>
-        </div>
-      </div>
+      <InputArea
+        inputValue={inputValue}
+        onInputChange={setInputValue}
+        onSend={handleSend}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
+        onImageSelect={handleImageSelect}
+        onRemoveImage={handleRemoveImage}
+        selectedImages={selectedImages}
+        disabled={!currentConversation}
+        sending={sending}
+        imageUploading={imageUploading}
+        inputRef={inputRef}
+      />
 
       {/* 编辑角色弹窗 */}
-      <Modal title="编辑角色" open={editModalVisible} onCancel={() => setEditModalVisible(false)} footer={null} width={600}>
-        <p style={{ color: '#666', marginBottom: 16 }}>编辑角色的信息和设置。</p>
-        <Form form={form} layout="vertical" onFinish={handleEditSubmit}>
-          <Form.Item name="name" label="角色名称" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-
-          {/* 图片上传区域 */}
-          <div className={styles.uploadSection}>
-            <div className={styles.uploadItem}>
-              <div className={styles.uploadLabel}>角色头像</div>
-              <Upload
-                accept="image/*"
-                showUploadList={false}
-                customRequest={handleAvatarUpload}
-              >
-                <div className={styles.uploadBox}>
-                  {avatarUrl ? (
-                    <Avatar size={80} src={getImageUrl(avatarUrl)} />
-                  ) : (
-                    <div className={styles.uploadPlaceholder}>
-                      {avatarUploading ? <Spin size="small" /> : <UploadOutlined />}
-                      <span>上传头像</span>
-                    </div>
-                  )}
-                </div>
-              </Upload>
-            </div>
-
-            <div className={styles.uploadItem}>
-              <div className={styles.uploadLabel}>用户头像</div>
-              <Upload
-                accept="image/*"
-                showUploadList={false}
-                customRequest={handleUserAvatarUpload}
-              >
-                <div className={styles.uploadBox}>
-                  {userAvatarUrl ? (
-                    <Avatar size={80} src={getImageUrl(userAvatarUrl)} />
-                  ) : (
-                    <div className={styles.uploadPlaceholder}>
-                      {userAvatarUploading ? <Spin size="small" /> : <UploadOutlined />}
-                      <span>上传头像</span>
-                    </div>
-                  )}
-                </div>
-              </Upload>
-              <div className={styles.uploadHint}>聊天时显示的你的头像</div>
-            </div>
-
-            <div className={styles.uploadItem}>
-              <div className={styles.uploadLabel}>聊天背景</div>
-              <Upload
-                accept="image/*"
-                showUploadList={false}
-                customRequest={handleBackgroundUpload}
-              >
-                <div className={styles.uploadBoxWide}>
-                  {backgroundUrl ? (
-                    <img src={getImageUrl(backgroundUrl)} alt="背景" className={styles.backgroundPreview} />
-                  ) : (
-                    <div className={styles.uploadPlaceholder}>
-                      {backgroundUploading ? <Spin size="small" /> : <UploadOutlined />}
-                      <span>上传背景图片</span>
-                    </div>
-                  )}
-                </div>
-              </Upload>
-            </div>
-          </div>
-
-          <Form.Item name="prompt" label="角色提示词" rules={[{ required: true }]}>
-            <Input.TextArea rows={4} />
-          </Form.Item>
-
-          <Form.Item name="modelName" label="AI 模型" initialValue="deepseek-chat">
-            <Select>
-              <Select.Option value="deepseek-chat">DeepSeek</Select.Option>
-              <Select.Option value="claude-opus-4-5-thinking">Claude</Select.Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item name="bubbleOpacity" label="气泡透明度">
-            <Slider min={0} max={100} marks={{ 0: '透明', 50: '半透明', 100: '不透明' }} />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" block>保存</Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+      <EditCharacterModal
+        visible={editModalVisible}
+        onClose={() => setEditModalVisible(false)}
+        form={form}
+        onSubmit={handleEditSubmit}
+        avatarUrl={avatarUrl}
+        avatarUploading={avatarUploading}
+        onAvatarUpload={handleAvatarUpload}
+        userAvatarUrl={userAvatarUrl}
+        userAvatarUploading={userAvatarUploading}
+        onUserAvatarUpload={handleUserAvatarUpload}
+        backgroundUrl={backgroundUrl}
+        backgroundUploading={backgroundUploading}
+        onBackgroundUpload={handleBackgroundUpload}
+      />
 
       {/* 历史对话抽屉 */}
-      <Drawer
-        title="历史对话"
-        placement="left"
+      <HistoryDrawer
+        visible={historyDrawerVisible}
         onClose={() => setHistoryDrawerVisible(false)}
-        open={historyDrawerVisible}
-        width={320}
-        className={styles.historyDrawer}
-      >
-        <div className={styles.historyHeader}>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleNewConversation} block>
-            新建对话
-          </Button>
-        </div>
-        <div className={styles.historyList}>
-          {conversations.length === 0 ? (
-            <div className={styles.emptyHistory}>
-              <p>暂无历史对话</p>
-            </div>
-          ) : (
-            conversations.map(conv => (
-              <div
-                key={conv.id}
-                className={`${styles.historyItem} ${currentConversation?.id === conv.id ? styles.active : ''}`}
-                onClick={() => editingConvId !== conv.id && handleSwitchConversation(conv)}
-              >
-                <div className={styles.historyItemContent}>
-                  {editingConvId === conv.id ? (
-                    <div className={styles.editTitleWrapper} onClick={e => e.stopPropagation()}>
-                      <Input
-                        size="small"
-                        value={editingTitle}
-                        onChange={e => setEditingTitle(e.target.value)}
-                        onPressEnter={() => handleSaveTitle(conv.id)}
-                        onBlur={() => handleSaveTitle(conv.id)}
-                        autoFocus
-                        className={styles.editTitleInput}
-                      />
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<CheckOutlined />}
-                        onClick={() => handleSaveTitle(conv.id)}
-                        className={styles.editTitleBtn}
-                      />
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<CloseOutlined />}
-                        onClick={handleCancelEdit}
-                        className={styles.editTitleBtn}
-                      />
-                    </div>
-                  ) : (
-                    <>
-                      <div className={styles.historyItemTitle}>{conv.title || '新对话'}</div>
-                      <div className={styles.historyItemMeta}>
-                        <span className={styles.historyItemTime}>{formatConversationTime(conv.updatedAt)}</span>
-                        {conv._count && <span className={styles.historyItemCount}>{conv._count.messages} 条消息</span>}
-                      </div>
-                    </>
-                  )}
-                </div>
-                {editingConvId !== conv.id && (
-                  <div className={styles.historyItemActions}>
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<EditOutlined />}
-                      onClick={(e) => handleStartEditTitle(conv, e)}
-                      className={styles.historyItemEdit}
-                    />
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<DeleteOutlined />}
-                      onClick={(e) => handleDeleteConversation(conv.id, e)}
-                      className={styles.historyItemDelete}
-                      danger
-                    />
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      </Drawer>
+        conversations={conversations}
+        currentConversationId={currentConversation?.id}
+        onNewConversation={handleNewConversation}
+        onSwitchConversation={handleSwitchConversation}
+        onDeleteConversation={handleDeleteConversation}
+        editingConvId={editingConvId}
+        editingTitle={editingTitle}
+        onStartEditTitle={handleStartEditTitle}
+        onEditingTitleChange={setEditingTitle}
+        onSaveTitle={handleSaveTitle}
+        onCancelEdit={handleCancelEdit}
+      />
     </div>
   )
 }
