@@ -144,6 +144,7 @@
 .messageTime {
   font-size: 11px;
   color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 .copyButton {
@@ -155,6 +156,7 @@
   font-size: 12px;
   border-radius: 4px;
   transition: all 0.2s;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
 }
 
 .copyButton:hover {
@@ -171,6 +173,7 @@
   font-size: 12px;
   border-radius: 4px;
   transition: all 0.2s;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
 }
 
 .regenerateButton:hover {
@@ -188,6 +191,7 @@
   font-size: 12px;
   border-radius: 4px;
   transition: all 0.2s;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
 }
 
 .editMessageButton:hover {
