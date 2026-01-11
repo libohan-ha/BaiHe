@@ -25,61 +25,10 @@ import {
   updateAICharacter,
   uploadAIChatImage,
 } from '../../services/api'
+import { getApiConfig } from '../../utils/aiConfig'
 import { useAIChatStore, useUserStore } from '../../store'
 import type { AICharacter, ChatMessage, Conversation } from '../../types'
 import styles from './AIChatRoomPage.module.css'
-
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions'
-
-// 判断模型是否是 Claude 模型
-const isClaudeModel = (modelName: string) => {
-  return modelName?.startsWith('claude')
-}
-
-/**
- * 修复本地地址问题
- * 当检测到 127.0.0.1 或 localhost 时，自动替换为当前访问的 hostname
- * 这样手机端也能正常访问代理服务
- */
-const fixLocalUrl = (url: string): string => {
-  if (!url) return url
-  
-  try {
-    const urlObj = new URL(url)
-    // 检测是否是本地地址
-    if (urlObj.hostname === '127.0.0.1' || urlObj.hostname === 'localhost') {
-      // 替换为当前页面的 hostname
-      urlObj.hostname = window.location.hostname
-      return urlObj.toString()
-    }
-    return url
-  } catch {
-    return url
-  }
-}
-
-// 获取 API 配置 - 根据角色选择的模型自动判断
-const getApiConfig = (settings: any, characterModel?: string) => {
-  // 优先根据角色模型判断使用哪个 API
-  const useClaudeApi = characterModel ? isClaudeModel(characterModel) : (settings.provider === 'claude')
-  
-  if (useClaudeApi) {
-    const baseUrl = fixLocalUrl(settings.claudeBaseUrl || 'http://127.0.0.1:8045/v1')
-    return {
-      url: `${baseUrl}/chat/completions`,
-      apiKey: settings.claudeApiKey || '',
-      model: characterModel || settings.claudeModel || 'claude-opus-4-5-thinking',
-      provider: 'claude' as const
-    }
-  }
-  
-  return {
-    url: DEEPSEEK_API_URL,
-    apiKey: settings.deepseekApiKey || settings.apiKey || '',
-    model: characterModel || settings.deepseekModel || 'deepseek-chat',
-    provider: 'deepseek' as const
-  }
-}
 
 export function AIChatRoomPage() {
   const { characterId } = useParams<{ characterId: string }>()

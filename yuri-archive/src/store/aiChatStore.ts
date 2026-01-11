@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { AICharacter, ChatMessage, Conversation } from '../types'
 
-export type AIProvider = 'deepseek' | 'claude'
+export type AIProvider = 'deepseek' | 'claude' | 'qwen' | 'gpt' | 'gemini' | 'deepseekV3'
 
 interface AISettings {
   provider: AIProvider
@@ -13,6 +13,22 @@ interface AISettings {
   claudeApiKey: string
   claudeBaseUrl: string
   claudeModel: string
+  // Qwen 设置
+  qwenApiKey: string
+  qwenBaseUrl: string
+  qwenModel: string
+  // GPT 设置
+  gptApiKey: string
+  gptBaseUrl: string
+  gptModel: string
+  // Gemini 设置
+  geminiApiKey: string
+  geminiBaseUrl: string
+  geminiModel: string
+  // DeepSeek V3 设置
+  deepseekV3ApiKey: string
+  deepseekV3BaseUrl: string
+  deepseekV3Model: string
   // 兼容旧版本
   apiKey: string
   defaultModel: string
@@ -76,6 +92,22 @@ const initialState = {
     claudeApiKey: 'sk-ace780b87a754995a3437a13518e99c9',
     claudeBaseUrl: 'http://127.0.0.1:8045/v1',
     claudeModel: 'claude-opus-4-5-thinking',
+    // Qwen 设置
+    qwenApiKey: '123456',
+    qwenBaseUrl: 'http://localhost:8317/v1',
+    qwenModel: 'qwen3-max',
+    // GPT 设置
+    gptApiKey: '123456',
+    gptBaseUrl: 'http://localhost:8317/v1',
+    gptModel: 'gpt-5.2',
+    // Gemini 设置
+    geminiApiKey: 'sk-ace780b87a754995a3437a13518e99c9',
+    geminiBaseUrl: 'http://127.0.0.1:8045/v1',
+    geminiModel: 'gemini-3-pro-high',
+    // DeepSeek V3 设置
+    deepseekV3ApiKey: '123456',
+    deepseekV3BaseUrl: 'http://localhost:8317/v1',
+    deepseekV3Model: 'deepseek-v3.2-chat',
     // 兼容旧版本
     apiKey: '',
     defaultModel: 'deepseek-chat'
