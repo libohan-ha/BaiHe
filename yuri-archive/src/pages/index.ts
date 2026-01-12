@@ -22,4 +22,6 @@ export { EditPrivateImagePage } from './EditPrivateImagePage'
 // AI聊天相关页面
 export { AIChatPage } from './AIChatPage'
 export { AIChatRoomPage } from './AIChatRoomPage'
+// 公共聊天室
+export { PublicChatPage } from './PublicChatPage'
 

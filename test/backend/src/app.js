@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const http = require('http');
 const morgan = require('morgan');
 const path = require('path');
 require('dotenv').config();
@@ -22,8 +23,15 @@ const aiChatRoutes = require('./routes/aiChat.routes');
 const privateImageRoutes = require('./routes/privateImage.routes');
 const privateImageTagRoutes = require('./routes/privateImageTag.routes');
 const privateImageCollectionRoutes = require('./routes/privateImageCollection.routes');
+// 公共聊天室相关
+const publicChatRoutes = require('./routes/publicChat.routes');
+const { initSocket } = require('./socket');
 
 const app = express();
+const server = http.createServer(app);
+
+// 初始化 Socket.io
+const io = initSocket(server);
 
 app.use(morgan('dev'));
 app.use(cors({
@@ -57,6 +65,8 @@ app.use('/api/ai-chat', aiChatRoutes);
 app.use('/api/private-images', privateImageRoutes);
 app.use('/api/private-image-tags', privateImageTagRoutes);
 app.use('/api/private-image-collections', privateImageCollectionRoutes);
+// 公共聊天室路由
+app.use('/api/public-chat', publicChatRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
@@ -71,10 +81,11 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';  // 监听所有网络接口
 
-app.listen(PORT, HOST, () => {
+server.listen(PORT, HOST, () => {
   console.log(`🚀 服务器运行在 http://${HOST}:${PORT}`);
   console.log(`📝 健康检查: http://localhost:${PORT}/api/health`);
   console.log(`🌐 局域网访问: http://<你的IP>:${PORT}`);
+  console.log(`💬 公共聊天室 WebSocket 已启用`);
 });
 
-module.exports = app;
+module.exports = { app, server, io };
