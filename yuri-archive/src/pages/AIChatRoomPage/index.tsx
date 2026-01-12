@@ -10,8 +10,6 @@ import type { UploadProps } from 'antd'
 import { Avatar, Button, Form, message, Modal, Spin } from 'antd'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useChat, useImageUpload, useConversation } from './hooks'
-import { HistoryDrawer, InputArea, EditCharacterModal, MessageBubble } from './components'
 import {
   editAndRegenerateMessage,
   formatMessageWithImages,
@@ -25,10 +23,12 @@ import {
   updateAICharacter,
   uploadAIChatImage,
 } from '../../services/api'
-import { getApiConfig } from '../../utils/aiConfig'
 import { useAIChatStore, useUserStore } from '../../store'
-import type { AICharacter, ChatMessage, Conversation } from '../../types'
+import type { AICharacter, Conversation } from '../../types'
+import { getApiConfig } from '../../utils/aiConfig'
 import styles from './AIChatRoomPage.module.css'
+import { EditCharacterModal, HistoryDrawer, InputArea, MessageBubble } from './components'
+import { useChat, useConversation, useImageUpload } from './hooks'
 
 export function AIChatRoomPage() {
   const { characterId } = useParams<{ characterId: string }>()
