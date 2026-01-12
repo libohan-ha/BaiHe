@@ -221,11 +221,11 @@ export function UserCenterPage() {
       return
     }
 
-    // 检查文件大小（限制 2MB）
-    const isLt2M = file.size / 1024 / 1024 < 2
-    if (!isLt2M) {
-      message.error('图片大小不能超过 2MB')
-      onError?.(new Error('图片大小不能超过 2MB'))
+    // 检查文件大小（限制 50MB）
+    const isLt50M = file.size / 1024 / 1024 < 50
+    if (!isLt50M) {
+      message.error('图片大小不能超过 50MB')
+      onError?.(new Error('图片大小不能超过 50MB'))
       return
     }
 
@@ -502,7 +502,7 @@ export function UserCenterPage() {
                 )}
               </Upload>
               <Text type="secondary" className={styles.uploadHint}>
-                支持 JPG、PNG 格式，大小不超过 2MB
+                支持 JPG、PNG 格式，大小不超过 50MB
               </Text>
             </div>
           </Form.Item>
