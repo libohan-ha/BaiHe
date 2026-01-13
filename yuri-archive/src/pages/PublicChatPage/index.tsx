@@ -32,7 +32,7 @@
    const [messages, setMessages] = useState<ChatMessage[]>([])
    const [inputValue, setInputValue] = useState('')
    const [connected, setConnected] = useState(false)
-   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
+  const [, setOnlineUsers] = useState<OnlineUser[]>([])
    const [onlineCount, setOnlineCount] = useState(0)
    const [loading, setLoading] = useState(true)
    const messageListRef = useRef<HTMLDivElement>(null)
@@ -234,6 +234,8 @@
                    <Avatar
                      src={msg.user.avatarUrl ? getImageUrl(msg.user.avatarUrl) : undefined}
                      className={styles.avatar}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => navigate(`/user/${msg.user?.id || msg.userId}`)}
                    >
                      {msg.user.username?.[0]?.toUpperCase()}
                    </Avatar>
@@ -253,6 +255,8 @@
                    <Avatar
                      src={currentUser?.avatarUrl ? getImageUrl(currentUser.avatarUrl) : undefined}
                      className={styles.avatar}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => navigate(`/user/${msg.userId}`)}
                    >
                      {currentUser?.username?.[0]?.toUpperCase()}
                    </Avatar>
