@@ -155,19 +155,20 @@ model ImageCollection {
 // ============ AI聊天相关模型 ============
 
 model AICharacter {
-  id              String        @id @default(cuid())
-  name            String        // 角色名称
-  avatarUrl       String?       // 角色头像
-  userAvatarUrl   String?       // 用户在此角色下显示的头像
-  prompt          String        @db.Text // 角色提示词
-  backgroundUrl   String?       // 聊天背景图片
-  modelName       String        @default("deepseek-chat") // 使用的模型名称
-  bubbleOpacity   Int           @default(85) // 消息气泡透明度 (0-100)
-  userId          String        // 创建者ID
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversations   Conversation[]
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                  String              @id @default(cuid())
+  name                String              // 角色名称
+  avatarUrl           String?             // 角色头像
+  userAvatarUrl       String?             // 用户在此角色下显示的头像
+  prompt              String              @db.Text // 角色提示词
+  backgroundUrl       String?             // 聊天背景图片
+  modelName           String              @default("deepseek-chat") // 使用的模型名称
+  bubbleOpacity       Int                 @default(85) // 消息气泡透明度 (0-100)
+  userId              String              // 创建者ID
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations       Conversation[]
+  publicChatMessages  PublicChatMessage[] // 公共聊天室中该AI的消息
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
 
   @@index([userId])
 }
@@ -246,13 +247,16 @@ model PrivateImageCollection {
 // ============ 公共聊天室相关模型 ============
 
 model PublicChatMessage {
-  id        String   @id @default(cuid())
-  content   String   @db.Text           // 消息内容
-  imageUrl  String?                     // 图片URL（可选）
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  id              String        @id @default(cuid())
+  content         String        @db.Text           // 消息内容
+  imageUrl        String?                          // 图片URL（可选）
+  userId          String?                          // 用户ID（AI消息时为空）
+  user            User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiCharacterId   String?                          // AI角色ID（用户消息时为空）
+  aiCharacter     AICharacter?  @relation(fields: [aiCharacterId], references: [id], onDelete: SetNull)
+  createdAt       DateTime      @default(now())
 
   @@index([createdAt])
   @@index([userId])
+  @@index([aiCharacterId])
 }

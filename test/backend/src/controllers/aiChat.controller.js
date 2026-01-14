@@ -1,5 +1,7 @@
 const aiChatService = require('../services/aiChat.service');
 const { success, error } = require('../utils/response');
+const fs = require('fs');
+const path = require('path');
 
 /**
  * 修复 API URL
@@ -35,6 +37,103 @@ const fixProxyUrl = (url) => {
   } catch {
     return url;
   }
+};
+
+// ============ 多模态图片处理（仅携带最新一条消息图片） ============
+
+const UPLOADS_ROOT = path.join(__dirname, '../../uploads');
+
+const IMAGE_MIME_TYPES = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+};
+
+const toDataUrlFromUpload = async (imageUrl) => {
+  if (!imageUrl || typeof imageUrl !== 'string') return null;
+
+  if (imageUrl.startsWith('data:')) return imageUrl;
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) return imageUrl;
+
+  let pathname = imageUrl;
+  try {
+    pathname = new URL(imageUrl, 'http://localhost').pathname;
+  } catch {
+    // ignore
+  }
+
+  const match = pathname.match(/^\/uploads\/([^/]+)\/([^/]+)$/);
+  if (!match) return null;
+
+  const folder = match[1];
+  const filename = match[2];
+
+  const allowedFolders = new Set(['avatars', 'covers', 'gallery', 'chat']);
+  if (!allowedFolders.has(folder)) return null;
+
+  const safeFilename = path.basename(filename);
+  if (safeFilename !== filename) return null;
+
+  const ext = path.extname(safeFilename).toLowerCase();
+  const mimeType = IMAGE_MIME_TYPES[ext];
+  if (!mimeType) return null;
+
+  const baseDir = path.resolve(UPLOADS_ROOT, folder);
+  const filePath = path.resolve(baseDir, safeFilename);
+  const relativePath = path.relative(baseDir, filePath);
+  if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) return null;
+
+  try {
+    const buffer = await fs.promises.readFile(filePath);
+    const base64 = buffer.toString('base64');
+    return `data:${mimeType};base64,${base64}`;
+  } catch {
+    console.warn('读取图片失败:', pathname);
+    return null;
+  }
+};
+
+const formatContentWithImages = async (content, images) => {
+  if (!Array.isArray(images) || images.length === 0) return content;
+
+  const parts = [];
+  const text = typeof content === 'string' ? content : String(content ?? '');
+
+  if (text.trim()) {
+    parts.push({ type: 'text', text });
+  }
+
+  for (const imageUrl of images) {
+    const dataUrl = await toDataUrlFromUpload(imageUrl);
+    if (dataUrl) {
+      parts.push({
+        type: 'image_url',
+        image_url: { url: dataUrl },
+      });
+    }
+  }
+
+  return parts.length > 0 ? parts : content;
+};
+
+const attachLatestMessageImages = async (messages) => {
+  if (!Array.isArray(messages) || messages.length === 0) return [];
+
+  const prepared = messages.map(m => ({
+    role: m.role,
+    content: m.content,
+  }));
+
+  const lastIndex = messages.length - 1;
+  const last = messages[lastIndex];
+
+  if (last?.role === 'user' && Array.isArray(last.images) && last.images.length > 0) {
+    prepared[lastIndex].content = await formatContentWithImages(last.content, last.images);
+  }
+
+  return prepared;
 };
 
 // AI API 代理 - 支持流式响应
@@ -264,6 +363,9 @@ const regenerateAssistantMessage = async (req, res, next) => {
     const fixedUrl = fixProxyUrl(apiUrl);
     console.log('重新生成AI回复:', apiUrl, '->', fixedUrl);
 
+    // 仅携带最新一条消息的图片（多模态）
+    const preparedMessages = await attachLatestMessageImages(messages);
+
     // 调用 AI API
     const response = await fetch(fixedUrl, {
       method: 'POST',
@@ -275,7 +377,7 @@ const regenerateAssistantMessage = async (req, res, next) => {
         model,
         messages: [
           { role: 'system', content: character?.prompt || '你是一个友好的AI助手。' },
-          ...messages.map(m => ({ role: m.role, content: m.content }))
+          ...preparedMessages
         ],
         stream: true
       })
@@ -352,6 +454,9 @@ const editAndRegenerateMessage = async (req, res, next) => {
     const fixedUrl = fixProxyUrl(apiUrl);
     console.log('编辑消息并重新生成AI回复:', apiUrl, '->', fixedUrl);
 
+    // 仅携带最新一条消息的图片（多模态）
+    const preparedMessages = await attachLatestMessageImages(messages);
+
     // 调用 AI API
     const response = await fetch(fixedUrl, {
       method: 'POST',
@@ -363,7 +468,7 @@ const editAndRegenerateMessage = async (req, res, next) => {
         model,
         messages: [
           { role: 'system', content: character?.prompt || '你是一个友好的AI助手。' },
-          ...messages.map(m => ({ role: m.role, content: m.content }))
+          ...preparedMessages
         ],
         stream: true
       })
