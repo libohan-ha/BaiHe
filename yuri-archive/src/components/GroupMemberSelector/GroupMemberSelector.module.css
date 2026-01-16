@@ -1,0 +1,70 @@
+.modal :global(.ant-modal-content) {
+  border-radius: 12px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 0;
+}
+
+.selectAllRow {
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 12px;
+}
+
+.characterList {
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.characterItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid #f0f0f0;
+}
+
+.characterItem:hover {
+  background-color: #faf5ff;
+  border-color: #e9d5ff;
+}
+
+.characterItem.selected {
+  background-color: #f3e8ff;
+  border-color: #c084fc;
+}
+
+.avatar {
+  flex-shrink: 0;
+}
+
+.characterInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.characterName {
+  font-weight: 500;
+  color: #1f2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.characterModel {
+  font-size: 12px;
+  color: #9ca3af;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

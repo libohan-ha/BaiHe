@@ -1393,3 +1393,130 @@ interface CheckPrivateCollectionResponse {
 export async function checkPrivateImageCollection(imageId: string): Promise<CheckPrivateCollectionResponse> {
   return request<CheckPrivateCollectionResponse>(`/api/private-image-collections/check/${imageId}`)
 }
+
+// ============ AI群聊接口 ============
+
+// 群聊对话类型
+export interface GroupConversation extends Conversation {
+  isGroupChat: boolean
+  members: GroupMember[]
+}
+
+export interface GroupMember {
+  id: string
+  conversationId: string
+  aiCharacterId: string
+  aiCharacter: AICharacter
+  order: number
+  createdAt: string
+}
+
+export interface GroupChatMessage extends ChatMessage {
+  aiCharacterId?: string
+  aiCharacter?: {
+    id: string
+    name: string
+    avatarUrl: string | null
+  }
+}
+
+// 创建群聊对话（不需要主角色ID）
+export async function createGroupConversation(
+  title: string,
+  memberIds: string[]
+): Promise<GroupConversation> {
+  return request<GroupConversation>('/api/ai-group-chat/conversations', {
+    method: 'POST',
+    body: JSON.stringify({ title, memberIds }),
+  })
+}
+
+// 获取用户的所有群聊对话列表
+export async function getGroupConversations(): Promise<GroupConversation[]> {
+  const result = await request<{ conversations: GroupConversation[] }>(
+    '/api/ai-group-chat/conversations'
+  )
+  return result.conversations
+}
+
+// 删除群聊对话
+export async function deleteGroupConversation(conversationId: string): Promise<void> {
+  await request<null>(`/api/ai-group-chat/conversations/${conversationId}`, {
+    method: 'DELETE',
+  })
+}
+
+// 更新群聊标题
+export async function updateGroupConversationTitle(conversationId: string, title: string): Promise<GroupConversation> {
+  return request<GroupConversation>(`/api/ai-group-chat/conversations/${conversationId}/title`, {
+    method: 'PATCH',
+    body: JSON.stringify({ title }),
+  })
+}
+
+// 获取群聊成员列表
+export async function getGroupMembers(conversationId: string): Promise<GroupMember[]> {
+  const result = await request<{ members: GroupMember[] }>(
+    `/api/ai-group-chat/conversations/${conversationId}/members`
+  )
+  return result.members
+}
+
+// 添加群聊成员
+export async function addGroupMember(conversationId: string, aiCharacterId: string): Promise<GroupMember> {
+  return request<GroupMember>(`/api/ai-group-chat/conversations/${conversationId}/members`, {
+    method: 'POST',
+    body: JSON.stringify({ aiCharacterId }),
+  })
+}
+
+// 移除群聊成员
+export async function removeGroupMember(conversationId: string, aiCharacterId: string): Promise<void> {
+  await request<null>(`/api/ai-group-chat/conversations/${conversationId}/members/${aiCharacterId}`, {
+    method: 'DELETE',
+  })
+}
+
+// 获取群聊消息
+export async function getGroupChatMessages(conversationId: string): Promise<GroupChatMessage[]> {
+  const result = await request<{ messages: GroupChatMessage[] }>(
+    `/api/ai-group-chat/conversations/${conversationId}/messages`
+  )
+  return result.messages
+}
+
+// 发送用户消息到群聊
+export async function sendGroupChatMessage(
+  conversationId: string,
+  content: string,
+  images?: string[]
+): Promise<GroupChatMessage> {
+  return request<GroupChatMessage>(`/api/ai-group-chat/conversations/${conversationId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ content, images }),
+  })
+}
+
+// 群聊AI回复（SSE流式）
+export async function groupChatWithAI(
+  conversationId: string,
+  apiConfigs: Record<string, { apiUrl: string; apiKey: string; model: string }>
+): Promise<Response> {
+  const token = localStorage.getItem('token')
+
+  const response = await fetch(`${BASE_URL}/api/ai-group-chat/conversations/${conversationId}/ai-reply`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ apiConfigs }),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.message || '群聊AI回复失败')
+  }
+
+  return response
+}

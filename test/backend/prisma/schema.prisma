@@ -155,37 +155,42 @@ model ImageCollection {
 // ============ AI聊天相关模型 ============
 
 model AICharacter {
-  id                  String              @id @default(cuid())
-  name                String              // 角色名称
-  avatarUrl           String?             // 角色头像
-  userAvatarUrl       String?             // 用户在此角色下显示的头像
-  prompt              String              @db.Text // 角色提示词
-  backgroundUrl       String?             // 聊天背景图片
-  modelName           String              @default("deepseek-chat") // 使用的模型名称
-  bubbleOpacity       Int                 @default(85) // 消息气泡透明度 (0-100)
-  userId              String              // 创建者ID
-  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversations       Conversation[]
-  publicChatMessages  PublicChatMessage[] // 公共聊天室中该AI的消息
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
+  id                   String               @id @default(cuid())
+  name                 String               // 角色名称
+  avatarUrl            String?              // 角色头像
+  userAvatarUrl        String?              // 用户在此角色下显示的头像
+  prompt               String               @db.Text // 角色提示词
+  backgroundUrl        String?              // 聊天背景图片
+  modelName            String               @default("deepseek-chat") // 使用的模型名称
+  bubbleOpacity        Int                  @default(85) // 消息气泡透明度 (0-100)
+  userId               String               // 创建者ID
+  user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations        Conversation[]
+  publicChatMessages   PublicChatMessage[]  // 公共聊天室中该AI的消息
+  conversationMembers  ConversationMember[] // 参与的群聊
+  chatMessages         ChatMessage[]        // 群聊中发送的消息
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
 
   @@index([userId])
 }
 
 model Conversation {
-  id            String        @id @default(cuid())
-  title         String        @default("新对话") // 对话标题
-  characterId   String
-  character     AICharacter   @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  id            String               @id @default(cuid())
+  title         String               @default("新对话") // 对话标题
+  characterId   String?              // 一对一聊天时的AI角色ID（群聊时为空）
+  character     AICharacter?         @relation(fields: [characterId], references: [id], onDelete: Cascade)
   userId        String
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isGroupChat   Boolean              @default(false) // 是否为群聊
   messages      ChatMessage[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  members       ConversationMember[] // 群聊成员
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
 
   @@index([characterId])
   @@index([userId])
+  @@index([isGroupChat])
 }
 
 model ChatMessage {
@@ -193,11 +198,14 @@ model ChatMessage {
   content        String       @db.Text // 消息内容
   role           String       // 'user' 或 'assistant'
   images         String[]     // 用户上传的图片URL数组
+  aiCharacterId  String?      // AI角色ID（群聊时标识是哪个AI的回复）
+  aiCharacter    AICharacter? @relation(fields: [aiCharacterId], references: [id], onDelete: SetNull)
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   createdAt      DateTime     @default(now())
 
   @@index([conversationId])
+  @@index([aiCharacterId])
 }
 
 // ============ 隐私相册相关模型 ============
@@ -258,5 +266,21 @@ model PublicChatMessage {
 
   @@index([createdAt])
   @@index([userId])
+  @@index([aiCharacterId])
+}
+
+// ============ 群聊成员关联模型 ============
+
+model ConversationMember {
+  id              String       @id @default(cuid())
+  conversationId  String
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  aiCharacterId   String
+  aiCharacter     AICharacter  @relation(fields: [aiCharacterId], references: [id], onDelete: Cascade)
+  order           Int          @default(0) // 成员顺序（用于回复排序）
+  createdAt       DateTime     @default(now())
+
+  @@unique([conversationId, aiCharacterId]) // 同一对话不能重复添加同一AI
+  @@index([conversationId])
   @@index([aiCharacterId])
 }

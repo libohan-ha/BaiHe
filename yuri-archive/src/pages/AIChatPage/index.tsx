@@ -1,4 +1,4 @@
-import { PlusOutlined, RobotOutlined, SettingOutlined, UploadOutlined } from '@ant-design/icons'
+import { PlusOutlined, RobotOutlined, SettingOutlined, TeamOutlined, UploadOutlined } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
 import { Avatar, Button, Form, Input, Modal, Radio, Select, Slider, Spin, Typography, Upload, message } from 'antd'
 import { useEffect, useState } from 'react'
@@ -275,6 +275,9 @@ export function AIChatPage() {
           <p className={styles.subtitle}>创建和管理你的AI聊天角色</p>
         </div>
         <div className={styles.headerButtons}>
+          <Button icon={<TeamOutlined />} onClick={() => navigate('/ai-group-chat')} className={styles.groupChatButton}>
+            群聊
+          </Button>
           <Button icon={<SettingOutlined />} onClick={openSettings} className={styles.settingsButton}>
             API设置
           </Button>

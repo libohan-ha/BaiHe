@@ -25,6 +25,8 @@ const privateImageTagRoutes = require('./routes/privateImageTag.routes');
 const privateImageCollectionRoutes = require('./routes/privateImageCollection.routes');
 // 公共聊天室相关
 const publicChatRoutes = require('./routes/publicChat.routes');
+// AI群聊相关
+const aiGroupChatRoutes = require('./routes/aiGroupChat.routes');
 const { initSocket } = require('./socket');
 
 const app = express();
@@ -67,6 +69,8 @@ app.use('/api/private-image-tags', privateImageTagRoutes);
 app.use('/api/private-image-collections', privateImageCollectionRoutes);
 // 公共聊天室路由
 app.use('/api/public-chat', publicChatRoutes);
+// AI群聊路由
+app.use('/api/ai-group-chat', aiGroupChatRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
