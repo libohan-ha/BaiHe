@@ -21,6 +21,9 @@ interface AISettings {
   deepseekV3ApiKey: string
   deepseekV3BaseUrl: string
   deepseekV3Model: string
+  qwenCoderApiKey: string
+  qwenCoderBaseUrl: string
+  qwenCoderModel: string
   apiKey: string
   defaultModel: string
 }
@@ -68,6 +71,13 @@ export const isDeepseekV3Model = (modelName: string): boolean => {
 }
 
 /**
+ * 判断模型是否是 Qwen Coder 模型
+ */
+export const isQwenCoderModel = (modelName: string): boolean => {
+  return modelName?.startsWith('qwen3-coder')
+}
+
+/**
  * 修复本地地址问题
  * 当检测到 127.0.0.1 或 localhost 时，自动替换为当前访问的 hostname
  * 这样手机端也能正常访问代理服务
@@ -101,6 +111,17 @@ export const getApiConfig = (settings: AISettings, characterModel?: string): Api
   const useGptApi = characterModel ? isGptModel(characterModel) : (settings.provider === 'gpt')
   const useGeminiApi = characterModel ? isGeminiModel(characterModel) : (settings.provider === 'gemini')
   const useDeepseekV3Api = characterModel ? isDeepseekV3Model(characterModel) : (settings.provider === 'deepseekV3')
+  const useQwenCoderApi = characterModel ? isQwenCoderModel(characterModel) : (settings.provider === 'qwenCoder')
+
+  if (useQwenCoderApi) {
+    const baseUrl = fixLocalUrl(settings.qwenCoderBaseUrl || 'http://118.178.253.190:8317/v1')
+    return {
+      url: `${baseUrl}/chat/completions`,
+      apiKey: settings.qwenCoderApiKey || '',
+      model: characterModel || settings.qwenCoderModel || 'qwen3-coder-plus',
+      provider: 'qwenCoder'
+    }
+  }
 
   if (useDeepseekV3Api) {
     const baseUrl = fixLocalUrl(settings.deepseekV3BaseUrl || 'http://localhost:8317/v1')

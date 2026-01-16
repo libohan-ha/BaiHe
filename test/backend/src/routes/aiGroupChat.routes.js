@@ -4,6 +4,7 @@ const {
   getGroupConversations,
   deleteGroupConversation,
   updateGroupConversationTitle,
+  updateGroupConversationBackground,
   getGroupMembers,
   addGroupMember,
   removeGroupMember,
@@ -30,6 +31,9 @@ router.delete('/conversations/:conversationId', deleteGroupConversation);
 
 // 更新群聊标题
 router.patch('/conversations/:conversationId/title', updateGroupConversationTitle);
+
+// 更新群聊背景图片
+router.patch('/conversations/:conversationId/background', updateGroupConversationBackground);
 
 // ============ 群聊成员管理 ============
 

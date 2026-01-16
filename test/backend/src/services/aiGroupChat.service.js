@@ -93,7 +93,7 @@ const getGroupMembers = async (conversationId, userId) => {
     throw createError(404, '群聊对话不存在');
   }
 
-  return { members: conversation.members };
+  return { members: conversation.members, backgroundUrl: conversation.backgroundUrl };
 };
 
 /**
@@ -224,6 +224,26 @@ const updateGroupConversationTitle = async (conversationId, title, userId) => {
   const updated = await prisma.conversation.update({
     where: { id: conversationId },
     data: { title }
+  });
+
+  return updated;
+};
+
+/**
+ * 更新群聊背景图片
+ */
+const updateGroupConversationBackground = async (conversationId, backgroundUrl, userId) => {
+  const conversation = await prisma.conversation.findFirst({
+    where: { id: conversationId, userId, isGroupChat: true }
+  });
+
+  if (!conversation) {
+    throw createError(404, '群聊对话不存在');
+  }
+
+  const updated = await prisma.conversation.update({
+    where: { id: conversationId },
+    data: { backgroundUrl }
   });
 
   return updated;
@@ -397,6 +417,7 @@ module.exports = {
   removeGroupMember,
   deleteGroupConversation,
   updateGroupConversationTitle,
+  updateGroupConversationBackground,
   getGroupMessages,
   sendGroupMessage,
   saveGroupAIMessage,

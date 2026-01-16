@@ -1,5 +1,6 @@
-import { ArrowLeftOutlined, PlusOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons'
-import { Avatar, Button, message, Spin, Tooltip } from 'antd'
+import { ArrowLeftOutlined, PictureOutlined, PlusOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons'
+import { Avatar, Button, message, Modal, Spin, Tooltip, Upload } from 'antd'
+import type { UploadProps } from 'antd'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import GroupMemberSelector from '../../components/GroupMemberSelector'
@@ -10,6 +11,8 @@ import {
   getImageUrl,
   groupChatWithAI,
   sendGroupChatMessage,
+  updateGroupConversationBackground,
+  uploadAIChatImage,
   type GroupChatMessage,
   type GroupMember,
 } from '../../services/api'
@@ -30,12 +33,23 @@ export function AIGroupChatPage() {
   const [sending, setSending] = useState(false)
   const [memberSelectorOpen, setMemberSelectorOpen] = useState(false)
 
+  // 背景图片状态
+  const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null)
+  const [backgroundUploading, setBackgroundUploading] = useState(false)
+
   // 流式响应状态
   const [streamingAIs, setStreamingAIs] = useState<Map<string, { content: string; name: string; avatarUrl: string | null }>>(new Map())
   const [waitingAIs, setWaitingAIs] = useState<Set<string>>(new Set())
 
   const chatAreaRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    if (loading) return
+    if (window.innerWidth >= 768) {
+      setTimeout(() => inputRef.current?.focus(), 100)
+    }
+  }, [loading])
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -61,9 +75,10 @@ export function AIGroupChatPage() {
   const loadConversation = async () => {
     setLoading(true)
     try {
-      // 获取群聊成员
-      const memberList = await getGroupMembers(conversationId!)
+      // 获取群聊成员和背景
+      const { members: memberList, backgroundUrl: bgUrl } = await getGroupMembers(conversationId!)
       setMembers(memberList)
+      setBackgroundUrl(bgUrl)
 
       // 获取群聊消息
       const msgList = await getGroupChatMessages(conversationId!)
@@ -74,6 +89,41 @@ export function AIGroupChatPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // 上传背景图片
+  const handleBackgroundUpload: UploadProps['customRequest'] = async (options) => {
+    const { file, onSuccess, onError } = options
+    setBackgroundUploading(true)
+    try {
+      const result = await uploadAIChatImage(file as File, 'background')
+      await updateGroupConversationBackground(conversationId!, result.url)
+      setBackgroundUrl(result.url)
+      onSuccess?.(result)
+      message.success('背景图片设置成功')
+    } catch (err) {
+      onError?.(err as Error)
+      message.error('上传失败')
+    } finally {
+      setBackgroundUploading(false)
+    }
+  }
+
+  // 清除背景图片
+  const handleClearBackground = async () => {
+    Modal.confirm({
+      title: '确认清除',
+      content: '确定要清除聊天背景吗？',
+      onOk: async () => {
+        try {
+          await updateGroupConversationBackground(conversationId!, null)
+          setBackgroundUrl(null)
+          message.success('背景已清除')
+        } catch (err) {
+          message.error(err instanceof Error ? err.message : '清除失败')
+        }
+      }
+    })
   }
 
   const handleSend = async () => {
@@ -160,52 +210,66 @@ export function AIGroupChatPage() {
       setSending(false)
       setWaitingAIs(new Set())
       setStreamingAIs(new Map())
+
+      if (window.innerWidth >= 768) {
+        setTimeout(() => inputRef.current?.focus(), 100)
+      }
     }
   }
 
-  const handleSSEEvent = (data: any) => {
-    if (data.aiCharacterId) {
-      const aiId = data.aiCharacterId
+  const handleSSEEvent = (data: unknown) => {
+    if (!data || typeof data !== 'object') return
+    const obj = data as Record<string, unknown>
 
-      if (data.error) {
-        // AI错误
-        setWaitingAIs(prev => {
-          const next = new Set(prev)
-          next.delete(aiId)
-          return next
+    const aiId = typeof obj.aiCharacterId === 'string' ? obj.aiCharacterId : null
+    if (!aiId) return
+
+    const aiName = typeof obj.aiName === 'string' ? obj.aiName : ''
+    const errorMsg = typeof obj.error === 'string' ? obj.error : null
+    const content = typeof obj.content === 'string' ? obj.content : null
+    const avatarUrl = typeof obj.avatarUrl === 'string' ? obj.avatarUrl : (obj.avatarUrl === null ? null : undefined)
+
+    if (errorMsg) {
+      setWaitingAIs(prev => {
+        const next = new Set(prev)
+        next.delete(aiId)
+        return next
+      })
+      message.error(aiName ? `${aiName}: ${errorMsg}` : errorMsg)
+      return
+    }
+
+    if (content !== null) {
+      setWaitingAIs(prev => {
+        const next = new Set(prev)
+        next.delete(aiId)
+        return next
+      })
+      setStreamingAIs(prev => {
+        const next = new Map(prev)
+        const existing = next.get(aiId)
+        next.set(aiId, {
+          content: (existing?.content || '') + content,
+          name: existing?.name || aiName,
+          avatarUrl: existing?.avatarUrl ?? (avatarUrl === undefined ? null : avatarUrl),
         })
-        message.error(`${data.aiName}: ${data.error}`)
-      } else if (data.content !== undefined) {
-        // 流式内容
-        setWaitingAIs(prev => {
-          const next = new Set(prev)
-          next.delete(aiId)
-          return next
-        })
-        setStreamingAIs(prev => {
-          const next = new Map(prev)
-          const existing = next.get(aiId)
+        return next
+      })
+      return
+    }
+
+    if (aiName && avatarUrl !== undefined) {
+      setStreamingAIs(prev => {
+        const next = new Map(prev)
+        if (!next.has(aiId)) {
           next.set(aiId, {
-            content: (existing?.content || '') + data.content,
-            name: existing?.name || data.aiName || '',
-            avatarUrl: existing?.avatarUrl || data.avatarUrl || null,
+            content: '',
+            name: aiName,
+            avatarUrl: avatarUrl,
           })
-          return next
-        })
-      } else if (data.aiName && data.avatarUrl !== undefined) {
-        // AI开始事件
-        setStreamingAIs(prev => {
-          const next = new Map(prev)
-          if (!next.has(aiId)) {
-            next.set(aiId, {
-              content: '',
-              name: data.aiName,
-              avatarUrl: data.avatarUrl,
-            })
-          }
-          return next
-        })
-      }
+        }
+        return next
+      })
     }
   }
 
@@ -268,6 +332,32 @@ export function AIGroupChatPage() {
               <span className={styles.moreMembers}>+{members.length - 5}</span>
             )}
           </div>
+          <Upload
+            accept="image/*"
+            showUploadList={false}
+            customRequest={handleBackgroundUpload}
+          >
+            <Tooltip title={backgroundUrl ? '更换背景' : '设置背景'}>
+              <Button
+                type="text"
+                icon={<PictureOutlined />}
+                loading={backgroundUploading}
+                className={styles.bgButton}
+              />
+            </Tooltip>
+          </Upload>
+          {backgroundUrl && (
+            <Tooltip title="清除背景">
+              <Button
+                type="text"
+                danger
+                onClick={handleClearBackground}
+                className={styles.clearBgButton}
+              >
+                ✕
+              </Button>
+            </Tooltip>
+          )}
           <Button
             type="text"
             icon={<PlusOutlined />}
@@ -280,7 +370,11 @@ export function AIGroupChatPage() {
       </div>
 
       {/* 聊天区域 */}
-      <div className={styles.chatArea} ref={chatAreaRef}>
+      <div
+        className={styles.chatArea}
+        ref={chatAreaRef}
+        style={backgroundUrl ? { backgroundImage: `url(${getImageUrl(backgroundUrl)})` } : {}}
+      >
         {messages.length === 0 && !sending ? (
           <div className={styles.emptyChat}>
             <TeamOutlined className={styles.emptyIcon} />
@@ -377,25 +471,27 @@ export function AIGroupChatPage() {
 
       {/* 输入区域 */}
       <div className={styles.inputArea}>
-        <textarea
-          ref={inputRef}
-          value={inputValue}
-          onChange={e => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={members.length === 0 ? '请先添加AI成员' : '输入消息...'}
-          disabled={sending || members.length === 0}
-          className={styles.input}
-          rows={1}
-        />
-        <Button
-          type="primary"
-          onClick={handleSend}
-          disabled={!inputValue.trim() || sending || members.length === 0}
-          loading={sending}
-          className={styles.sendButton}
-        >
-          发送
-        </Button>
+        <div className={styles.inputContainer}>
+          <textarea
+            ref={inputRef}
+            value={inputValue}
+            onChange={e => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={members.length === 0 ? '请先添加AI成员' : '输入消息...'}
+            disabled={sending || members.length === 0}
+            className={styles.input}
+            rows={1}
+          />
+          <Button
+            type="primary"
+            onClick={handleSend}
+            disabled={!inputValue.trim() || sending || members.length === 0}
+            loading={sending}
+            className={styles.sendButton}
+          >
+            发送
+          </Button>
+        </div>
       </div>
 
       {/* 成员选择弹窗 */}

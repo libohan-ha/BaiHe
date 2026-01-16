@@ -1399,6 +1399,7 @@ export async function checkPrivateImageCollection(imageId: string): Promise<Chec
 // 群聊对话类型
 export interface GroupConversation extends Conversation {
   isGroupChat: boolean
+  backgroundUrl?: string | null
   members: GroupMember[]
 }
 
@@ -1454,12 +1455,20 @@ export async function updateGroupConversationTitle(conversationId: string, title
   })
 }
 
+// 更新群聊背景图片
+export async function updateGroupConversationBackground(conversationId: string, backgroundUrl: string | null): Promise<GroupConversation> {
+  return request<GroupConversation>(`/api/ai-group-chat/conversations/${conversationId}/background`, {
+    method: 'PATCH',
+    body: JSON.stringify({ backgroundUrl }),
+  })
+}
+
 // 获取群聊成员列表
-export async function getGroupMembers(conversationId: string): Promise<GroupMember[]> {
-  const result = await request<{ members: GroupMember[] }>(
+export async function getGroupMembers(conversationId: string): Promise<{ members: GroupMember[], backgroundUrl: string | null }> {
+  const result = await request<{ members: GroupMember[], backgroundUrl: string | null }>(
     `/api/ai-group-chat/conversations/${conversationId}/members`
   )
-  return result.members
+  return result
 }
 
 // 添加群聊成员

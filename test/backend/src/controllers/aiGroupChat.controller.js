@@ -88,6 +88,20 @@ const updateGroupConversationTitle = async (req, res, next) => {
   }
 };
 
+/**
+ * 更新群聊背景图片
+ */
+const updateGroupConversationBackground = async (req, res, next) => {
+  try {
+    const { conversationId } = req.params;
+    const { backgroundUrl } = req.body;
+    const result = await aiGroupChatService.updateGroupConversationBackground(conversationId, backgroundUrl || null, req.user.id);
+    res.json(success(result, '更新成功'));
+  } catch (err) {
+    next(err);
+  }
+};
+
 const getGroupMembers = async (req, res, next) => {
   try {
     const { conversationId } = req.params;
@@ -340,6 +354,7 @@ module.exports = {
   getGroupConversations,
   deleteGroupConversation,
   updateGroupConversationTitle,
+  updateGroupConversationBackground,
   getGroupMembers,
   addGroupMember,
   removeGroupMember,

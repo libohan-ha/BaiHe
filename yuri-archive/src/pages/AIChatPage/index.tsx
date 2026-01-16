@@ -192,6 +192,9 @@ export function AIChatPage() {
     deepseekV3ApiKey?: string
     deepseekV3BaseUrl?: string
     deepseekV3Model?: string
+    qwenCoderApiKey?: string
+    qwenCoderBaseUrl?: string
+    qwenCoderModel?: string
   }) => {
     // 保留未更改的字段值，避免条件渲染导致字段被覆盖
     const newDeepseekApiKey = values.deepseekApiKey !== undefined ? values.deepseekApiKey : settings.deepseekApiKey
@@ -210,6 +213,9 @@ export function AIChatPage() {
     const newDeepseekV3ApiKey = values.deepseekV3ApiKey !== undefined ? values.deepseekV3ApiKey : settings.deepseekV3ApiKey
     const newDeepseekV3BaseUrl = values.deepseekV3BaseUrl !== undefined ? values.deepseekV3BaseUrl : settings.deepseekV3BaseUrl
     const newDeepseekV3Model = values.deepseekV3Model !== undefined ? values.deepseekV3Model : settings.deepseekV3Model
+    const newQwenCoderApiKey = values.qwenCoderApiKey !== undefined ? values.qwenCoderApiKey : settings.qwenCoderApiKey
+    const newQwenCoderBaseUrl = values.qwenCoderBaseUrl !== undefined ? values.qwenCoderBaseUrl : settings.qwenCoderBaseUrl
+    const newQwenCoderModel = values.qwenCoderModel !== undefined ? values.qwenCoderModel : settings.qwenCoderModel
 
     setSettings({
       provider: values.provider,
@@ -229,8 +235,11 @@ export function AIChatPage() {
       deepseekV3ApiKey: newDeepseekV3ApiKey,
       deepseekV3BaseUrl: newDeepseekV3BaseUrl,
       deepseekV3Model: newDeepseekV3Model,
+      qwenCoderApiKey: newQwenCoderApiKey,
+      qwenCoderBaseUrl: newQwenCoderBaseUrl,
+      qwenCoderModel: newQwenCoderModel,
       // 兼容旧版本
-      apiKey: values.provider === 'deepseek' ? newDeepseekApiKey : (values.provider === 'claude' ? newClaudeApiKey : (values.provider === 'qwen' ? newQwenApiKey : (values.provider === 'gpt' ? newGptApiKey : (values.provider === 'gemini' ? newGeminiApiKey : newDeepseekV3ApiKey))))
+      apiKey: values.provider === 'deepseek' ? newDeepseekApiKey : (values.provider === 'claude' ? newClaudeApiKey : (values.provider === 'qwen' ? newQwenApiKey : (values.provider === 'gpt' ? newGptApiKey : (values.provider === 'gemini' ? newGeminiApiKey : (values.provider === 'qwenCoder' ? newQwenCoderApiKey : newDeepseekV3ApiKey)))))
     })
     message.success('设置已保存')
     setSettingsVisible(false)
@@ -254,7 +263,10 @@ export function AIChatPage() {
       geminiModel: settings.geminiModel || 'gemini-3-pro-high',
       deepseekV3ApiKey: settings.deepseekV3ApiKey || '',
       deepseekV3BaseUrl: settings.deepseekV3BaseUrl || 'http://localhost:8317/v1',
-      deepseekV3Model: settings.deepseekV3Model || 'deepseek-v3.2-chat'
+      deepseekV3Model: settings.deepseekV3Model || 'deepseek-v3.2-chat',
+      qwenCoderApiKey: settings.qwenCoderApiKey || '',
+      qwenCoderBaseUrl: settings.qwenCoderBaseUrl || 'http://118.178.253.190:8317/v1',
+      qwenCoderModel: settings.qwenCoderModel || 'qwen3-coder-plus'
     })
     setSettingsVisible(true)
   }
@@ -412,6 +424,7 @@ export function AIChatPage() {
               <Select.Option value="gpt-5.2">GPT</Select.Option>
               <Select.Option value="gemini-3-pro-high">Gemini</Select.Option>
               <Select.Option value="deepseek-v3.2-chat">DeepSeek V3</Select.Option>
+              <Select.Option value="qwen3-coder-plus">Qwen Coder</Select.Option>
             </Select>
           </Form.Item>
 
@@ -444,6 +457,7 @@ export function AIChatPage() {
               <Radio.Button value="gpt">GPT</Radio.Button>
               <Radio.Button value="gemini">Gemini</Radio.Button>
               <Radio.Button value="deepseekV3">DeepSeek V3</Radio.Button>
+              <Radio.Button value="qwenCoder">Qwen Coder</Radio.Button>
             </Radio.Group>
           </Form.Item>
 
@@ -573,27 +587,55 @@ export function AIChatPage() {
                 )
               }
               // DeepSeek V3
+              if (provider === 'deepseekV3') {
+                return (
+                  <>
+                    <Form.Item
+                      name="deepseekV3BaseUrl"
+                      label="DeepSeek V3 API 地址"
+                      extra="本地代理服务器地址"
+                    >
+                      <Input placeholder="http://localhost:8317/v1" />
+                    </Form.Item>
+                    <Form.Item
+                      name="deepseekV3ApiKey"
+                      label="DeepSeek V3 API Key"
+                    >
+                      <Input.Password placeholder="sk-..." />
+                    </Form.Item>
+                    <Form.Item
+                      name="deepseekV3Model"
+                      label="DeepSeek V3 模型"
+                    >
+                      <Select>
+                        <Select.Option value="deepseek-v3.2-chat">deepseek-v3.2-chat</Select.Option>
+                      </Select>
+                    </Form.Item>
+                  </>
+                )
+              }
+              // Qwen Coder
               return (
                 <>
                   <Form.Item
-                    name="deepseekV3BaseUrl"
-                    label="DeepSeek V3 API 地址"
-                    extra="本地代理服务器地址"
+                    name="qwenCoderBaseUrl"
+                    label="Qwen Coder API 地址"
+                    extra="远程代理服务器地址"
                   >
-                    <Input placeholder="http://localhost:8317/v1" />
+                    <Input placeholder="http://118.178.253.190:8317/v1" />
                   </Form.Item>
                   <Form.Item
-                    name="deepseekV3ApiKey"
-                    label="DeepSeek V3 API Key"
+                    name="qwenCoderApiKey"
+                    label="Qwen Coder API Key"
                   >
                     <Input.Password placeholder="sk-..." />
                   </Form.Item>
                   <Form.Item
-                    name="deepseekV3Model"
-                    label="DeepSeek V3 模型"
+                    name="qwenCoderModel"
+                    label="Qwen Coder 模型"
                   >
                     <Select>
-                      <Select.Option value="deepseek-v3.2-chat">deepseek-v3.2-chat</Select.Option>
+                      <Select.Option value="qwen3-coder-plus">qwen3-coder-plus</Select.Option>
                     </Select>
                   </Form.Item>
                 </>
