@@ -1,5 +1,5 @@
-import { ArrowLeftOutlined, PictureOutlined, PlusOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons'
-import { Avatar, Button, message, Modal, Spin, Tooltip, Upload } from 'antd'
+import { ArrowLeftOutlined, PictureOutlined, PlusOutlined, SettingOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons'
+import { Avatar, Button, message, Modal, Slider, Spin, Tooltip, Upload } from 'antd'
 import type { UploadProps } from 'antd'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -12,6 +12,7 @@ import {
   groupChatWithAI,
   sendGroupChatMessage,
   updateGroupConversationBackground,
+  updateGroupConversationBubbleOpacity,
   uploadAIChatImage,
   type GroupChatMessage,
   type GroupMember,
@@ -36,6 +37,10 @@ export function AIGroupChatPage() {
   // 背景图片状态
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null)
   const [backgroundUploading, setBackgroundUploading] = useState(false)
+
+  // 气泡透明度状态
+  const [bubbleOpacity, setBubbleOpacity] = useState(85)
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false)
 
   // 流式响应状态
   const [streamingAIs, setStreamingAIs] = useState<Map<string, { content: string; name: string; avatarUrl: string | null }>>(new Map())
@@ -76,9 +81,10 @@ export function AIGroupChatPage() {
     setLoading(true)
     try {
       // 获取群聊成员和背景
-      const { members: memberList, backgroundUrl: bgUrl } = await getGroupMembers(conversationId!)
+      const { members: memberList, backgroundUrl: bgUrl, bubbleOpacity: opacity } = await getGroupMembers(conversationId!)
       setMembers(memberList)
       setBackgroundUrl(bgUrl)
+      setBubbleOpacity(opacity ?? 85)
 
       // 获取群聊消息
       const msgList = await getGroupChatMessages(conversationId!)
@@ -124,6 +130,26 @@ export function AIGroupChatPage() {
         }
       }
     })
+  }
+
+  // 保存气泡透明度
+  const handleSaveBubbleOpacity = async (value: number) => {
+    try {
+      await updateGroupConversationBubbleOpacity(conversationId!, value)
+      setBubbleOpacity(value)
+      message.success('透明度已保存')
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '保存失败')
+    }
+  }
+
+  // 气泡样式
+  const getBubbleStyle = (role: 'user' | 'assistant') => {
+    const opacity = bubbleOpacity / 100
+    if (role === 'user') {
+      return { backgroundColor: `rgba(192, 132, 252, ${opacity})` }
+    }
+    return { backgroundColor: `rgba(255, 255, 255, ${opacity})` }
   }
 
   const handleSend = async () => {
@@ -287,7 +313,7 @@ export function AIGroupChatPage() {
       }
       message.success('添加成员成功')
       // 重新加载成员列表
-      const memberList = await getGroupMembers(conversationId!)
+      const { members: memberList } = await getGroupMembers(conversationId!)
       setMembers(memberList)
     } catch (err) {
       message.error(err instanceof Error ? err.message : '添加成员失败')
@@ -358,6 +384,14 @@ export function AIGroupChatPage() {
               </Button>
             </Tooltip>
           )}
+          <Tooltip title="气泡设置">
+            <Button
+              type="text"
+              icon={<SettingOutlined />}
+              onClick={() => setSettingsModalOpen(true)}
+              className={styles.settingsButton}
+            />
+          </Tooltip>
           <Button
             type="text"
             icon={<PlusOutlined />}
@@ -395,7 +429,7 @@ export function AIGroupChatPage() {
                       src={getImageUrl(currentUser?.avatarUrl)}
                       icon={<UserOutlined />}
                     />
-                    <div className={styles.messageBubble}>{msg.content}</div>
+                    <div className={styles.messageBubble} style={getBubbleStyle('user')}>{msg.content}</div>
                   </>
                 ) : (
                   <>
@@ -406,7 +440,7 @@ export function AIGroupChatPage() {
                     />
                     <div className={styles.aiMessageContent}>
                       <span className={styles.aiName}>{msg.aiCharacter?.name || 'AI'}</span>
-                      <div className={styles.messageBubble}>{msg.content}</div>
+                      <div className={styles.messageBubble} style={getBubbleStyle('assistant')}>{msg.content}</div>
                     </div>
                   </>
                 )}
@@ -430,7 +464,7 @@ export function AIGroupChatPage() {
                       />
                       <div className={styles.aiMessageContent}>
                         <span className={styles.aiName}>{member.aiCharacter.name}</span>
-                        <div className={styles.messageBubble}>
+                        <div className={styles.messageBubble} style={getBubbleStyle('assistant')}>
                           <div className={styles.typing}>
                             <span></span>
                             <span></span>
@@ -456,7 +490,7 @@ export function AIGroupChatPage() {
                     />
                     <div className={styles.aiMessageContent}>
                       <span className={styles.aiName}>{data.name}</span>
-                      <div className={styles.messageBubble}>
+                      <div className={styles.messageBubble} style={getBubbleStyle('assistant')}>
                         {data.content}
                         <span className={styles.cursor}>|</span>
                       </div>
@@ -503,6 +537,51 @@ export function AIGroupChatPage() {
         title="添加AI成员"
         confirmText="添加"
       />
+
+      {/* 气泡设置弹窗 */}
+      <Modal
+        title="气泡设置"
+        open={settingsModalOpen}
+        onCancel={() => setSettingsModalOpen(false)}
+        footer={null}
+        width={400}
+      >
+        <div style={{ padding: '16px 0' }}>
+          <div style={{ marginBottom: 8 }}>气泡透明度</div>
+          <Slider
+            min={0}
+            max={100}
+            value={bubbleOpacity}
+            onChange={setBubbleOpacity}
+            onChangeComplete={handleSaveBubbleOpacity}
+            marks={{ 0: '透明', 50: '半透明', 100: '不透明' }}
+          />
+          <div style={{ marginTop: 16, display: 'flex', gap: 16 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, color: '#999', marginBottom: 4 }}>用户气泡预览</div>
+              <div style={{ 
+                padding: '8px 12px', 
+                borderRadius: 8,
+                color: 'white',
+                ...getBubbleStyle('user')
+              }}>
+                示例消息
+              </div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, color: '#999', marginBottom: 4 }}>AI气泡预览</div>
+              <div style={{ 
+                padding: '8px 12px', 
+                borderRadius: 8,
+                border: '1px solid #eee',
+                ...getBubbleStyle('assistant')
+              }}>
+                示例消息
+              </div>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

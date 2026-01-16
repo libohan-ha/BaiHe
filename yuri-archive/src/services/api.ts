@@ -1463,9 +1463,17 @@ export async function updateGroupConversationBackground(conversationId: string, 
   })
 }
 
+// 更新群聊气泡透明度
+export async function updateGroupConversationBubbleOpacity(conversationId: string, bubbleOpacity: number): Promise<GroupConversation> {
+  return request<GroupConversation>(`/api/ai-group-chat/conversations/${conversationId}/bubble-opacity`, {
+    method: 'PATCH',
+    body: JSON.stringify({ bubbleOpacity }),
+  })
+}
+
 // 获取群聊成员列表
-export async function getGroupMembers(conversationId: string): Promise<{ members: GroupMember[], backgroundUrl: string | null }> {
-  const result = await request<{ members: GroupMember[], backgroundUrl: string | null }>(
+export async function getGroupMembers(conversationId: string): Promise<{ members: GroupMember[], backgroundUrl: string | null, bubbleOpacity: number }> {
+  const result = await request<{ members: GroupMember[], backgroundUrl: string | null, bubbleOpacity: number }>(
     `/api/ai-group-chat/conversations/${conversationId}/members`
   )
   return result

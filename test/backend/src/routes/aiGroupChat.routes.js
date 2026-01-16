@@ -5,6 +5,7 @@ const {
   deleteGroupConversation,
   updateGroupConversationTitle,
   updateGroupConversationBackground,
+  updateGroupConversationBubbleOpacity,
   getGroupMembers,
   addGroupMember,
   removeGroupMember,
@@ -34,6 +35,9 @@ router.patch('/conversations/:conversationId/title', updateGroupConversationTitl
 
 // 更新群聊背景图片
 router.patch('/conversations/:conversationId/background', updateGroupConversationBackground);
+
+// 更新群聊气泡透明度
+router.patch('/conversations/:conversationId/bubble-opacity', updateGroupConversationBubbleOpacity);
 
 // ============ 群聊成员管理 ============
 

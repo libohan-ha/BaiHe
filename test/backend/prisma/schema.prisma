@@ -179,6 +179,7 @@ model Conversation {
   id            String               @id @default(cuid())
   title         String               @default("新对话") // 对话标题
   backgroundUrl String?              // 群聊背景图片
+  bubbleOpacity Int                  @default(85) // 消息气泡透明度 (0-100)
   characterId   String?              // 一对一聊天时的AI角色ID（群聊时为空）
   character     AICharacter?         @relation(fields: [characterId], references: [id], onDelete: Cascade)
   userId        String

@@ -102,6 +102,24 @@ const updateGroupConversationBackground = async (req, res, next) => {
   }
 };
 
+/**
+ * 更新群聊气泡透明度
+ */
+const updateGroupConversationBubbleOpacity = async (req, res, next) => {
+  try {
+    const { conversationId } = req.params;
+    const { bubbleOpacity } = req.body;
+    const opacity = bubbleOpacity === null || bubbleOpacity === undefined ? null : Number(bubbleOpacity);
+    if (opacity !== null && (!Number.isFinite(opacity) || opacity < 0 || opacity > 100)) {
+      return res.status(400).json(error('气泡透明度必须是 0-100 的数字', 400));
+    }
+    const result = await aiGroupChatService.updateGroupConversationBubbleOpacity(conversationId, opacity, req.user.id);
+    res.json(success(result, '更新成功'));
+  } catch (err) {
+    next(err);
+  }
+};
+
 const getGroupMembers = async (req, res, next) => {
   try {
     const { conversationId } = req.params;
@@ -355,6 +373,7 @@ module.exports = {
   deleteGroupConversation,
   updateGroupConversationTitle,
   updateGroupConversationBackground,
+  updateGroupConversationBubbleOpacity,
   getGroupMembers,
   addGroupMember,
   removeGroupMember,
