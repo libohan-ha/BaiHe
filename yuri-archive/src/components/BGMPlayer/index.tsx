@@ -112,7 +112,7 @@ export function BGMPlayer() {
     }
     
     setCurrentIndex(newIndex)
-  }, [currentIndex, playMode])
+  }, [currentIndex, playMode, handlePanelInteraction])
 
   // 音量调节
   const handleVolumeChange = (value: number) => {

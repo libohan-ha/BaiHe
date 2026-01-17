@@ -43,11 +43,12 @@ const updateArticle = async (req, res, next) => {
       return res.status(400).json(error('文章ID无效', 400));
     }
 
+    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
     const article = await articleService.updateArticle(
       id,
       req.body,
       req.user.id,
-      req.user.role === 'ADMIN'
+      isAdmin
     );
     if (!article) {
       return res.status(404).json(error('文章不存在', 404));
@@ -65,10 +66,11 @@ const deleteArticle = async (req, res, next) => {
       return res.status(400).json(error('文章ID无效', 400));
     }
 
+    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
     const result = await articleService.deleteArticle(
       id,
       req.user.id,
-      req.user.role === 'ADMIN'
+      isAdmin
     );
     if (!result) {
       return res.status(404).json(error('文章不存在', 404));

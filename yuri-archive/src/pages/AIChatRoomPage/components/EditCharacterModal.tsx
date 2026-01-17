@@ -1,15 +1,15 @@
 import React from 'react'
 import { Avatar, Button, Form, Input, Modal, Select, Slider, Spin, Upload } from 'antd'
 import { UploadOutlined } from '@ant-design/icons'
-import type { UploadProps } from 'antd'
+import type { FormInstance, UploadProps } from 'antd'
 import { getImageUrl } from '../../../services/api'
 import styles from '../AIChatRoomPage.module.css'
 
 interface EditCharacterModalProps {
   visible: boolean
   onClose: () => void
-  form: any
-  onSubmit: (values: any) => void
+  form: FormInstance
+  onSubmit: (values: Record<string, unknown>) => void
   // 头像相关
   avatarUrl: string
   avatarUploading: boolean

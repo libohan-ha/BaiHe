@@ -57,7 +57,7 @@ export function ArticleDetailPage() {
       const found = res.data.find(a => a.id === articleId)
       if (found && 'collectionId' in found) {
         setCollected(true)
-        setCollectionId((found as any).collectionId)
+        setCollectionId((found as (Article & { collectionId: string })).collectionId)
       }
     } catch {
       // 忽略错误

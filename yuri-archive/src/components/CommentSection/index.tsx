@@ -61,7 +61,7 @@ export function CommentSection({ articleId, imageId }: CommentSectionProps) {
       const res = await getComments(commentTarget, page, pageSize)
       setComments(res.comments || [])
       setTotal(res.pagination?.total || 0)
-    } catch (err) {
+    } catch {
       message.error('加载评论失败')
     } finally {
       setLoading(false)

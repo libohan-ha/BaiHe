@@ -9,8 +9,6 @@ vi.mock('../../../services/api', () => ({
   formatMessageWithImages: vi.fn((content) => Promise.resolve(content)),
 }))
 
-import { sendChatMessage, saveAssistantMessage } from '../../../services/api'
-
 describe('useChat', () => {
   beforeEach(() => {
     vi.clearAllMocks()

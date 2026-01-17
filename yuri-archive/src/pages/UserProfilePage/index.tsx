@@ -65,7 +65,7 @@ export function UserProfilePage() {
       const res = await getUserArticles(id, articlesPage, PAGE_SIZE)
       setArticles(res.data)
       setArticlesTotal(res.total)
-    } catch (err) {
+    } catch {
       // 忽略错误
     } finally {
       setArticlesLoading(false)
@@ -79,7 +79,7 @@ export function UserProfilePage() {
       const res = await getUserImages(id, imagesPage, PAGE_SIZE)
       setImages(res.data)
       setImagesTotal(res.total)
-    } catch (err) {
+    } catch {
       // 忽略错误
     } finally {
       setImagesLoading(false)

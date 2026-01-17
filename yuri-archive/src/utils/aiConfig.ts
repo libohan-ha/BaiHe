@@ -35,6 +35,19 @@ interface ApiConfig {
   provider: AIProvider
 }
 
+export const getProviderDisplayName = (provider: AIProvider): string => {
+  const map: Record<AIProvider, string> = {
+    deepseek: 'DeepSeek',
+    claude: 'Claude',
+    qwen: 'Qwen',
+    gpt: 'GPT',
+    gemini: 'Gemini',
+    deepseekV3: 'DeepSeek V3',
+    qwenCoder: 'Qwen Coder'
+  }
+  return map[provider] ?? provider
+}
+
 /**
  * 判断模型是否是 Claude 模型
  */

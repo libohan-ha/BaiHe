@@ -49,7 +49,7 @@ export function CreateArticlePage() {
     try {
       const data = await getTags()
       setTags(data)
-    } catch (err) {
+    } catch {
       message.error('加载标签失败')
     } finally {
       setTagsLoading(false)

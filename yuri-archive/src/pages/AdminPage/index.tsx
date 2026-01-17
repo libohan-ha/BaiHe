@@ -424,7 +424,7 @@ export function AdminPage() {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: User) => {
+      render: (_: unknown, record: User) => {
         // 不能删除自己，普通管理员也不能删除超级管理员
         const canDelete = record.id !== currentUser?.id &&
           (currentUser?.role === 'SUPER_ADMIN' || record.role !== 'SUPER_ADMIN')
@@ -463,7 +463,7 @@ export function AdminPage() {
       title: '作者',
       dataIndex: 'author',
       key: 'author',
-      render: (author: any) => author?.username || '未知',
+      render: (author?: User) => author?.username || '未知',
     },
     {
       title: '状态',
@@ -498,7 +498,7 @@ export function AdminPage() {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: Article) => (
+      render: (_: unknown, record: Article) => (
         <Popconfirm
           title="确定删除此文章吗？"
           description="删除后无法恢复"
@@ -533,7 +533,7 @@ export function AdminPage() {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: Tag) => (
+      render: (_: unknown, record: Tag) => (
         <Space>
           <Button
             icon={<EditOutlined />}
@@ -577,7 +577,7 @@ export function AdminPage() {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: ImageTag) => (
+      render: (_: unknown, record: ImageTag) => (
         <Space>
           <Button
             icon={<EditOutlined />}
@@ -640,7 +640,7 @@ export function AdminPage() {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: User) => (
+      render: (_: unknown, record: User) => (
         <Space>
           <Button 
             icon={<EditOutlined />} 

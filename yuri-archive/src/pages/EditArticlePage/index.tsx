@@ -68,7 +68,7 @@ export function EditArticlePage() {
       
       setArticle(articleData)
       setTags(tagsData)
-    } catch (err) {
+    } catch {
       message.error('加载文章失败')
       navigate('/')
     } finally {

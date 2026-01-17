@@ -40,7 +40,7 @@ const GroupMemberSelector: React.FC<GroupMemberSelectorProps> = ({
       // 过滤掉排除的角色
       const filtered = data.filter(c => !excludeIds.includes(c.id))
       setCharacters(filtered)
-    } catch (err) {
+    } catch {
       message.error('加载AI角色失败')
     } finally {
       setLoading(false)

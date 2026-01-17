@@ -25,7 +25,7 @@ import {
 } from '../../services/api'
 import { useAIChatStore, useUserStore } from '../../store'
 import type { AICharacter, Conversation } from '../../types'
-import { getApiConfig } from '../../utils/aiConfig'
+import { getApiConfig, getProviderDisplayName } from '../../utils/aiConfig'
 import styles from './AIChatRoomPage.module.css'
 import { EditCharacterModal, HistoryDrawer, InputArea, MessageBubble } from './components'
 import { useChat, useConversation, useImageUpload } from './hooks'
@@ -224,7 +224,7 @@ export function AIChatRoomPage() {
     try {
       await createNewConversation()
       setHistoryDrawerVisible(false) // 创建新对话后关闭抽屉
-    } catch (err) {
+    } catch {
       message.error('创建对话失败')
     }
   }
@@ -254,7 +254,7 @@ export function AIChatRoomPage() {
           setStreamingState({ isStreaming: false, conversationId: null, messageId: null })
           await deleteConv(convId)
           message.success('删除成功')
-        } catch (err) {
+        } catch {
           message.error('删除失败')
         }
       }
@@ -278,7 +278,7 @@ export function AIChatRoomPage() {
     try {
       await updateTitle(convId, editingTitle.trim())
       message.success('标题已更新')
-    } catch (err) {
+    } catch {
       message.error('更新失败')
     } finally {
       setEditingConvId(null)
@@ -298,7 +298,7 @@ export function AIChatRoomPage() {
 
     try {
       await handleImageUpload(Array.from(files))
-    } catch (err) {
+    } catch {
       message.error('图片上传失败')
     } finally {
       // 清空 input 以允许重复选择相同文件
@@ -315,7 +315,7 @@ export function AIChatRoomPage() {
     const apiConfig = getApiConfig(settings, character?.modelName)
     
     if (!apiConfig.apiKey) {
-      const providerName = apiConfig.provider === 'claude' ? 'Claude' : 'DeepSeek'
+      const providerName = getProviderDisplayName(apiConfig.provider)
       message.warning(`请先在AI聊天页面设置 ${providerName} API Key`)
       return
     }
@@ -464,7 +464,7 @@ export function AIChatRoomPage() {
       }
       await handleImageUpload(files)
       message.success('图片已添加')
-    } catch (err) {
+    } catch {
       message.error('图片上传失败')
     }
   }
@@ -498,7 +498,7 @@ export function AIChatRoomPage() {
       } else {
         message.error('复制失败')
       }
-    } catch (err) {
+    } catch {
       message.error('复制失败')
     }
   }
@@ -511,7 +511,7 @@ export function AIChatRoomPage() {
     const apiConfig = getApiConfig(settings, character?.modelName)
     
     if (!apiConfig.apiKey) {
-      const providerName = apiConfig.provider === 'claude' ? 'Claude' : 'DeepSeek'
+      const providerName = getProviderDisplayName(apiConfig.provider)
       message.warning(`请先在AI聊天页面设置 ${providerName} API Key`)
       return
     }
@@ -594,7 +594,7 @@ export function AIChatRoomPage() {
     const apiConfig = getApiConfig(settings, character?.modelName)
     
     if (!apiConfig.apiKey) {
-      const providerName = apiConfig.provider === 'claude' ? 'Claude' : 'DeepSeek'
+      const providerName = getProviderDisplayName(apiConfig.provider)
       message.warning(`请先在AI聊天页面设置 ${providerName} API Key`)
       return
     }
@@ -636,7 +636,6 @@ export function AIChatRoomPage() {
       // 流式读取响应
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
-      let fullContent = ''
 
       if (reader) {
         while (true) {
@@ -655,7 +654,6 @@ export function AIChatRoomPage() {
                 const parsed = JSON.parse(data)
                 const content = parsed.choices?.[0]?.delta?.content || ''
                 if (content) {
-                  fullContent += content
                   appendStreamingContent(content)
                 }
               } catch {
@@ -701,7 +699,7 @@ export function AIChatRoomPage() {
     }
   }
 
-  const handleEditSubmit = async (values: any) => {
+  const handleEditSubmit = async (values: Record<string, unknown>) => {
     try {
       const data = {
         ...values,
@@ -713,7 +711,7 @@ export function AIChatRoomPage() {
       setCharacter(updated)
       message.success('保存成功')
       setEditModalVisible(false)
-    } catch (err) {
+    } catch {
       message.error('保存失败')
     }
   }
@@ -780,7 +778,7 @@ export function AIChatRoomPage() {
           await deleteAICharacter(characterId!)
           message.success('删除成功')
           navigate('/ai-chat', { replace: true })
-        } catch (err) {
+        } catch {
           message.error('删除失败')
         }
       }
