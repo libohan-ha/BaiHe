@@ -8,10 +8,3 @@ bug：
 待完成：
 图片大小限制-头像上传的 已解决（前端限制 50MB：yuri-archive/src/pages/UserCenterPage/index.tsx；后端限制 50MB：test/backend/src/config/multer.js）
 
-编辑、重新生成回复时要携带最新消息图片 已解决（后端：test/backend/src/controllers/aiChat.controller.js）
-
-加入ai进去聊天室
-
-修改路由名字 解决
-
-点击聊天室的用户头像，跳转到主页 解决
