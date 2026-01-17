@@ -8,14 +8,21 @@
  *   Docker: docker exec baihe-backend node /app/check-images.js
  */
 
-const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const path = require('path');
 
-const prisma = new PrismaClient();
+// 支持从不同位置运行
+const isInBackend = fs.existsSync(path.join(__dirname, '../prisma'));
+const UPLOADS_DIR = isInBackend
+  ? path.join(__dirname, '../uploads')
+  : path.join(__dirname, '../test/backend/uploads');
 
-// 上传目录路径（根据运行环境调整）
-const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '../test/backend/uploads');
+const prismaPath = isInBackend
+  ? path.join(__dirname, '../node_modules/@prisma/client')
+  : path.join(__dirname, '../test/backend/node_modules/@prisma/client');
+
+const { PrismaClient } = require(prismaPath);
+const prisma = new PrismaClient();
 
 async function checkImages() {
   console.log('🔍 开始检查图片完整性...\n');
@@ -71,21 +78,21 @@ async function checkImages() {
   // 3. 检查图库图片
   console.log('🖼️  检查图库图片...');
   const images = await prisma.image.findMany({
-    select: { id: true, title: true, imageUrl: true, thumbnailUrl: true }
+    select: { id: true, title: true, url: true }
   });
   
   for (const image of images) {
-    if (image.imageUrl && image.imageUrl.startsWith('/uploads/')) {
-      const filePath = path.join(UPLOADS_DIR, image.imageUrl.replace('/uploads/', ''));
+    if (image.url && image.url.startsWith('/uploads/')) {
+      const filePath = path.join(UPLOADS_DIR, image.url.replace('/uploads/', ''));
       if (!fs.existsSync(filePath)) {
         missingFiles.push({
           type: '图库图片',
           id: image.id,
           title: image.title?.slice(0, 30),
-          url: image.imageUrl
+          url: image.url
         });
       } else {
-        validFiles.push({ type: '图库图片', url: image.imageUrl });
+        validFiles.push({ type: '图库图片', url: image.url });
       }
     }
   }
