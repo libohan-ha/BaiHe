@@ -42,6 +42,11 @@ a:hover {
   box-shadow: 0 8px 25px rgba(168, 85, 247, 0.15);
 }
 
+/* 修复 Avatar 头像变形问题 */
+.ant-avatar img {
+  object-fit: cover;
+}
+
 /* 滚动条样式 */
 ::-webkit-scrollbar {
   width: 8px;

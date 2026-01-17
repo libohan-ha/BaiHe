@@ -123,6 +123,7 @@ export const EditCharacterModal: React.FC<EditCharacterModalProps> = ({
             <Select.Option value="gpt-5.2">GPT</Select.Option>
             <Select.Option value="gemini-3-pro-high">Gemini</Select.Option>
             <Select.Option value="deepseek-v3.2-chat">DeepSeek V3</Select.Option>
+            <Select.Option value="qwen3-coder-plus">Qwen Coder</Select.Option>
           </Select>
         </Form.Item>
 

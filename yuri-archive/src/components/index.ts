@@ -16,3 +16,5 @@ export { CollectionSearch } from './CollectionSearch'
 export { BGMPlayer } from './BGMPlayer'
 // 图片预览组件
 export { ImagePreview } from './ImagePreview'
+// 群聊成员选择器
+export { default as GroupMemberSelector } from './GroupMemberSelector'

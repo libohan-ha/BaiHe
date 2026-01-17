@@ -1,8 +1,9 @@
 import {
+  CommentOutlined,
   FileTextOutlined,
+  LockOutlined,
   PictureOutlined,
   RobotOutlined,
-  LockOutlined,
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import { Menu } from 'antd'
@@ -28,6 +29,11 @@ const baseMenuItems: MenuItem[] = [
     key: 'ai-chat',
     icon: <RobotOutlined />,
     label: 'AI聊天',
+  },
+  {
+    key: 'chat',
+    icon: <CommentOutlined />,
+    label: '聊天室',
   },
 ]
 
@@ -63,6 +69,9 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
     if (location.pathname.startsWith('/ai-chat')) {
       return 'ai-chat'
     }
+    if (location.pathname.startsWith('/public-chat')) {
+      return 'chat'
+    }
     return 'articles'
   }
 
@@ -75,6 +84,8 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
       navigate('/ai-chat')
     } else if (key === 'private-gallery') {
       navigate('/private-gallery')
+    } else if (key === 'chat') {
+      navigate('/public-chat')
     }
   }
 

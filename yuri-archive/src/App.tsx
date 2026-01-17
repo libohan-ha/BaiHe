@@ -7,6 +7,8 @@ import {
   AdminPage,
   AIChatPage,
   AIChatRoomPage,
+  AIGroupChatPage,
+  AIGroupChatListPage,
   ArticleDetailPage,
   CreateArticlePage,
   EditArticlePage,
@@ -18,6 +20,7 @@ import {
   LoginPage,
   PrivateGalleryPage,
   PrivateImageDetailPage,
+  PublicChatPage,
   RegisterPage,
   SearchPage,
   TagPage,
@@ -89,6 +92,10 @@ function App() {
               {/* AI聊天相关路由 */}
               <Route path="ai-chat" element={<AIChatPage />} />
               <Route path="ai-chat/:characterId" element={<AIChatRoomPage />} />
+              <Route path="ai-group-chat" element={<AIGroupChatListPage />} />
+              <Route path="ai-group-chat/:conversationId" element={<AIGroupChatPage />} />
+              {/* 公共聊天室 */}
+              <Route path="public-chat" element={<PublicChatPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

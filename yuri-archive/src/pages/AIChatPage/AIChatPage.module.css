@@ -48,6 +48,10 @@
   height: 40px;
 }
 
+.groupChatButton {
+  height: 40px;
+}
+
 /* 角色卡片网格 */
 .characterGrid {
   display: grid;
