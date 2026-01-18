@@ -98,7 +98,7 @@ const initialState = {
     claudeModel: 'claude-opus-4-5-thinking',
     // Qwen 设置
     qwenApiKey: '123456',
-    qwenBaseUrl: 'http://localhost:8317/v1',
+    qwenBaseUrl: 'http://118.178.253.190:8317/v1',
     qwenModel: 'qwen3-max',
     // GPT 设置
     gptApiKey: '123456',
@@ -110,7 +110,7 @@ const initialState = {
     geminiModel: 'gemini-3-pro-high',
     // DeepSeek V3 设置
     deepseekV3ApiKey: '123456',
-    deepseekV3BaseUrl: 'http://localhost:8317/v1',
+    deepseekV3BaseUrl: 'http://118.178.253.190:8317/v1',
     deepseekV3Model: 'deepseek-v3.2-chat',
     // Qwen Coder 设置
     qwenCoderApiKey: '123456',

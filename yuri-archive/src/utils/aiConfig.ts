@@ -137,7 +137,7 @@ export const getApiConfig = (settings: AISettings, characterModel?: string): Api
   }
 
   if (useDeepseekV3Api) {
-    const baseUrl = fixLocalUrl(settings.deepseekV3BaseUrl || 'http://localhost:8317/v1')
+    const baseUrl = fixLocalUrl(settings.deepseekV3BaseUrl || 'http://118.178.253.190:8317/v1')
     return {
       url: `${baseUrl}/chat/completions`,
       apiKey: settings.deepseekV3ApiKey || '',
@@ -167,7 +167,7 @@ export const getApiConfig = (settings: AISettings, characterModel?: string): Api
   }
 
   if (useQwenApi) {
-    const baseUrl = fixLocalUrl(settings.qwenBaseUrl || 'http://localhost:8317/v1')
+    const baseUrl = fixLocalUrl(settings.qwenBaseUrl || 'http://118.178.253.190:8317/v1')
     return {
       url: `${baseUrl}/chat/completions`,
       apiKey: settings.qwenApiKey || '',
