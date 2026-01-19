@@ -124,6 +124,8 @@ export const EditCharacterModal: React.FC<EditCharacterModalProps> = ({
             <Select.Option value="gemini-3-pro-high">Gemini</Select.Option>
             <Select.Option value="deepseek-v3.2-chat">DeepSeek V3</Select.Option>
             <Select.Option value="qwen3-coder-plus">Qwen Coder</Select.Option>
+            <Select.Option value="minimax-m2.1">MiniMax</Select.Option>
+            <Select.Option value="glm-4.7">GLM</Select.Option>
           </Select>
         </Form.Item>
 

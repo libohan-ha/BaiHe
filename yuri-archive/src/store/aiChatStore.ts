@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { AICharacter, ChatMessage, Conversation } from '../types'
 
-export type AIProvider = 'deepseek' | 'claude' | 'qwen' | 'gpt' | 'gemini' | 'deepseekV3' | 'qwenCoder'
+export type AIProvider = 'deepseek' | 'claude' | 'qwen' | 'gpt' | 'gemini' | 'deepseekV3' | 'qwenCoder' | 'minimax' | 'glm'
 
 interface AISettings {
   provider: AIProvider
@@ -33,6 +33,14 @@ interface AISettings {
   qwenCoderApiKey: string
   qwenCoderBaseUrl: string
   qwenCoderModel: string
+  // Minimax 设置
+  minimaxApiKey: string
+  minimaxBaseUrl: string
+  minimaxModel: string
+  // GLM 设置
+  glmApiKey: string
+  glmBaseUrl: string
+  glmModel: string
   // 兼容旧版本
   apiKey: string
   defaultModel: string
@@ -116,6 +124,14 @@ const initialState = {
     qwenCoderApiKey: '123456',
     qwenCoderBaseUrl: 'http://118.178.253.190:8317/v1',
     qwenCoderModel: 'qwen3-coder-plus',
+    // Minimax 设置
+    minimaxApiKey: '123456',
+    minimaxBaseUrl: 'http://118.178.253.190:8317/v1',
+    minimaxModel: 'minimax-m2.1',
+    // GLM 设置
+    glmApiKey: '123456',
+    glmBaseUrl: 'http://118.178.253.190:8317/v1',
+    glmModel: 'glm-4.7',
     // 兼容旧版本
     apiKey: '',
     defaultModel: 'deepseek-chat'

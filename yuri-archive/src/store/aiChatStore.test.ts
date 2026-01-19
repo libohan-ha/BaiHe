@@ -27,6 +27,16 @@ describe('aiChatStore', () => {
       const provider: AIProvider = 'gemini'
       expect(provider).toBe('gemini')
     })
+
+    it('should support minimax provider', () => {
+      const provider: AIProvider = 'minimax'
+      expect(provider).toBe('minimax')
+    })
+
+    it('should support glm provider', () => {
+      const provider: AIProvider = 'glm'
+      expect(provider).toBe('glm')
+    })
   })
 
   describe('settings', () => {
@@ -40,7 +50,7 @@ describe('aiChatStore', () => {
     it('should have default qwen settings', () => {
       const { settings } = useAIChatStore.getState()
       expect(settings.qwenApiKey).toBe('123456')
-      expect(settings.qwenBaseUrl).toBe('http://localhost:8317/v1')
+      expect(settings.qwenBaseUrl).toBe('http://118.178.253.190:8317/v1')
       expect(settings.qwenModel).toBe('qwen3-max')
     })
 
@@ -73,6 +83,34 @@ describe('aiChatStore', () => {
       expect(settings.geminiApiKey).toBe('sk-ace780b87a754995a3437a13518e99c9')
       expect(settings.geminiBaseUrl).toBe('http://127.0.0.1:8045/v1')
       expect(settings.geminiModel).toBe('gemini-3-pro-high')
+    })
+
+    it('should have minimax settings fields', () => {
+      const { settings } = useAIChatStore.getState()
+      expect(settings).toHaveProperty('minimaxApiKey')
+      expect(settings).toHaveProperty('minimaxBaseUrl')
+      expect(settings).toHaveProperty('minimaxModel')
+    })
+
+    it('should have default minimax settings', () => {
+      const { settings } = useAIChatStore.getState()
+      expect(settings.minimaxApiKey).toBe('123456')
+      expect(settings.minimaxBaseUrl).toBe('http://118.178.253.190:8317/v1')
+      expect(settings.minimaxModel).toBe('minimax-m2.1')
+    })
+
+    it('should have glm settings fields', () => {
+      const { settings } = useAIChatStore.getState()
+      expect(settings).toHaveProperty('glmApiKey')
+      expect(settings).toHaveProperty('glmBaseUrl')
+      expect(settings).toHaveProperty('glmModel')
+    })
+
+    it('should have default glm settings', () => {
+      const { settings } = useAIChatStore.getState()
+      expect(settings.glmApiKey).toBe('123456')
+      expect(settings.glmBaseUrl).toBe('http://118.178.253.190:8317/v1')
+      expect(settings.glmModel).toBe('glm-4.7')
     })
   })
 })

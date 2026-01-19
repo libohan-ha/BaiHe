@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getApiConfig, isQwenModel, isGeminiModel } from './aiConfig'
+import { getApiConfig, isQwenModel, isGeminiModel, isMinimaxModel, isGlmModel } from './aiConfig'
 
 describe('aiConfig', () => {
   describe('isQwenModel', () => {
@@ -29,6 +29,32 @@ describe('aiConfig', () => {
     })
   })
 
+  describe('isMinimaxModel', () => {
+    it('should return true for minimax models', () => {
+      expect(isMinimaxModel('minimax-m2.1')).toBe(true)
+      expect(isMinimaxModel('minimax-m2')).toBe(true)
+    })
+
+    it('should return false for non-minimax models', () => {
+      expect(isMinimaxModel('deepseek-chat')).toBe(false)
+      expect(isMinimaxModel('glm-4.7')).toBe(false)
+      expect(isMinimaxModel('')).toBe(false)
+    })
+  })
+
+  describe('isGlmModel', () => {
+    it('should return true for glm models', () => {
+      expect(isGlmModel('glm-4.7')).toBe(true)
+      expect(isGlmModel('glm-4.6')).toBe(true)
+    })
+
+    it('should return false for non-glm models', () => {
+      expect(isGlmModel('deepseek-chat')).toBe(false)
+      expect(isGlmModel('minimax-m2.1')).toBe(false)
+      expect(isGlmModel('')).toBe(false)
+    })
+  })
+
   describe('getApiConfig', () => {
     const mockSettings = {
       provider: 'deepseek' as const,
@@ -38,7 +64,7 @@ describe('aiConfig', () => {
       claudeBaseUrl: 'http://127.0.0.1:8045/v1',
       claudeModel: 'claude-opus-4-5-thinking',
       qwenApiKey: 'qwen-key',
-      qwenBaseUrl: 'http://localhost:8317/v1',
+      qwenBaseUrl: 'http://118.178.253.190:8317/v1',
       qwenModel: 'qwen3-max',
       gptApiKey: 'gpt-key',
       gptBaseUrl: 'http://localhost:8317/v1',
@@ -46,6 +72,18 @@ describe('aiConfig', () => {
       geminiApiKey: 'gemini-key',
       geminiBaseUrl: 'http://127.0.0.1:8045/v1',
       geminiModel: 'gemini-3-pro-high',
+      deepseekV3ApiKey: 'deepseekv3-key',
+      deepseekV3BaseUrl: 'http://118.178.253.190:8317/v1',
+      deepseekV3Model: 'deepseek-v3.2-chat',
+      qwenCoderApiKey: 'qwencoder-key',
+      qwenCoderBaseUrl: 'http://118.178.253.190:8317/v1',
+      qwenCoderModel: 'qwen3-coder-plus',
+      minimaxApiKey: 'minimax-key',
+      minimaxBaseUrl: 'http://118.178.253.190:8317/v1',
+      minimaxModel: 'minimax-m2.1',
+      glmApiKey: 'glm-key',
+      glmBaseUrl: 'http://118.178.253.190:8317/v1',
+      glmModel: 'glm-4.7',
       apiKey: '',
       defaultModel: 'deepseek-chat'
     }
@@ -55,7 +93,7 @@ describe('aiConfig', () => {
       expect(config.provider).toBe('qwen')
       expect(config.apiKey).toBe('qwen-key')
       expect(config.model).toBe('qwen3-max')
-      expect(config.url).toBe('http://localhost:8317/v1/chat/completions')
+      expect(config.url).toBe('http://118.178.253.190:8317/v1/chat/completions')
     })
 
     it('should return qwen config when provider is qwen', () => {
@@ -92,6 +130,22 @@ describe('aiConfig', () => {
       expect(config.provider).toBe('gemini')
       expect(config.apiKey).toBe('gemini-key')
       expect(config.model).toBe('gemini-3-pro-high')
+    })
+
+    it('should return minimax config when character model is minimax', () => {
+      const config = getApiConfig(mockSettings, 'minimax-m2.1')
+      expect(config.provider).toBe('minimax')
+      expect(config.apiKey).toBe('minimax-key')
+      expect(config.model).toBe('minimax-m2.1')
+      expect(config.url).toBe('http://118.178.253.190:8317/v1/chat/completions')
+    })
+
+    it('should return glm config when character model is glm', () => {
+      const config = getApiConfig(mockSettings, 'glm-4.7')
+      expect(config.provider).toBe('glm')
+      expect(config.apiKey).toBe('glm-key')
+      expect(config.model).toBe('glm-4.7')
+      expect(config.url).toBe('http://118.178.253.190:8317/v1/chat/completions')
     })
   })
 })

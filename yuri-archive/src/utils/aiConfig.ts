@@ -24,6 +24,12 @@ interface AISettings {
   qwenCoderApiKey: string
   qwenCoderBaseUrl: string
   qwenCoderModel: string
+  minimaxApiKey: string
+  minimaxBaseUrl: string
+  minimaxModel: string
+  glmApiKey: string
+  glmBaseUrl: string
+  glmModel: string
   apiKey: string
   defaultModel: string
 }
@@ -43,7 +49,9 @@ export const getProviderDisplayName = (provider: AIProvider): string => {
     gpt: 'GPT',
     gemini: 'Gemini',
     deepseekV3: 'DeepSeek V3',
-    qwenCoder: 'Qwen Coder'
+    qwenCoder: 'Qwen Coder',
+    minimax: 'MiniMax',
+    glm: 'GLM'
   }
   return map[provider] ?? provider
 }
@@ -91,6 +99,20 @@ export const isQwenCoderModel = (modelName: string): boolean => {
 }
 
 /**
+ * 判断模型是否是 MiniMax 模型
+ */
+export const isMinimaxModel = (modelName: string): boolean => {
+  return modelName?.startsWith('minimax')
+}
+
+/**
+ * 判断模型是否是 GLM 模型
+ */
+export const isGlmModel = (modelName: string): boolean => {
+  return modelName?.startsWith('glm')
+}
+
+/**
  * 修复本地地址问题
  * 当检测到 127.0.0.1 或 localhost 时，自动替换为当前访问的 hostname
  * 这样手机端也能正常访问代理服务
@@ -125,6 +147,8 @@ export const getApiConfig = (settings: AISettings, characterModel?: string): Api
   const useGeminiApi = characterModel ? isGeminiModel(characterModel) : (settings.provider === 'gemini')
   const useDeepseekV3Api = characterModel ? isDeepseekV3Model(characterModel) : (settings.provider === 'deepseekV3')
   const useQwenCoderApi = characterModel ? isQwenCoderModel(characterModel) : (settings.provider === 'qwenCoder')
+  const useMinimaxApi = characterModel ? isMinimaxModel(characterModel) : (settings.provider === 'minimax')
+  const useGlmApi = characterModel ? isGlmModel(characterModel) : (settings.provider === 'glm')
 
   if (useQwenCoderApi) {
     const baseUrl = fixLocalUrl(settings.qwenCoderBaseUrl || 'http://118.178.253.190:8317/v1')
@@ -143,6 +167,26 @@ export const getApiConfig = (settings: AISettings, characterModel?: string): Api
       apiKey: settings.deepseekV3ApiKey || '',
       model: characterModel || settings.deepseekV3Model || 'deepseek-v3.2-chat',
       provider: 'deepseekV3'
+    }
+  }
+
+  if (useMinimaxApi) {
+    const baseUrl = fixLocalUrl(settings.minimaxBaseUrl || 'http://118.178.253.190:8317/v1')
+    return {
+      url: `${baseUrl}/chat/completions`,
+      apiKey: settings.minimaxApiKey || '',
+      model: characterModel || settings.minimaxModel || 'minimax-m2.1',
+      provider: 'minimax'
+    }
+  }
+
+  if (useGlmApi) {
+    const baseUrl = fixLocalUrl(settings.glmBaseUrl || 'http://118.178.253.190:8317/v1')
+    return {
+      url: `${baseUrl}/chat/completions`,
+      apiKey: settings.glmApiKey || '',
+      model: characterModel || settings.glmModel || 'glm-4.7',
+      provider: 'glm'
     }
   }
 

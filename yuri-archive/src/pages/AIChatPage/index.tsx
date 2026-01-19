@@ -195,6 +195,12 @@ export function AIChatPage() {
     qwenCoderApiKey?: string
     qwenCoderBaseUrl?: string
     qwenCoderModel?: string
+    minimaxApiKey?: string
+    minimaxBaseUrl?: string
+    minimaxModel?: string
+    glmApiKey?: string
+    glmBaseUrl?: string
+    glmModel?: string
   }) => {
     // 保留未更改的字段值，避免条件渲染导致字段被覆盖
     const newDeepseekApiKey = values.deepseekApiKey !== undefined ? values.deepseekApiKey : settings.deepseekApiKey
@@ -216,6 +222,37 @@ export function AIChatPage() {
     const newQwenCoderApiKey = values.qwenCoderApiKey !== undefined ? values.qwenCoderApiKey : settings.qwenCoderApiKey
     const newQwenCoderBaseUrl = values.qwenCoderBaseUrl !== undefined ? values.qwenCoderBaseUrl : settings.qwenCoderBaseUrl
     const newQwenCoderModel = values.qwenCoderModel !== undefined ? values.qwenCoderModel : settings.qwenCoderModel
+    const newMinimaxApiKey = values.minimaxApiKey !== undefined ? values.minimaxApiKey : settings.minimaxApiKey
+    const newMinimaxBaseUrl = values.minimaxBaseUrl !== undefined ? values.minimaxBaseUrl : settings.minimaxBaseUrl
+    const newMinimaxModel = values.minimaxModel !== undefined ? values.minimaxModel : settings.minimaxModel
+    const newGlmApiKey = values.glmApiKey !== undefined ? values.glmApiKey : settings.glmApiKey
+    const newGlmBaseUrl = values.glmBaseUrl !== undefined ? values.glmBaseUrl : settings.glmBaseUrl
+    const newGlmModel = values.glmModel !== undefined ? values.glmModel : settings.glmModel
+
+    const legacyApiKey = (() => {
+      switch (values.provider) {
+        case 'deepseek':
+          return newDeepseekApiKey
+        case 'claude':
+          return newClaudeApiKey
+        case 'qwen':
+          return newQwenApiKey
+        case 'gpt':
+          return newGptApiKey
+        case 'gemini':
+          return newGeminiApiKey
+        case 'deepseekV3':
+          return newDeepseekV3ApiKey
+        case 'qwenCoder':
+          return newQwenCoderApiKey
+        case 'minimax':
+          return newMinimaxApiKey
+        case 'glm':
+          return newGlmApiKey
+        default:
+          return newDeepseekApiKey
+      }
+    })()
 
     setSettings({
       provider: values.provider,
@@ -238,8 +275,14 @@ export function AIChatPage() {
       qwenCoderApiKey: newQwenCoderApiKey,
       qwenCoderBaseUrl: newQwenCoderBaseUrl,
       qwenCoderModel: newQwenCoderModel,
+      minimaxApiKey: newMinimaxApiKey,
+      minimaxBaseUrl: newMinimaxBaseUrl,
+      minimaxModel: newMinimaxModel,
+      glmApiKey: newGlmApiKey,
+      glmBaseUrl: newGlmBaseUrl,
+      glmModel: newGlmModel,
       // 兼容旧版本
-      apiKey: values.provider === 'deepseek' ? newDeepseekApiKey : (values.provider === 'claude' ? newClaudeApiKey : (values.provider === 'qwen' ? newQwenApiKey : (values.provider === 'gpt' ? newGptApiKey : (values.provider === 'gemini' ? newGeminiApiKey : (values.provider === 'qwenCoder' ? newQwenCoderApiKey : newDeepseekV3ApiKey)))))
+      apiKey: legacyApiKey
     })
     message.success('设置已保存')
     setSettingsVisible(false)
@@ -253,7 +296,7 @@ export function AIChatPage() {
       claudeBaseUrl: settings.claudeBaseUrl || 'http://127.0.0.1:8045/v1',
       claudeModel: settings.claudeModel || 'claude-opus-4-5-thinking',
       qwenApiKey: settings.qwenApiKey || '',
-      qwenBaseUrl: settings.qwenBaseUrl || 'http://localhost:8317/v1',
+      qwenBaseUrl: settings.qwenBaseUrl || 'http://118.178.253.190:8317/v1',
       qwenModel: settings.qwenModel || 'qwen3-max',
       gptApiKey: settings.gptApiKey || '',
       gptBaseUrl: settings.gptBaseUrl || 'http://localhost:8317/v1',
@@ -262,11 +305,17 @@ export function AIChatPage() {
       geminiBaseUrl: settings.geminiBaseUrl || 'http://127.0.0.1:8045/v1',
       geminiModel: settings.geminiModel || 'gemini-3-pro-high',
       deepseekV3ApiKey: settings.deepseekV3ApiKey || '',
-      deepseekV3BaseUrl: settings.deepseekV3BaseUrl || 'http://localhost:8317/v1',
+      deepseekV3BaseUrl: settings.deepseekV3BaseUrl || 'http://118.178.253.190:8317/v1',
       deepseekV3Model: settings.deepseekV3Model || 'deepseek-v3.2-chat',
       qwenCoderApiKey: settings.qwenCoderApiKey || '',
       qwenCoderBaseUrl: settings.qwenCoderBaseUrl || 'http://118.178.253.190:8317/v1',
-      qwenCoderModel: settings.qwenCoderModel || 'qwen3-coder-plus'
+      qwenCoderModel: settings.qwenCoderModel || 'qwen3-coder-plus',
+      minimaxApiKey: settings.minimaxApiKey || '',
+      minimaxBaseUrl: settings.minimaxBaseUrl || 'http://118.178.253.190:8317/v1',
+      minimaxModel: settings.minimaxModel || 'minimax-m2.1',
+      glmApiKey: settings.glmApiKey || '',
+      glmBaseUrl: settings.glmBaseUrl || 'http://118.178.253.190:8317/v1',
+      glmModel: settings.glmModel || 'glm-4.7'
     })
     setSettingsVisible(true)
   }
@@ -425,6 +474,8 @@ export function AIChatPage() {
               <Select.Option value="gemini-3-pro-high">Gemini</Select.Option>
               <Select.Option value="deepseek-v3.2-chat">DeepSeek V3</Select.Option>
               <Select.Option value="qwen3-coder-plus">Qwen Coder</Select.Option>
+              <Select.Option value="minimax-m2.1">MiniMax</Select.Option>
+              <Select.Option value="glm-4.7">GLM</Select.Option>
             </Select>
           </Form.Item>
 
@@ -458,6 +509,8 @@ export function AIChatPage() {
               <Radio.Button value="gemini">Gemini</Radio.Button>
               <Radio.Button value="deepseekV3">DeepSeek V3</Radio.Button>
               <Radio.Button value="qwenCoder">Qwen Coder</Radio.Button>
+              <Radio.Button value="minimax">MiniMax</Radio.Button>
+              <Radio.Button value="glm">GLM</Radio.Button>
             </Radio.Group>
           </Form.Item>
 
@@ -511,7 +564,7 @@ export function AIChatPage() {
                       label="Qwen API 地址"
                       extra="本地代理服务器地址"
                     >
-                      <Input placeholder="http://localhost:8317/v1" />
+                      <Input placeholder="http://118.178.253.190:8317/v1" />
                     </Form.Item>
                     <Form.Item
                       name="qwenApiKey"
@@ -595,7 +648,7 @@ export function AIChatPage() {
                       label="DeepSeek V3 API 地址"
                       extra="本地代理服务器地址"
                     >
-                      <Input placeholder="http://localhost:8317/v1" />
+                      <Input placeholder="http://118.178.253.190:8317/v1" />
                     </Form.Item>
                     <Form.Item
                       name="deepseekV3ApiKey"
@@ -614,32 +667,93 @@ export function AIChatPage() {
                   </>
                 )
               }
+
               // Qwen Coder
-              return (
-                <>
-                  <Form.Item
-                    name="qwenCoderBaseUrl"
-                    label="Qwen Coder API 地址"
-                    extra="远程代理服务器地址"
-                  >
-                    <Input placeholder="http://118.178.253.190:8317/v1" />
-                  </Form.Item>
-                  <Form.Item
-                    name="qwenCoderApiKey"
-                    label="Qwen Coder API Key"
-                  >
-                    <Input.Password placeholder="sk-..." />
-                  </Form.Item>
-                  <Form.Item
-                    name="qwenCoderModel"
-                    label="Qwen Coder 模型"
-                  >
-                    <Select>
-                      <Select.Option value="qwen3-coder-plus">qwen3-coder-plus</Select.Option>
-                    </Select>
-                  </Form.Item>
-                </>
-              )
+              if (provider === 'qwenCoder') {
+                return (
+                  <>
+                    <Form.Item
+                      name="qwenCoderBaseUrl"
+                      label="Qwen Coder API 地址"
+                      extra="远程代理服务器地址"
+                    >
+                      <Input placeholder="http://118.178.253.190:8317/v1" />
+                    </Form.Item>
+                    <Form.Item
+                      name="qwenCoderApiKey"
+                      label="Qwen Coder API Key"
+                    >
+                      <Input.Password placeholder="sk-..." />
+                    </Form.Item>
+                    <Form.Item
+                      name="qwenCoderModel"
+                      label="Qwen Coder 模型"
+                    >
+                      <Select>
+                        <Select.Option value="qwen3-coder-plus">qwen3-coder-plus</Select.Option>
+                      </Select>
+                    </Form.Item>
+                  </>
+                )
+              }
+
+              if (provider === 'minimax') {
+                return (
+                  <>
+                    <Form.Item
+                      name="minimaxBaseUrl"
+                      label="MiniMax API 地址"
+                      extra="远程代理服务器地址"
+                    >
+                      <Input placeholder="http://118.178.253.190:8317/v1" />
+                    </Form.Item>
+                    <Form.Item
+                      name="minimaxApiKey"
+                      label="MiniMax API Key"
+                    >
+                      <Input.Password placeholder="sk-..." />
+                    </Form.Item>
+                    <Form.Item
+                      name="minimaxModel"
+                      label="MiniMax 模型"
+                    >
+                      <Select>
+                        <Select.Option value="minimax-m2.1">minimax-m2.1</Select.Option>
+                      </Select>
+                    </Form.Item>
+                  </>
+                )
+              }
+
+              if (provider === 'glm') {
+                return (
+                  <>
+                    <Form.Item
+                      name="glmBaseUrl"
+                      label="GLM API 地址"
+                      extra="远程代理服务器地址"
+                    >
+                      <Input placeholder="http://118.178.253.190:8317/v1" />
+                    </Form.Item>
+                    <Form.Item
+                      name="glmApiKey"
+                      label="GLM API Key"
+                    >
+                      <Input.Password placeholder="sk-..." />
+                    </Form.Item>
+                    <Form.Item
+                      name="glmModel"
+                      label="GLM 模型"
+                    >
+                      <Select>
+                        <Select.Option value="glm-4.7">glm-4.7</Select.Option>
+                      </Select>
+                    </Form.Item>
+                  </>
+                )
+              }
+
+              return null
             }}
           </Form.Item>
 
