@@ -148,6 +148,19 @@ const initialState = {
   isStreaming: false
 }
 
+const STORAGE_KEY = 'yuri-archive-ai-chat'
+const STORAGE_VERSION = 1
+
+const normalizeBaseUrl = (value: unknown): string => {
+  if (typeof value !== 'string') return ''
+  return value.trim().replace(/\/+$/, '')
+}
+
+const LEGACY_LOCAL_8317_BASE_URLS = new Set([
+  'http://localhost:8317/v1',
+  'http://127.0.0.1:8317/v1'
+])
+
 export const useAIChatStore = create<AIChatStore>()(
   persist(
     (set) => ({
@@ -235,7 +248,42 @@ export const useAIChatStore = create<AIChatStore>()(
       })
     }),
     {
-      name: 'yuri-archive-ai-chat',
+      name: STORAGE_KEY,
+      version: STORAGE_VERSION,
+      migrate: (persistedState, version) => {
+        if (version >= STORAGE_VERSION) return persistedState
+        if (!persistedState || typeof persistedState !== 'object') {
+          return { settings: initialState.settings }
+        }
+
+        const state = persistedState as { settings?: Partial<AISettings> }
+        const persistedSettings = state.settings ?? {}
+        const mergedSettings: AISettings = {
+          ...initialState.settings,
+          ...persistedSettings
+        }
+
+        const remoteBaseUrlKeys = [
+          'qwenBaseUrl',
+          'deepseekV3BaseUrl',
+          'qwenCoderBaseUrl',
+          'minimaxBaseUrl',
+          'glmBaseUrl'
+        ] as const satisfies ReadonlyArray<keyof AISettings>
+
+        for (const key of remoteBaseUrlKeys) {
+          const raw = persistedSettings[key]
+          const normalized = normalizeBaseUrl(raw)
+          if (!normalized || LEGACY_LOCAL_8317_BASE_URLS.has(normalized)) {
+            mergedSettings[key] = initialState.settings[key]
+          }
+        }
+
+        return {
+          ...state,
+          settings: mergedSettings
+        }
+      },
       partialize: (state) => ({
         settings: state.settings
       })
