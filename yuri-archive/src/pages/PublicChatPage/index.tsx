@@ -2,6 +2,7 @@ import { SendOutlined } from '@ant-design/icons'
 import { Avatar, Button, Input, message, Spin } from 'antd'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ChatMarkdownRenderer } from '../../components'
 import { getAICharacters, getImageUrl } from '../../services/api'
 import { connectSocket, disconnectSocket, getSocket } from '../../services/socket'
 import { useAIChatStore, useUserStore } from '../../store'
@@ -425,7 +426,7 @@ export function PublicChatPage() {
                         </div>
                       )
                     ) : (
-                      msg.content
+                      isAI ? <ChatMarkdownRenderer content={msg.content} /> : msg.content
                     )}
                   </div>
                   <div className={styles.time}>

@@ -8,7 +8,7 @@ import {
   ReloadOutlined,
   RobotOutlined,
 } from '@ant-design/icons'
-import { ImagePreview } from '../../../components'
+import { ChatMarkdownRenderer, ImagePreview } from '../../../components'
 import { getImageUrl } from '../../../services/api'
 import type { ChatMessage } from '../../../types'
 import styles from '../AIChatRoomPage.module.css'
@@ -125,6 +125,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     }
 
     // 正常显示内容
+    if (!isUser) {
+      return <ChatMarkdownRenderer content={message.content} />
+    }
+
     return message.content
   }
 

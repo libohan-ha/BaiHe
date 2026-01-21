@@ -3,6 +3,7 @@ import { Avatar, Button, message, Modal, Slider, Spin, Tooltip, Upload } from 'a
 import type { UploadProps } from 'antd'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { ChatMarkdownRenderer } from '../../components'
 import GroupMemberSelector from '../../components/GroupMemberSelector'
 import {
   addGroupMember,
@@ -440,7 +441,9 @@ export function AIGroupChatPage() {
                     />
                     <div className={styles.aiMessageContent}>
                       <span className={styles.aiName}>{msg.aiCharacter?.name || 'AI'}</span>
-                      <div className={styles.messageBubble} style={getBubbleStyle('assistant')}>{msg.content}</div>
+                      <div className={styles.messageBubble} style={getBubbleStyle('assistant')}>
+                        <ChatMarkdownRenderer content={msg.content} />
+                      </div>
                     </div>
                   </>
                 )}
