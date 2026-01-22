@@ -18,6 +18,12 @@ interface AISettings {
   geminiApiKey: string
   geminiBaseUrl: string
   geminiModel: string
+  geminiPreviewApiKey: string
+  geminiPreviewBaseUrl: string
+  geminiPreviewModel: string
+  kimiApiKey: string
+  kimiBaseUrl: string
+  kimiModel: string
   deepseekV3ApiKey: string
   deepseekV3BaseUrl: string
   deepseekV3Model: string
@@ -48,6 +54,8 @@ export const getProviderDisplayName = (provider: AIProvider): string => {
     qwen: 'Qwen',
     gpt: 'GPT',
     gemini: 'Gemini',
+    geminiPreview: 'Gemini Preview',
+    kimi: 'Kimi',
     deepseekV3: 'DeepSeek V3',
     qwenCoder: 'Qwen Coder',
     minimax: 'MiniMax',
@@ -82,6 +90,20 @@ export const isGptModel = (modelName: string): boolean => {
  */
 export const isGeminiModel = (modelName: string): boolean => {
   return modelName?.startsWith('gemini')
+}
+
+/**
+ * 判断模型是否是 Gemini Preview 模型
+ */
+export const isGeminiPreviewModel = (modelName: string): boolean => {
+  return modelName === 'gemini-3-pro-preview'
+}
+
+/**
+ * 判断模型是否是 Kimi 模型
+ */
+export const isKimiModel = (modelName: string): boolean => {
+  return modelName?.startsWith('kimi')
 }
 
 /**
@@ -145,6 +167,8 @@ export const getApiConfig = (settings: AISettings, characterModel?: string): Api
   const useQwenApi = characterModel ? isQwenModel(characterModel) : (settings.provider === 'qwen')
   const useGptApi = characterModel ? isGptModel(characterModel) : (settings.provider === 'gpt')
   const useGeminiApi = characterModel ? isGeminiModel(characterModel) : (settings.provider === 'gemini')
+  const useGeminiPreviewApi = characterModel ? isGeminiPreviewModel(characterModel) : (settings.provider === 'geminiPreview')
+  const useKimiApi = characterModel ? isKimiModel(characterModel) : (settings.provider === 'kimi')
   const useDeepseekV3Api = characterModel ? isDeepseekV3Model(characterModel) : (settings.provider === 'deepseekV3')
   const useQwenCoderApi = characterModel ? isQwenCoderModel(characterModel) : (settings.provider === 'qwenCoder')
   const useMinimaxApi = characterModel ? isMinimaxModel(characterModel) : (settings.provider === 'minimax')
@@ -187,6 +211,26 @@ export const getApiConfig = (settings: AISettings, characterModel?: string): Api
       apiKey: settings.glmApiKey || '',
       model: characterModel || settings.glmModel || 'glm-4.7',
       provider: 'glm'
+    }
+  }
+
+  if (useGeminiPreviewApi) {
+    const baseUrl = fixLocalUrl(settings.geminiPreviewBaseUrl || 'http://localhost:8317/v1')
+    return {
+      url: `${baseUrl}/chat/completions`,
+      apiKey: settings.geminiPreviewApiKey || '',
+      model: characterModel || settings.geminiPreviewModel || 'gemini-3-pro-preview',
+      provider: 'geminiPreview'
+    }
+  }
+
+  if (useKimiApi) {
+    const baseUrl = fixLocalUrl(settings.kimiBaseUrl || 'http://118.178.253.190:8317/v1')
+    return {
+      url: `${baseUrl}/chat/completions`,
+      apiKey: settings.kimiApiKey || '',
+      model: characterModel || settings.kimiModel || 'kimi-k2-0905',
+      provider: 'kimi'
     }
   }
 

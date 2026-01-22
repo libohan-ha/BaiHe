@@ -2,7 +2,18 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { AICharacter, ChatMessage, Conversation } from '../types'
 
-export type AIProvider = 'deepseek' | 'claude' | 'qwen' | 'gpt' | 'gemini' | 'deepseekV3' | 'qwenCoder' | 'minimax' | 'glm'
+export type AIProvider =
+  | 'deepseek'
+  | 'claude'
+  | 'qwen'
+  | 'gpt'
+  | 'gemini'
+  | 'geminiPreview'
+  | 'kimi'
+  | 'deepseekV3'
+  | 'qwenCoder'
+  | 'minimax'
+  | 'glm'
 
 interface AISettings {
   provider: AIProvider
@@ -25,6 +36,14 @@ interface AISettings {
   geminiApiKey: string
   geminiBaseUrl: string
   geminiModel: string
+  // Gemini Preview 设置
+  geminiPreviewApiKey: string
+  geminiPreviewBaseUrl: string
+  geminiPreviewModel: string
+  // Kimi 设置
+  kimiApiKey: string
+  kimiBaseUrl: string
+  kimiModel: string
   // DeepSeek V3 设置
   deepseekV3ApiKey: string
   deepseekV3BaseUrl: string
@@ -116,6 +135,14 @@ const initialState = {
     geminiApiKey: 'sk-ace780b87a754995a3437a13518e99c9',
     geminiBaseUrl: 'http://127.0.0.1:8045/v1',
     geminiModel: 'gemini-3-pro-high',
+    // Gemini Preview 设置
+    geminiPreviewApiKey: '123456',
+    geminiPreviewBaseUrl: 'http://localhost:8317/v1',
+    geminiPreviewModel: 'gemini-3-pro-preview',
+    // Kimi 设置
+    kimiApiKey: '123456',
+    kimiBaseUrl: 'http://118.178.253.190:8317/v1',
+    kimiModel: 'kimi-k2-0905',
     // DeepSeek V3 设置
     deepseekV3ApiKey: '123456',
     deepseekV3BaseUrl: 'http://118.178.253.190:8317/v1',
@@ -149,7 +176,7 @@ const initialState = {
 }
 
 const STORAGE_KEY = 'yuri-archive-ai-chat'
-const STORAGE_VERSION = 1
+const STORAGE_VERSION = 3
 
 const normalizeBaseUrl = (value: unknown): string => {
   if (typeof value !== 'string') return ''
@@ -265,6 +292,7 @@ export const useAIChatStore = create<AIChatStore>()(
 
         const remoteBaseUrlKeys = [
           'qwenBaseUrl',
+          'kimiBaseUrl',
           'deepseekV3BaseUrl',
           'qwenCoderBaseUrl',
           'minimaxBaseUrl',

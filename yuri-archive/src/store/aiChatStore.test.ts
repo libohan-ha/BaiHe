@@ -28,6 +28,16 @@ describe('aiChatStore', () => {
       expect(provider).toBe('gemini')
     })
 
+    it('should support geminiPreview provider', () => {
+      const provider: AIProvider = 'geminiPreview'
+      expect(provider).toBe('geminiPreview')
+    })
+
+    it('should support kimi provider', () => {
+      const provider: AIProvider = 'kimi'
+      expect(provider).toBe('kimi')
+    })
+
     it('should support minimax provider', () => {
       const provider: AIProvider = 'minimax'
       expect(provider).toBe('minimax')
@@ -83,6 +93,34 @@ describe('aiChatStore', () => {
       expect(settings.geminiApiKey).toBe('sk-ace780b87a754995a3437a13518e99c9')
       expect(settings.geminiBaseUrl).toBe('http://127.0.0.1:8045/v1')
       expect(settings.geminiModel).toBe('gemini-3-pro-high')
+    })
+
+    it('should have gemini preview settings fields', () => {
+      const { settings } = useAIChatStore.getState()
+      expect(settings).toHaveProperty('geminiPreviewApiKey')
+      expect(settings).toHaveProperty('geminiPreviewBaseUrl')
+      expect(settings).toHaveProperty('geminiPreviewModel')
+    })
+
+    it('should have default gemini preview settings', () => {
+      const { settings } = useAIChatStore.getState()
+      expect(settings.geminiPreviewApiKey).toBe('123456')
+      expect(settings.geminiPreviewBaseUrl).toBe('http://localhost:8317/v1')
+      expect(settings.geminiPreviewModel).toBe('gemini-3-pro-preview')
+    })
+
+    it('should have kimi settings fields', () => {
+      const { settings } = useAIChatStore.getState()
+      expect(settings).toHaveProperty('kimiApiKey')
+      expect(settings).toHaveProperty('kimiBaseUrl')
+      expect(settings).toHaveProperty('kimiModel')
+    })
+
+    it('should have default kimi settings', () => {
+      const { settings } = useAIChatStore.getState()
+      expect(settings.kimiApiKey).toBe('123456')
+      expect(settings.kimiBaseUrl).toBe('http://118.178.253.190:8317/v1')
+      expect(settings.kimiModel).toBe('kimi-k2-0905')
     })
 
     it('should have minimax settings fields', () => {

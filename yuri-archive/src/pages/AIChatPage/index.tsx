@@ -189,6 +189,12 @@ export function AIChatPage() {
     geminiApiKey?: string
     geminiBaseUrl?: string
     geminiModel?: string
+    geminiPreviewApiKey?: string
+    geminiPreviewBaseUrl?: string
+    geminiPreviewModel?: string
+    kimiApiKey?: string
+    kimiBaseUrl?: string
+    kimiModel?: string
     deepseekV3ApiKey?: string
     deepseekV3BaseUrl?: string
     deepseekV3Model?: string
@@ -216,6 +222,12 @@ export function AIChatPage() {
     const newGeminiApiKey = values.geminiApiKey !== undefined ? values.geminiApiKey : settings.geminiApiKey
     const newGeminiBaseUrl = values.geminiBaseUrl !== undefined ? values.geminiBaseUrl : settings.geminiBaseUrl
     const newGeminiModel = values.geminiModel !== undefined ? values.geminiModel : settings.geminiModel
+    const newGeminiPreviewApiKey = values.geminiPreviewApiKey !== undefined ? values.geminiPreviewApiKey : settings.geminiPreviewApiKey
+    const newGeminiPreviewBaseUrl = values.geminiPreviewBaseUrl !== undefined ? values.geminiPreviewBaseUrl : settings.geminiPreviewBaseUrl
+    const newGeminiPreviewModel = values.geminiPreviewModel !== undefined ? values.geminiPreviewModel : settings.geminiPreviewModel
+    const newKimiApiKey = values.kimiApiKey !== undefined ? values.kimiApiKey : settings.kimiApiKey
+    const newKimiBaseUrl = values.kimiBaseUrl !== undefined ? values.kimiBaseUrl : settings.kimiBaseUrl
+    const newKimiModel = values.kimiModel !== undefined ? values.kimiModel : settings.kimiModel
     const newDeepseekV3ApiKey = values.deepseekV3ApiKey !== undefined ? values.deepseekV3ApiKey : settings.deepseekV3ApiKey
     const newDeepseekV3BaseUrl = values.deepseekV3BaseUrl !== undefined ? values.deepseekV3BaseUrl : settings.deepseekV3BaseUrl
     const newDeepseekV3Model = values.deepseekV3Model !== undefined ? values.deepseekV3Model : settings.deepseekV3Model
@@ -241,6 +253,10 @@ export function AIChatPage() {
           return newGptApiKey
         case 'gemini':
           return newGeminiApiKey
+        case 'geminiPreview':
+          return newGeminiPreviewApiKey
+        case 'kimi':
+          return newKimiApiKey
         case 'deepseekV3':
           return newDeepseekV3ApiKey
         case 'qwenCoder':
@@ -269,6 +285,12 @@ export function AIChatPage() {
       geminiApiKey: newGeminiApiKey,
       geminiBaseUrl: newGeminiBaseUrl,
       geminiModel: newGeminiModel,
+      geminiPreviewApiKey: newGeminiPreviewApiKey,
+      geminiPreviewBaseUrl: newGeminiPreviewBaseUrl,
+      geminiPreviewModel: newGeminiPreviewModel,
+      kimiApiKey: newKimiApiKey,
+      kimiBaseUrl: newKimiBaseUrl,
+      kimiModel: newKimiModel,
       deepseekV3ApiKey: newDeepseekV3ApiKey,
       deepseekV3BaseUrl: newDeepseekV3BaseUrl,
       deepseekV3Model: newDeepseekV3Model,
@@ -304,6 +326,12 @@ export function AIChatPage() {
       geminiApiKey: settings.geminiApiKey || '',
       geminiBaseUrl: settings.geminiBaseUrl || 'http://127.0.0.1:8045/v1',
       geminiModel: settings.geminiModel || 'gemini-3-pro-high',
+      geminiPreviewApiKey: settings.geminiPreviewApiKey || '',
+      geminiPreviewBaseUrl: settings.geminiPreviewBaseUrl || 'http://localhost:8317/v1',
+      geminiPreviewModel: settings.geminiPreviewModel || 'gemini-3-pro-preview',
+      kimiApiKey: settings.kimiApiKey || '',
+      kimiBaseUrl: settings.kimiBaseUrl || 'http://118.178.253.190:8317/v1',
+      kimiModel: settings.kimiModel || 'kimi-k2-0905',
       deepseekV3ApiKey: settings.deepseekV3ApiKey || '',
       deepseekV3BaseUrl: settings.deepseekV3BaseUrl || 'http://118.178.253.190:8317/v1',
       deepseekV3Model: settings.deepseekV3Model || 'deepseek-v3.2-chat',
@@ -472,6 +500,8 @@ export function AIChatPage() {
               <Select.Option value="qwen3-max">Qwen</Select.Option>
               <Select.Option value="gpt-5.2">GPT</Select.Option>
               <Select.Option value="gemini-3-pro-high">Gemini</Select.Option>
+              <Select.Option value="gemini-3-pro-preview">Gemini Preview</Select.Option>
+              <Select.Option value="kimi-k2-0905">Kimi</Select.Option>
               <Select.Option value="deepseek-v3.2-chat">DeepSeek V3</Select.Option>
               <Select.Option value="qwen3-coder-plus">Qwen Coder</Select.Option>
               <Select.Option value="minimax-m2.1">MiniMax</Select.Option>
@@ -507,6 +537,8 @@ export function AIChatPage() {
               <Radio.Button value="qwen">Qwen</Radio.Button>
               <Radio.Button value="gpt">GPT</Radio.Button>
               <Radio.Button value="gemini">Gemini</Radio.Button>
+              <Radio.Button value="geminiPreview">Gemini Preview</Radio.Button>
+              <Radio.Button value="kimi">Kimi</Radio.Button>
               <Radio.Button value="deepseekV3">DeepSeek V3</Radio.Button>
               <Radio.Button value="qwenCoder">Qwen Coder</Radio.Button>
               <Radio.Button value="minimax">MiniMax</Radio.Button>
@@ -634,6 +666,62 @@ export function AIChatPage() {
                     >
                       <Select>
                         <Select.Option value="gemini-3-pro-high">gemini-3-pro-high</Select.Option>
+                      </Select>
+                    </Form.Item>
+                  </>
+                )
+              }
+              // Gemini Preview
+              if (provider === 'geminiPreview') {
+                return (
+                  <>
+                    <Form.Item
+                      name="geminiPreviewBaseUrl"
+                      label="Gemini Preview API 地址"
+                      extra="本地代理服务器地址"
+                    >
+                      <Input placeholder="http://localhost:8317/v1" />
+                    </Form.Item>
+                    <Form.Item
+                      name="geminiPreviewApiKey"
+                      label="Gemini Preview API Key"
+                    >
+                      <Input.Password placeholder="sk-..." />
+                    </Form.Item>
+                    <Form.Item
+                      name="geminiPreviewModel"
+                      label="Gemini Preview 模型"
+                    >
+                      <Select>
+                        <Select.Option value="gemini-3-pro-preview">gemini-3-pro-preview</Select.Option>
+                      </Select>
+                    </Form.Item>
+                  </>
+                )
+              }
+              // Kimi
+              if (provider === 'kimi') {
+                return (
+                  <>
+                    <Form.Item
+                      name="kimiBaseUrl"
+                      label="Kimi API 地址"
+                      extra="远程代理服务器地址"
+                    >
+                      <Input placeholder="http://118.178.253.190:8317/v1" />
+                    </Form.Item>
+                    <Form.Item
+                      name="kimiApiKey"
+                      label="Kimi API Key"
+                    >
+                      <Input.Password placeholder="sk-..." />
+                    </Form.Item>
+                    <Form.Item
+                      name="kimiModel"
+                      label="Kimi 模型"
+                    >
+                      <Select>
+                        <Select.Option value="kimi-k2-0905">kimi-k2-0905</Select.Option>
                       </Select>
                     </Form.Item>
                   </>

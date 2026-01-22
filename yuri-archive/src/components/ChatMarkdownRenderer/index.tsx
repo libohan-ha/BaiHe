@@ -1,10 +1,13 @@
+import { memo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkBreaks from 'remark-breaks'
 import type { MarkdownRendererProps } from '../../types'
 import { ImagePreview } from '../ImagePreview'
 import styles from './ChatMarkdownRenderer.module.css'
 
-export function ChatMarkdownRenderer({ content }: MarkdownRendererProps) {
+export const ChatMarkdownRenderer = memo(function ChatMarkdownRenderer({
+  content,
+}: MarkdownRendererProps) {
   return (
     <div className={styles.chatMarkdown}>
       <ReactMarkdown
@@ -28,4 +31,4 @@ export function ChatMarkdownRenderer({ content }: MarkdownRendererProps) {
       </ReactMarkdown>
     </div>
   )
-}
+})
