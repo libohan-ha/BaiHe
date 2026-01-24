@@ -8,7 +8,7 @@ import {
 } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
 import { Avatar, Button, Form, message, Modal, Spin } from 'antd'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   editAndRegenerateMessage,
@@ -470,7 +470,7 @@ export function AIChatRoomPage() {
   }
 
   // 复制消息内容 - 使用 fallback 方法以支持非 HTTPS 环境
-  const handleCopyMessage = async (content: string) => {
+  const handleCopyMessage = useCallback(async (content: string) => {
     try {
       // 优先使用现代 Clipboard API
       if (navigator.clipboard && window.isSecureContext) {
@@ -501,10 +501,10 @@ export function AIChatRoomPage() {
     } catch {
       message.error('复制失败')
     }
-  }
+  }, [])
 
   // 重新生成AI回复
-  const handleRegenerateMessage = async (messageId: string) => {
+  const handleRegenerateMessage = useCallback(async (messageId: string) => {
     if (regeneratingMessageId || sending || !currentConversation) return
 
     // 获取 API 配置
@@ -583,7 +583,19 @@ export function AIChatRoomPage() {
       setSending(false)
       setStreamingState({ isStreaming: false, conversationId: null, messageId: null })
     }
-  }
+  }, [
+    appendStreamingContent,
+    character?.modelName,
+    currentConversation,
+    regeneratingMessageId,
+    resetStreaming,
+    sending,
+    setMessages,
+    setRegeneratingMessageId,
+    setSending,
+    setStreamingState,
+    settings,
+  ])
 
   // 提交编辑消息并重新生成AI回复
   const handleSubmitEditMessage = async () => {
@@ -785,13 +797,21 @@ export function AIChatRoomPage() {
     })
   }
 
-  const bubbleStyle = (role: 'user' | 'assistant') => {
+  const bubbleStyles = useMemo(() => {
     const opacity = (character?.bubbleOpacity ?? 85) / 100
-    if (role === 'user') {
-      return { backgroundColor: `rgba(82, 196, 26, ${opacity})` }
-    }
-    return { backgroundColor: `rgba(255, 255, 255, ${opacity})` }
-  }
+    return {
+      user: { backgroundColor: `rgba(82, 196, 26, ${opacity})` },
+      assistant: { backgroundColor: `rgba(255, 255, 255, ${opacity})` },
+    } as const
+  }, [character?.bubbleOpacity])
+
+  const latestAssistantMessageId = useMemo(
+    () => getLatestAssistantMessageId(messages),
+    [getLatestAssistantMessageId, messages]
+  )
+
+  const canEditMessage = !sending && !regeneratingMessageId && !editingMessageId
+  const canRegenerateMessage = canEditMessage
 
   if (loading) {
     return (
@@ -854,29 +874,36 @@ export function AIChatRoomPage() {
           </div>
         ) : (
           <div className={styles.messagesContainer}>
-            {messages.map(msg => (
-              <MessageBubble
-                key={msg.id}
-                message={msg}
-                isUser={msg.role === 'user'}
-                avatarUrl={msg.role === 'user' ? (character.userAvatarUrl || currentUser?.avatarUrl) : character.avatarUrl}
-                bubbleStyle={bubbleStyle(msg.role)}
-                isStreamingThis={isStreaming && streamingConversationId === currentConversation?.id && streamingMessageId === msg.id}
-                streamingContent={streamingContent}
-                isRegenerating={isStreaming && msg.id === regeneratingMessageId}
-                isEditing={msg.id === editingMessageId}
-                editingContent={editingMessageContent}
-                onEditingContentChange={setEditingMessageContent}
-                onSubmitEdit={handleSubmitEditMessage}
-                onCancelEdit={cancelEditMessage}
-                onCopy={() => handleCopyMessage(msg.content)}
-                onEdit={() => startEditMessage(msg)}
-                onRegenerate={() => handleRegenerateMessage(msg.id)}
-                canEdit={!sending && !regeneratingMessageId && !editingMessageId}
-                canRegenerate={!sending && !regeneratingMessageId && !editingMessageId}
-                isLatestAssistant={msg.id === getLatestAssistantMessageId(messages)}
-              />
-            ))}
+            {messages.map(msg => {
+              const isUser = msg.role === 'user'
+              const isStreamingThis = isStreaming && streamingConversationId === currentConversation?.id && streamingMessageId === msg.id
+              const isEditingThis = msg.id === editingMessageId
+              const isLatestAssistant = msg.id === latestAssistantMessageId
+
+              return (
+                <MessageBubble
+                  key={msg.id}
+                  message={msg}
+                  isUser={isUser}
+                  avatarUrl={isUser ? (character.userAvatarUrl || currentUser?.avatarUrl) : character.avatarUrl}
+                  bubbleStyle={bubbleStyles[msg.role]}
+                  isStreamingThis={isStreamingThis}
+                  streamingContent={isStreamingThis ? streamingContent : ''}
+                  isRegenerating={isStreaming && msg.id === regeneratingMessageId}
+                  isEditing={isEditingThis}
+                  editingContent={isEditingThis ? editingMessageContent : ''}
+                  onEditingContentChange={isEditingThis ? setEditingMessageContent : undefined}
+                  onSubmitEdit={isEditingThis ? handleSubmitEditMessage : undefined}
+                  onCancelEdit={isEditingThis ? cancelEditMessage : undefined}
+                  onCopyMessage={handleCopyMessage}
+                  onEditMessage={isUser ? startEditMessage : undefined}
+                  onRegenerateMessage={isLatestAssistant ? handleRegenerateMessage : undefined}
+                  canEdit={canEditMessage}
+                  canRegenerate={canRegenerateMessage}
+                  isLatestAssistant={isLatestAssistant}
+                />
+              )
+            })}
             {/* 只有发送新消息时才显示新的等待气泡 */}
             {sending && !streamingMessageId && !regeneratingMessageId && (
               <div className={`${styles.messageWrapper} ${styles.assistant}`}>
@@ -887,7 +914,7 @@ export function AIChatRoomPage() {
                   className={styles.streamingAvatar}
                 />
                 <div>
-                  <div className={`${styles.messageBubble} ${styles.assistant}`} style={bubbleStyle('assistant')}>
+                  <div className={`${styles.messageBubble} ${styles.assistant}`} style={bubbleStyles.assistant}>
                     {streamingContent ? (
                       <>
                         {streamingContent}

@@ -11,7 +11,7 @@ const path = require('path');
 const fixProxyUrl = (url) => {
   try {
     const urlObj = new URL(url);
-    const localProxyPorts = ['8045', '8080', '8000'];
+    const localProxyPorts = ['8045', '8080', '8000', '8317'];
     const isPrivateIP = /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(urlObj.hostname);
     const isLocalhost = urlObj.hostname === '127.0.0.1' || urlObj.hostname === 'localhost';
     
@@ -147,7 +147,7 @@ const proxyAIRequest = async (req, res, next) => {
 
     // 修复 API URL（局域网地址转本地）
     const fixedUrl = fixProxyUrl(apiUrl);
-    console.log('AI代理请求:', apiUrl, '->', fixedUrl);
+    console.log('AI代理请求:', model, apiUrl, '->', fixedUrl);
 
     // 转发请求到 AI API
     const response = await fetch(fixedUrl, {
@@ -361,7 +361,7 @@ const regenerateAssistantMessage = async (req, res, next) => {
 
     // 修复 API URL
     const fixedUrl = fixProxyUrl(apiUrl);
-    console.log('重新生成AI回复:', apiUrl, '->', fixedUrl);
+    console.log('重新生成AI回复:', model, apiUrl, '->', fixedUrl);
 
     // 仅携带最新一条消息的图片（多模态）
     const preparedMessages = await attachLatestMessageImages(messages);
@@ -452,7 +452,7 @@ const editAndRegenerateMessage = async (req, res, next) => {
 
     // 修复 API URL
     const fixedUrl = fixProxyUrl(apiUrl);
-    console.log('编辑消息并重新生成AI回复:', apiUrl, '->', fixedUrl);
+    console.log('编辑消息并重新生成AI回复:', model, apiUrl, '->', fixedUrl);
 
     // 仅携带最新一条消息的图片（多模态）
     const preparedMessages = await attachLatestMessageImages(messages);

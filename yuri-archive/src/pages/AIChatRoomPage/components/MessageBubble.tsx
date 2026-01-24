@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo } from 'react'
 import { Avatar } from 'antd'
 import {
   CheckOutlined,
@@ -29,16 +29,16 @@ interface MessageBubbleProps {
   onSubmitEdit?: () => void
   onCancelEdit?: () => void
   // 操作
-  onCopy?: () => void
-  onEdit?: () => void
-  onRegenerate?: () => void
+  onCopyMessage?: (content: string) => void
+  onEditMessage?: (message: ChatMessage) => void
+  onRegenerateMessage?: (messageId: string) => void
   // 权限控制
   canEdit?: boolean
   canRegenerate?: boolean
   isLatestAssistant?: boolean
 }
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({
+export const MessageBubble = memo(function MessageBubble({
   message,
   isUser,
   avatarUrl,
@@ -51,13 +51,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   onEditingContentChange,
   onSubmitEdit,
   onCancelEdit,
-  onCopy,
-  onEdit,
-  onRegenerate,
+  onCopyMessage,
+  onEditMessage,
+  onRegenerateMessage,
   canEdit = false,
   canRegenerate = false,
   isLatestAssistant = false,
-}) => {
+}: MessageBubbleProps) {
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr)
     return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
@@ -161,7 +161,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           <span className={styles.messageTime}>{formatTime(message.createdAt)}</span>
           <button
             className={styles.copyButton}
-            onClick={onCopy}
+            onClick={() => onCopyMessage?.(message.content)}
             title="复制"
           >
             <CopyOutlined />
@@ -170,7 +170,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           {isUser && canEdit && (
             <button
               className={styles.editMessageButton}
-              onClick={onEdit}
+              onClick={() => onEditMessage?.(message)}
               title="编辑消息"
             >
               <EditOutlined />
@@ -180,7 +180,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           {!isUser && isLatestAssistant && canRegenerate && (
             <button
               className={styles.regenerateButton}
-              onClick={onRegenerate}
+              onClick={() => onRegenerateMessage?.(message.id)}
               title="重新生成"
             >
               <ReloadOutlined />
@@ -190,4 +190,4 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       </div>
     </div>
   )
-}
+})
