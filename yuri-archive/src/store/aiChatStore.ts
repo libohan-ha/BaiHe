@@ -184,7 +184,7 @@ const initialState = {
   isStreaming: false
 }
 
-const STORAGE_KEY = 'yuri-archive-ai-chat'
+const STORAGE_KEY = 'anime-archive-ai-chat'
 const STORAGE_VERSION = 4
 
 const normalizeBaseUrl = (value: unknown): string => {

@@ -185,7 +185,7 @@ export function Header({ sidebarCollapsed = false, onToggleSidebar }: HeaderProp
               />
               <Link to="/" className={styles.logo}>
                 <span className={styles.logoIcon}>🌸</span>
-                <span className={styles.logoText}>yuri</span>
+                <span className={styles.logoText}>anime</span>
               </Link>
             </>
           )}

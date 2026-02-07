@@ -38,7 +38,7 @@ export function LoginPage() {
         <div className={styles.header}>
           <span className={styles.logo}>🌸</span>
           <Title level={2} className={styles.title}>欢迎回来</Title>
-          <Text type="secondary">登录百合文学档案馆</Text>
+          <Text type="secondary">登录动漫创作档案馆</Text>
         </div>
 
         <Form

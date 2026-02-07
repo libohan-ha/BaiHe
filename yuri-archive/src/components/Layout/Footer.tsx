@@ -14,7 +14,7 @@ export function Footer() {
           <span>© {currentYear} 文学档案馆</span>
           <span className={styles.divider}>|</span>
           <span>
-            Made with <HeartFilled className={styles.heart} /> for Yuri lovers
+            Made with <HeartFilled className={styles.heart} /> for anime lovers
           </span>
         </div>
         <div className={styles.links}>

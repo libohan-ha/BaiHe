@@ -43,7 +43,7 @@ export const useUserStore = create<UserStore>()(
       },
     }),
     {
-      name: 'yuri-archive-user',
+      name: 'anime-archive-user',
       partialize: (state) => ({
         currentUser: state.currentUser,
         token: state.token,

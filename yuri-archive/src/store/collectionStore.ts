@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-const STORAGE_KEY = 'yuri-archive-collections'
+const STORAGE_KEY = 'anime-archive-collections'
 
 interface CollectionStore {
   collections: string[] // 收藏的文章ID列表

@@ -30,7 +30,7 @@ import {
   UserProfilePage
 } from './pages'
 
-// 百合主题配色 - 柔和的粉紫色系
+// 动漫主题配色 - 柔和的粉紫色系
 const theme = {
   token: {
     colorPrimary: '#c084fc',

@@ -40,7 +40,7 @@ export function RegisterPage() {
         <div className={styles.header}>
           <span className={styles.logo}>🌸</span>
           <Title level={2} className={styles.title}>加入我们</Title>
-          <Text type="secondary">创建百合文学档案馆账号</Text>
+          <Text type="secondary">创建动漫创作档案馆账号</Text>
         </div>
 
         <Form

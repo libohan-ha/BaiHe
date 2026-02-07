@@ -135,7 +135,7 @@ export function GalleryPage() {
             🖼️ 图片画廊
           </Title>
           <p className={styles.subtitle}>
-            发现和分享精美的百合插画作品
+            发现和分享精美的动漫插画作品
           </p>
         </div>
         <Space className={styles.headerButtons}>
