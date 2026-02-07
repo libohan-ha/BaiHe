@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getApiConfig, isQwenModel, isGeminiModel, isGeminiPreviewModel, isKimiModel, isMinimaxModel, isGlmModel } from './aiConfig'
+import { getApiConfig, isQwenModel, isGeminiModel, isGeminiPreviewModel, isKimiModel, isGrokModel, isMinimaxModel, isGlmModel } from './aiConfig'
 
 describe('aiConfig', () => {
   describe('isQwenModel', () => {
@@ -55,6 +55,19 @@ describe('aiConfig', () => {
     })
   })
 
+  describe('isGrokModel', () => {
+    it('should return true for grok models', () => {
+      expect(isGrokModel('grok-4-1-fast-non-reasoning')).toBe(true)
+      expect(isGrokModel('grok')).toBe(true)
+    })
+
+    it('should return false for non-grok models', () => {
+      expect(isGrokModel('gpt-5.2')).toBe(false)
+      expect(isGrokModel('deepseek-chat')).toBe(false)
+      expect(isGrokModel('')).toBe(false)
+    })
+  })
+
   describe('isMinimaxModel', () => {
     it('should return true for minimax models', () => {
       expect(isMinimaxModel('minimax-m2.1')).toBe(true)
@@ -95,6 +108,9 @@ describe('aiConfig', () => {
       gptApiKey: 'gpt-key',
       gptBaseUrl: 'http://localhost:8317/v1',
       gptModel: 'gpt-5.2',
+      grokApiKey: 'grok-key',
+      grokBaseUrl: 'http://localhost:8000/v1',
+      grokModel: 'grok-4-1-fast-non-reasoning',
       geminiApiKey: 'gemini-key',
       geminiBaseUrl: 'http://127.0.0.1:8045/v1',
       geminiModel: 'gemini-3-pro-high',
@@ -170,6 +186,14 @@ describe('aiConfig', () => {
       expect(config.apiKey).toBe('kimi-key')
       expect(config.model).toBe('kimi-k2-0905')
       expect(config.url).toBe('http://118.178.253.190:8317/v1/chat/completions')
+    })
+
+    it('should return grok config when character model is grok', () => {
+      const config = getApiConfig(mockSettings, 'grok-4-1-fast-non-reasoning')
+      expect(config.provider).toBe('grok')
+      expect(config.apiKey).toBe('grok-key')
+      expect(config.model).toBe('grok-4-1-fast-non-reasoning')
+      expect(config.url).toBe('http://localhost:8000/v1/chat/completions')
     })
 
     it('should return gemini config when provider is gemini', () => {

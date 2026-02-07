@@ -186,6 +186,9 @@ export function AIChatPage() {
     gptApiKey?: string
     gptBaseUrl?: string
     gptModel?: string
+    grokApiKey?: string
+    grokBaseUrl?: string
+    grokModel?: string
     geminiApiKey?: string
     geminiBaseUrl?: string
     geminiModel?: string
@@ -219,6 +222,9 @@ export function AIChatPage() {
     const newGptApiKey = values.gptApiKey !== undefined ? values.gptApiKey : settings.gptApiKey
     const newGptBaseUrl = values.gptBaseUrl !== undefined ? values.gptBaseUrl : settings.gptBaseUrl
     const newGptModel = values.gptModel !== undefined ? values.gptModel : settings.gptModel
+    const newGrokApiKey = values.grokApiKey !== undefined ? values.grokApiKey : settings.grokApiKey
+    const newGrokBaseUrl = values.grokBaseUrl !== undefined ? values.grokBaseUrl : settings.grokBaseUrl
+    const newGrokModel = values.grokModel !== undefined ? values.grokModel : settings.grokModel
     const newGeminiApiKey = values.geminiApiKey !== undefined ? values.geminiApiKey : settings.geminiApiKey
     const newGeminiBaseUrl = values.geminiBaseUrl !== undefined ? values.geminiBaseUrl : settings.geminiBaseUrl
     const newGeminiModel = values.geminiModel !== undefined ? values.geminiModel : settings.geminiModel
@@ -251,6 +257,8 @@ export function AIChatPage() {
           return newQwenApiKey
         case 'gpt':
           return newGptApiKey
+        case 'grok':
+          return newGrokApiKey
         case 'gemini':
           return newGeminiApiKey
         case 'geminiPreview':
@@ -282,6 +290,9 @@ export function AIChatPage() {
       gptApiKey: newGptApiKey,
       gptBaseUrl: newGptBaseUrl,
       gptModel: newGptModel,
+      grokApiKey: newGrokApiKey,
+      grokBaseUrl: newGrokBaseUrl,
+      grokModel: newGrokModel,
       geminiApiKey: newGeminiApiKey,
       geminiBaseUrl: newGeminiBaseUrl,
       geminiModel: newGeminiModel,
@@ -323,6 +334,9 @@ export function AIChatPage() {
       gptApiKey: settings.gptApiKey || '',
       gptBaseUrl: settings.gptBaseUrl || 'http://localhost:8317/v1',
       gptModel: settings.gptModel || 'gpt-5.2',
+      grokApiKey: settings.grokApiKey || '',
+      grokBaseUrl: settings.grokBaseUrl || 'http://localhost:8000/v1',
+      grokModel: settings.grokModel || 'grok-4-1-fast-non-reasoning',
       geminiApiKey: settings.geminiApiKey || '',
       geminiBaseUrl: settings.geminiBaseUrl || 'http://127.0.0.1:8045/v1',
       geminiModel: settings.geminiModel || 'gemini-3-pro-high',
@@ -499,6 +513,7 @@ export function AIChatPage() {
               <Select.Option value="claude-opus-4-5-thinking">Claude</Select.Option>
               <Select.Option value="qwen3-max">Qwen</Select.Option>
               <Select.Option value="gpt-5.2">GPT</Select.Option>
+              <Select.Option value="grok-4-1-fast-non-reasoning">Grok</Select.Option>
               <Select.Option value="gemini-3-pro-high">Gemini</Select.Option>
               <Select.Option value="gemini-3-pro-preview">Gemini Preview</Select.Option>
               <Select.Option value="kimi-k2-0905">Kimi</Select.Option>
@@ -536,6 +551,7 @@ export function AIChatPage() {
               <Radio.Button value="claude">Claude</Radio.Button>
               <Radio.Button value="qwen">Qwen</Radio.Button>
               <Radio.Button value="gpt">GPT</Radio.Button>
+              <Radio.Button value="grok">Grok</Radio.Button>
               <Radio.Button value="gemini">Gemini</Radio.Button>
               <Radio.Button value="geminiPreview">Gemini Preview</Radio.Button>
               <Radio.Button value="kimi">Kimi</Radio.Button>
@@ -638,6 +654,34 @@ export function AIChatPage() {
                     >
                       <Select>
                         <Select.Option value="gpt-5.2">gpt-5.2</Select.Option>
+                      </Select>
+                    </Form.Item>
+                  </>
+                )
+              }
+              // Grok
+              if (provider === 'grok') {
+                return (
+                  <>
+                    <Form.Item
+                      name="grokBaseUrl"
+                      label="Grok API 地址"
+                      extra="本地代理服务器地址"
+                    >
+                      <Input placeholder="http://localhost:8000/v1" />
+                    </Form.Item>
+                    <Form.Item
+                      name="grokApiKey"
+                      label="Grok API Key"
+                    >
+                      <Input.Password placeholder="sk-..." />
+                    </Form.Item>
+                    <Form.Item
+                      name="grokModel"
+                      label="Grok 模型"
+                    >
+                      <Select>
+                        <Select.Option value="grok-4-1-fast-non-reasoning">grok-4-1-fast-non-reasoning</Select.Option>
                       </Select>
                     </Form.Item>
                   </>

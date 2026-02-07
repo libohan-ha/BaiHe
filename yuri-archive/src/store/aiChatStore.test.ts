@@ -38,6 +38,11 @@ describe('aiChatStore', () => {
       expect(provider).toBe('kimi')
     })
 
+    it('should support grok provider', () => {
+      const provider: AIProvider = 'grok'
+      expect(provider).toBe('grok')
+    })
+
     it('should support minimax provider', () => {
       const provider: AIProvider = 'minimax'
       expect(provider).toBe('minimax')
@@ -107,6 +112,20 @@ describe('aiChatStore', () => {
       expect(settings.geminiPreviewApiKey).toBe('123456')
       expect(settings.geminiPreviewBaseUrl).toBe('http://localhost:8317/v1')
       expect(settings.geminiPreviewModel).toBe('gemini-3-pro-preview')
+    })
+
+    it('should have grok settings fields', () => {
+      const { settings } = useAIChatStore.getState()
+      expect(settings).toHaveProperty('grokApiKey')
+      expect(settings).toHaveProperty('grokBaseUrl')
+      expect(settings).toHaveProperty('grokModel')
+    })
+
+    it('should have default grok settings', () => {
+      const { settings } = useAIChatStore.getState()
+      expect(settings.grokApiKey).toBe('123456')
+      expect(settings.grokBaseUrl).toBe('http://localhost:8000/v1')
+      expect(settings.grokModel).toBe('grok-4-1-fast-non-reasoning')
     })
 
     it('should have kimi settings fields', () => {

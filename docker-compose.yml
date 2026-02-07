@@ -37,7 +37,7 @@ services:
       HOST: 0.0.0.0
     volumes:
       # 同步本地uploads目录，让本地和Docker共享上传文件
-      - ./test/backend/uploads:/app/uploads
+      - "C:/Users/16613/Desktop/baihe/test/backend/uploads:/app/uploads"
     # 移除对postgres服务的依赖
     # depends_on:
     #   postgres:

@@ -7,6 +7,7 @@ export type AIProvider =
   | 'claude'
   | 'qwen'
   | 'gpt'
+  | 'grok'
   | 'gemini'
   | 'geminiPreview'
   | 'kimi'
@@ -32,6 +33,10 @@ interface AISettings {
   gptApiKey: string
   gptBaseUrl: string
   gptModel: string
+  // Grok 设置
+  grokApiKey: string
+  grokBaseUrl: string
+  grokModel: string
   // Gemini 设置
   geminiApiKey: string
   geminiBaseUrl: string
@@ -131,6 +136,10 @@ const initialState = {
     gptApiKey: '123456',
     gptBaseUrl: 'http://localhost:8317/v1',
     gptModel: 'gpt-5.2',
+    // Grok 设置
+    grokApiKey: '123456',
+    grokBaseUrl: 'http://localhost:8000/v1',
+    grokModel: 'grok-4-1-fast-non-reasoning',
     // Gemini 设置
     geminiApiKey: 'sk-ace780b87a754995a3437a13518e99c9',
     geminiBaseUrl: 'http://127.0.0.1:8045/v1',
@@ -176,7 +185,7 @@ const initialState = {
 }
 
 const STORAGE_KEY = 'yuri-archive-ai-chat'
-const STORAGE_VERSION = 3
+const STORAGE_VERSION = 4
 
 const normalizeBaseUrl = (value: unknown): string => {
   if (typeof value !== 'string') return ''

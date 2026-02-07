@@ -15,6 +15,9 @@ interface AISettings {
   gptApiKey: string
   gptBaseUrl: string
   gptModel: string
+  grokApiKey: string
+  grokBaseUrl: string
+  grokModel: string
   geminiApiKey: string
   geminiBaseUrl: string
   geminiModel: string
@@ -53,6 +56,7 @@ export const getProviderDisplayName = (provider: AIProvider): string => {
     claude: 'Claude',
     qwen: 'Qwen',
     gpt: 'GPT',
+    grok: 'Grok',
     gemini: 'Gemini',
     geminiPreview: 'Gemini Preview',
     kimi: 'Kimi',
@@ -83,6 +87,13 @@ export const isQwenModel = (modelName: string): boolean => {
  */
 export const isGptModel = (modelName: string): boolean => {
   return modelName?.startsWith('gpt')
+}
+
+/**
+ * 判断模型是否是 Grok 模型
+ */
+export const isGrokModel = (modelName: string): boolean => {
+  return modelName?.startsWith('grok')
 }
 
 /**
@@ -166,6 +177,7 @@ export const getApiConfig = (settings: AISettings, characterModel?: string): Api
   const useClaudeApi = characterModel ? isClaudeModel(characterModel) : (settings.provider === 'claude')
   const useQwenApi = characterModel ? isQwenModel(characterModel) : (settings.provider === 'qwen')
   const useGptApi = characterModel ? isGptModel(characterModel) : (settings.provider === 'gpt')
+  const useGrokApi = characterModel ? isGrokModel(characterModel) : (settings.provider === 'grok')
   const useGeminiApi = characterModel ? isGeminiModel(characterModel) : (settings.provider === 'gemini')
   const useGeminiPreviewApi = characterModel ? isGeminiPreviewModel(characterModel) : (settings.provider === 'geminiPreview')
   const useKimiApi = characterModel ? isKimiModel(characterModel) : (settings.provider === 'kimi')
@@ -241,6 +253,16 @@ export const getApiConfig = (settings: AISettings, characterModel?: string): Api
       apiKey: settings.geminiApiKey || '',
       model: characterModel || settings.geminiModel || 'gemini-3-pro-high',
       provider: 'gemini'
+    }
+  }
+
+  if (useGrokApi) {
+    const baseUrl = fixLocalUrl(settings.grokBaseUrl || 'http://localhost:8000/v1')
+    return {
+      url: `${baseUrl}/chat/completions`,
+      apiKey: settings.grokApiKey || '',
+      model: characterModel || settings.grokModel || 'grok-4-1-fast-non-reasoning',
+      provider: 'grok'
     }
   }
 

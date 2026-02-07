@@ -121,6 +121,7 @@ export const EditCharacterModal: React.FC<EditCharacterModalProps> = ({
             <Select.Option value="claude-opus-4-5-thinking">Claude</Select.Option>
             <Select.Option value="qwen3-max">Qwen</Select.Option>
             <Select.Option value="gpt-5.2">GPT</Select.Option>
+            <Select.Option value="grok-4-1-fast-non-reasoning">Grok</Select.Option>
             <Select.Option value="gemini-3-pro-high">Gemini</Select.Option>
             <Select.Option value="gemini-3-pro-preview">Gemini Preview</Select.Option>
             <Select.Option value="kimi-k2-0905">Kimi</Select.Option>
