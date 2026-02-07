@@ -157,6 +157,14 @@ const removeGroupMember = async (req, res, next) => {
 const getGroupMessages = async (req, res, next) => {
   try {
     const { conversationId } = req.params;
+    delete req.headers['if-none-match'];
+    delete req.headers['if-modified-since'];
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
+      'Surrogate-Control': 'no-store'
+    });
     const result = await aiGroupChatService.getGroupMessages(conversationId, req.user.id);
     res.json(success(result, '获取成功'));
   } catch (err) {

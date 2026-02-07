@@ -7,6 +7,35 @@ import type { AICharacter, Article, BatchTransferResult, ChatMessage, Conversati
  * - 生产环境：使用相对路径 /api（通过 Nginx 反向代理到后端）
  */
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '' : '')
+const PRIVATE_IMAGE_FILE_PREFIX = '/api/private-images/file/'
+
+function appendPrivateImageToken(url: string): string {
+  try {
+    const base = typeof window !== 'undefined' ? window.location.origin : 'http://localhost'
+    const parsed = new URL(url, base)
+    if (!parsed.pathname.startsWith(PRIVATE_IMAGE_FILE_PREFIX)) {
+      return url
+    }
+    if (parsed.searchParams.has('token')) {
+      return url
+    }
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    if (!token) {
+      return url
+    }
+
+    parsed.searchParams.set('token', token)
+
+    // 原始为相对路径时，返回相对路径，避免跨域与环境差异
+    if (url.startsWith('/')) {
+      return `${parsed.pathname}${parsed.search}`
+    }
+    return parsed.toString()
+  } catch {
+    return url
+  }
+}
 
 /**
  * 获取完整的图片URL
@@ -18,13 +47,13 @@ export function getImageUrl(url: string | undefined | null): string | undefined 
 
   // 如果已经是完整URL，直接返回
   if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url
+    return appendPrivateImageToken(url)
   }
 
   // 相对路径直接返回，让 Vite proxy 或 Nginx 处理
   // 这样无论是本地访问还是局域网访问都能正确加载图片
   if (url.startsWith('/')) {
-    return url
+    return appendPrivateImageToken(url)
   }
 
   return url
@@ -903,7 +932,9 @@ interface MessagesResponse {
 }
 
 export async function getChatMessages(conversationId: string): Promise<ChatMessage[]> {
-  const result = await request<MessagesResponse>(`/api/ai-chat/conversations/${conversationId}/messages`)
+  const result = await request<MessagesResponse>(`/api/ai-chat/conversations/${conversationId}/messages`, {
+    cache: 'no-store',
+  })
   return result.messages
 }
 
@@ -1497,7 +1528,10 @@ export async function removeGroupMember(conversationId: string, aiCharacterId: s
 // 获取群聊消息
 export async function getGroupChatMessages(conversationId: string): Promise<GroupChatMessage[]> {
   const result = await request<{ messages: GroupChatMessage[] }>(
-    `/api/ai-group-chat/conversations/${conversationId}/messages`
+    `/api/ai-group-chat/conversations/${conversationId}/messages`,
+    {
+      cache: 'no-store',
+    }
   )
   return result.messages
 }

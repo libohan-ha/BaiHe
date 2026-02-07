@@ -311,6 +311,14 @@ const deleteConversation = async (req, res, next) => {
 const getMessages = async (req, res, next) => {
   try {
     const { conversationId } = req.params;
+    delete req.headers['if-none-match'];
+    delete req.headers['if-modified-since'];
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
+      'Surrogate-Control': 'no-store'
+    });
     const result = await aiChatService.getMessages(conversationId, req.user.id);
     res.json(success(result, '获取成功'));
   } catch (err) {
@@ -483,7 +491,7 @@ const editAndRegenerateMessage = async (req, res, next) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Messages', JSON.stringify(messages.map(m => m.id)));
+    res.setHeader('X-Messages-Count', String(messages.length));
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
