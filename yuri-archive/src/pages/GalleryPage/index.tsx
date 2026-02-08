@@ -17,9 +17,8 @@ export function GalleryPage() {
   const [images, setImages] = useState<GalleryImage[]>([])
   const [tags, setTags] = useState<ImageTag[]>([])
   const [loading, setLoading] = useState(true)
-  const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const { isLoggedIn } = useUserStore()
 
@@ -30,6 +29,8 @@ export function GalleryPage() {
 
   const tagId = searchParams.get('tag')
   const searchKeyword = searchParams.get('search')
+  const pageParam = Number(searchParams.get('page'))
+  const page = Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1
 
   useEffect(() => {
     loadData()
@@ -65,13 +66,22 @@ export function GalleryPage() {
   }
 
   const handlePageChange = (newPage: number) => {
-    setPage(newPage)
+    const nextParams = new URLSearchParams(searchParams)
+    if (newPage > 1) {
+      nextParams.set('page', String(newPage))
+    } else {
+      nextParams.delete('page')
+    }
+    setSearchParams(nextParams)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleTagClick = (clickedTagId: string) => {
-    setPage(1)
-    navigate(`/gallery?tag=${clickedTagId}`)
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.set('tag', clickedTagId)
+    nextParams.delete('search')
+    nextParams.delete('page')
+    setSearchParams(nextParams)
   }
 
   const handleUpload = () => {

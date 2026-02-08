@@ -64,14 +64,10 @@ const createImage = async (req, res, next) => {
     url = url || imageUrl;
     // 支持 tags 和 tagIds 两种字段名
     tags = tags || tagIds;
-
-    if (!title) {
-      return res.status(400).json({
-        code: 400,
-        message: '图片标题不能为空',
-        data: null
-      });
-    }
+    const normalizedTitle = typeof title === 'string' ? title.trim() : '';
+    const normalizedDescription = typeof description === 'string' && description.trim()
+      ? description.trim()
+      : undefined;
 
     // 如果有上传的文件，处理文件并获取URL
     if (req.file) {
@@ -89,7 +85,16 @@ const createImage = async (req, res, next) => {
     }
 
     const image = await imageService.createImage(
-      { title, description, url, thumbnailUrl, width, height, size, tags },
+      {
+        title: normalizedTitle,
+        description: normalizedDescription,
+        url,
+        thumbnailUrl,
+        width,
+        height,
+        size,
+        tags
+      },
       req.user.id
     );
 

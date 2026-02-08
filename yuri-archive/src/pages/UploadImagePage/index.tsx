@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Form,
-  Input,
   Button,
   Upload,
   Select,
@@ -11,18 +10,15 @@ import {
   Card,
 } from 'antd'
 import { PlusOutlined, ArrowLeftOutlined } from '@ant-design/icons'
-import type { UploadFile, UploadProps } from 'antd'
+import type { UploadFile } from 'antd'
 import { createImage, uploadGalleryImage, getImageTags } from '../../services/api'
 import { useUserStore } from '../../store/userStore'
 import type { ImageTag } from '../../types'
 import styles from './UploadImagePage.module.css'
 
 const { Title } = Typography
-const { TextArea } = Input
 
 interface FormValues {
-  title: string
-  description?: string
   tagIds: string[]
 }
 
@@ -30,12 +26,10 @@ export function UploadImagePage() {
   const [form] = Form.useForm<FormValues>()
   const navigate = useNavigate()
   const { isLoggedIn } = useUserStore()
-  
-  const [loading, setLoading] = useState(false)
+
+  const [submitting, setSubmitting] = useState(false)
   const [tags, setTags] = useState<ImageTag[]>([])
   const [fileList, setFileList] = useState<UploadFile[]>([])
-  const [imageUrl, setImageUrl] = useState<string>('')
-  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -51,59 +45,60 @@ export function UploadImagePage() {
       const data = await getImageTags()
       setTags(data)
     } catch {
-      // 忽略错误
+      // ignore error
     }
-  }
-
-  const handleUpload: UploadProps['customRequest'] = async (options) => {
-    const { file, onSuccess, onError } = options
-    
-    setUploading(true)
-    try {
-      const result = await uploadGalleryImage(file as File)
-      setImageUrl(result.url)
-      onSuccess?.(result)
-      message.success('图片上传成功')
-    } catch (err) {
-      onError?.(err as Error)
-      message.error(err instanceof Error ? err.message : '图片上传失败，请重试')
-      // 上传失败时清空文件列表和图片URL
-      setFileList([])
-      setImageUrl('')
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  const handleChange: UploadProps['onChange'] = ({ fileList: newFileList }) => {
-    // 如果文件被删除，清空 imageUrl
-    if (newFileList.length === 0) {
-      setImageUrl('')
-    }
-    setFileList(newFileList)
   }
 
   const handleSubmit = async (values: FormValues) => {
-    if (!imageUrl) {
-      message.error('请先上传图片')
+    if (fileList.length === 0) {
+      message.error('请先选择图片')
       return
     }
 
-    setLoading(true)
-    try {
-      const result = await createImage({
-        title: values.title,
-        description: values.description,
-        imageUrl,
-        tagIds: values.tagIds || [],
-      })
-      message.success('发布成功')
-      navigate(`/image/${result.id}`)
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : '发布失败')
-    } finally {
-      setLoading(false)
+    setSubmitting(true)
+    const successFiles: string[] = []
+    const failedFiles: string[] = []
+
+    for (const fileItem of fileList) {
+      const rawFile = fileItem.originFileObj
+      const fileName = fileItem.name || '未命名文件'
+
+      if (!(rawFile instanceof File)) {
+        failedFiles.push(fileName)
+        continue
+      }
+
+      try {
+        const uploaded = await uploadGalleryImage(rawFile)
+        await createImage({
+          imageUrl: uploaded.url,
+          tagIds: values.tagIds || [],
+        })
+        successFiles.push(fileName)
+      } catch {
+        failedFiles.push(fileName)
+      }
     }
+
+    if (successFiles.length > 0 && failedFiles.length === 0) {
+      message.success(`已成功上传 ${successFiles.length} 张图片`)
+    } else if (successFiles.length > 0) {
+      const failedPreview = failedFiles.slice(0, 3).join('、')
+      message.warning(
+        `成功 ${successFiles.length} 张，失败 ${failedFiles.length} 张${
+          failedPreview ? `（${failedPreview}${failedFiles.length > 3 ? ' 等' : ''}）` : ''
+        }`
+      )
+    } else {
+      message.error('上传失败，请重试')
+    }
+
+    if (successFiles.length > 0) {
+      setFileList([])
+      form.resetFields(['tagIds'])
+    }
+
+    setSubmitting(false)
   }
 
   const handleBack = () => {
@@ -113,7 +108,7 @@ export function UploadImagePage() {
   const uploadButton = (
     <div className={styles.uploadButton}>
       <PlusOutlined />
-      <div style={{ marginTop: 8 }}>上传图片</div>
+      <div style={{ marginTop: 8 }}>选择图片</div>
     </div>
   )
 
@@ -129,7 +124,7 @@ export function UploadImagePage() {
           返回
         </Button>
         <Title level={2} className={styles.title}>
-          🖼️ 上传图片
+          上传图片
         </Title>
       </div>
 
@@ -148,39 +143,17 @@ export function UploadImagePage() {
             <Upload
               listType="picture-card"
               fileList={fileList}
-              customRequest={handleUpload}
-              onChange={handleChange}
-              maxCount={1}
+              onChange={({ fileList: newFileList }) => setFileList(newFileList)}
+              beforeUpload={() => false}
+              multiple
               accept="image/*"
               className={styles.upload}
             >
-              {fileList.length >= 1 ? null : uploadButton}
+              {uploadButton}
             </Upload>
-            {uploading && <span className={styles.uploadingText}>上传中...</span>}
-          </Form.Item>
-
-          <Form.Item
-            name="title"
-            label="标题"
-            rules={[
-              { required: true, message: '请输入标题' },
-              { max: 100, message: '标题最多100个字符' },
-            ]}
-          >
-            <Input placeholder="请输入图片标题" />
-          </Form.Item>
-
-          <Form.Item
-            name="description"
-            label="描述"
-            rules={[{ max: 500, message: '描述最多500个字符' }]}
-          >
-            <TextArea
-              placeholder="请输入图片描述（可选）"
-              rows={4}
-              showCount
-              maxLength={500}
-            />
+            {fileList.length > 0 && (
+              <span className={styles.uploadingText}>已选择 {fileList.length} 张图片</span>
+            )}
           </Form.Item>
 
           <Form.Item
@@ -202,11 +175,13 @@ export function UploadImagePage() {
             <Button
               type="primary"
               htmlType="submit"
-              loading={loading}
-              disabled={!imageUrl || uploading}
+              loading={submitting}
+              disabled={fileList.length === 0 || submitting}
               className={styles.submitButton}
             >
-              {uploading ? '图片上传中...' : '发布图片'}
+              {submitting
+                ? `发布中（${fileList.length} 张）...`
+                : `发布图片${fileList.length > 0 ? `（${fileList.length} 张）` : ''}`}
             </Button>
             <Button onClick={handleBack}>
               取消

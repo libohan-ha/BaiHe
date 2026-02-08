@@ -156,6 +156,8 @@ export function ImageDetailPage() {
   const canEdit = isOwner || isAdmin
   const canDelete = isOwner || isAdmin
   const canTransfer = isLoggedIn // 所有登录用户都可以转移
+  const displayTitle = image?.title?.trim()
+  const displayDescription = image?.description?.trim()
 
   if (loading) {
     return (
@@ -238,16 +240,18 @@ export function ImageDetailPage() {
           >
             <img
               src={getImageUrl(image.imageUrl)}
-              alt={image.title}
+              alt={displayTitle || '图片'}
               className={styles.mainImage}
             />
           </div>
         </div>
 
         <div className={styles.infoSection}>
-          <Title level={2} className={styles.title}>
-            {image.title}
-          </Title>
+          {displayTitle && (
+            <Title level={2} className={styles.title}>
+              {displayTitle}
+            </Title>
+          )}
 
           <div className={styles.meta}>
             <div className={styles.author} onClick={handleAuthorClick} style={{ cursor: 'pointer' }}>
@@ -270,10 +274,10 @@ export function ImageDetailPage() {
             </div>
           </div>
 
-          {image.description && (
+          {displayDescription && (
             <div className={styles.description}>
               <Title level={5}>描述</Title>
-              <Paragraph>{image.description}</Paragraph>
+              <Paragraph>{displayDescription}</Paragraph>
             </div>
           )}
 
@@ -310,7 +314,7 @@ export function ImageDetailPage() {
       >
         <img
           src={getImageUrl(image.imageUrl)}
-          alt={image.title}
+          alt={displayTitle || '图片'}
           style={{ width: '100%', height: 'auto' }}
         />
       </Modal>

@@ -665,7 +665,7 @@ export async function searchImages(
 }
 
 interface CreateImageData {
-  title: string
+  title?: string
   imageUrl: string
   thumbnailUrl?: string
   description?: string

@@ -60,6 +60,8 @@ export function GalleryCard({
     }
   }
 
+  const displayTitle = image.title?.trim()
+
   return (
     <Card
       hoverable
@@ -68,7 +70,7 @@ export function GalleryCard({
       cover={
         <div className={styles.imageContainer}>
           <img
-            alt={image.title}
+            alt={displayTitle || '图片'}
             src={getImageUrl(image.thumbnailUrl || image.imageUrl)}
             className={styles.image}
           />
@@ -86,9 +88,11 @@ export function GalleryCard({
       }
     >
       <div className={styles.content}>
-        <Text strong className={styles.title} ellipsis>
-          {image.title}
-        </Text>
+        {displayTitle && (
+          <Text strong className={styles.title} ellipsis>
+            {displayTitle}
+          </Text>
+        )}
         
         <div className={styles.author} onClick={handleAuthorClick} style={{ cursor: 'pointer' }}>
           <Avatar
