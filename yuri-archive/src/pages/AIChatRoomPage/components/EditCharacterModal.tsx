@@ -115,20 +115,12 @@ export const EditCharacterModal: React.FC<EditCharacterModalProps> = ({
           <Input.TextArea rows={4} />
         </Form.Item>
 
-        <Form.Item name="modelName" label="AI 模型" initialValue="deepseek-chat">
+        <Form.Item name="modelName" label="AI 模型" initialValue="deepseek-v4-flash">
           <Select>
-            <Select.Option value="deepseek-chat">DeepSeek</Select.Option>
-            <Select.Option value="claude-opus-4-5-thinking">Claude</Select.Option>
-            <Select.Option value="qwen3-max">Qwen</Select.Option>
-            <Select.Option value="gpt-5.2">GPT</Select.Option>
+            <Select.Option value="deepseek-v4-flash">DeepSeek V4 Flash</Select.Option>
+            <Select.Option value="deepseek-v4-pro">DeepSeek V4 Pro</Select.Option>
             <Select.Option value="grok-4-1-fast-non-reasoning">Grok</Select.Option>
-            <Select.Option value="gemini-3-pro-high">Gemini</Select.Option>
-            <Select.Option value="gemini-3-pro-preview">Gemini Preview</Select.Option>
-            <Select.Option value="kimi-k2-0905">Kimi</Select.Option>
-            <Select.Option value="deepseek-v3.2-chat">DeepSeek V3</Select.Option>
-            <Select.Option value="qwen3-coder-plus">Qwen Coder</Select.Option>
-            <Select.Option value="minimax-m2.1">MiniMax</Select.Option>
-            <Select.Option value="glm-4.7">GLM</Select.Option>
+            <Select.Option value="claude-sonnet-4-6">Claude Sonnet 4</Select.Option>
           </Select>
         </Form.Item>
 

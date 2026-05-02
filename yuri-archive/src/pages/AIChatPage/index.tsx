@@ -174,147 +174,52 @@ export function AIChatPage() {
     navigate(`/ai-chat/${character.id}`)
   }
 
+  const normalizeBaseUrlInput = (value: string): string => {
+    const trimmed = value.trim()
+    if (!trimmed) return ''
+    const hasScheme = /^[a-zA-Z][a-zA-Z\d+.-]*:\/\//.test(trimmed)
+    const withScheme = hasScheme ? trimmed : `http://${trimmed}`
+    return withScheme.replace(/\/+$/, '')
+  }
+
   const handleSettingsSave = (values: {
     provider: AIProvider
     deepseekApiKey?: string
-    claudeApiKey?: string
-    claudeBaseUrl?: string
-    claudeModel?: string
-    qwenApiKey?: string
-    qwenBaseUrl?: string
-    qwenModel?: string
-    gptApiKey?: string
-    gptBaseUrl?: string
-    gptModel?: string
+    deepseekModel?: string
     grokApiKey?: string
     grokBaseUrl?: string
     grokModel?: string
-    geminiApiKey?: string
-    geminiBaseUrl?: string
-    geminiModel?: string
-    geminiPreviewApiKey?: string
-    geminiPreviewBaseUrl?: string
-    geminiPreviewModel?: string
-    kimiApiKey?: string
-    kimiBaseUrl?: string
-    kimiModel?: string
-    deepseekV3ApiKey?: string
-    deepseekV3BaseUrl?: string
-    deepseekV3Model?: string
-    qwenCoderApiKey?: string
-    qwenCoderBaseUrl?: string
-    qwenCoderModel?: string
-    minimaxApiKey?: string
-    minimaxBaseUrl?: string
-    minimaxModel?: string
-    glmApiKey?: string
-    glmBaseUrl?: string
-    glmModel?: string
+    claudeApiKey?: string
+    claudeBaseUrl?: string
+    claudeModel?: string
   }) => {
-    // 保留未更改的字段值，避免条件渲染导致字段被覆盖
     const newDeepseekApiKey = values.deepseekApiKey !== undefined ? values.deepseekApiKey : settings.deepseekApiKey
-    const newClaudeApiKey = values.claudeApiKey !== undefined ? values.claudeApiKey : settings.claudeApiKey
-    const newClaudeBaseUrl = values.claudeBaseUrl !== undefined ? values.claudeBaseUrl : settings.claudeBaseUrl
-    const newClaudeModel = values.claudeModel !== undefined ? values.claudeModel : settings.claudeModel
-    const newQwenApiKey = values.qwenApiKey !== undefined ? values.qwenApiKey : settings.qwenApiKey
-    const newQwenBaseUrl = values.qwenBaseUrl !== undefined ? values.qwenBaseUrl : settings.qwenBaseUrl
-    const newQwenModel = values.qwenModel !== undefined ? values.qwenModel : settings.qwenModel
-    const newGptApiKey = values.gptApiKey !== undefined ? values.gptApiKey : settings.gptApiKey
-    const newGptBaseUrl = values.gptBaseUrl !== undefined ? values.gptBaseUrl : settings.gptBaseUrl
-    const newGptModel = values.gptModel !== undefined ? values.gptModel : settings.gptModel
+    const newDeepseekModel = values.deepseekModel !== undefined ? values.deepseekModel : settings.deepseekModel
     const newGrokApiKey = values.grokApiKey !== undefined ? values.grokApiKey : settings.grokApiKey
-    const newGrokBaseUrl = values.grokBaseUrl !== undefined ? values.grokBaseUrl : settings.grokBaseUrl
+    const newGrokBaseUrl = values.grokBaseUrl !== undefined
+      ? normalizeBaseUrlInput(values.grokBaseUrl)
+      : settings.grokBaseUrl
     const newGrokModel = values.grokModel !== undefined ? values.grokModel : settings.grokModel
-    const newGeminiApiKey = values.geminiApiKey !== undefined ? values.geminiApiKey : settings.geminiApiKey
-    const newGeminiBaseUrl = values.geminiBaseUrl !== undefined ? values.geminiBaseUrl : settings.geminiBaseUrl
-    const newGeminiModel = values.geminiModel !== undefined ? values.geminiModel : settings.geminiModel
-    const newGeminiPreviewApiKey = values.geminiPreviewApiKey !== undefined ? values.geminiPreviewApiKey : settings.geminiPreviewApiKey
-    const newGeminiPreviewBaseUrl = values.geminiPreviewBaseUrl !== undefined ? values.geminiPreviewBaseUrl : settings.geminiPreviewBaseUrl
-    const newGeminiPreviewModel = values.geminiPreviewModel !== undefined ? values.geminiPreviewModel : settings.geminiPreviewModel
-    const newKimiApiKey = values.kimiApiKey !== undefined ? values.kimiApiKey : settings.kimiApiKey
-    const newKimiBaseUrl = values.kimiBaseUrl !== undefined ? values.kimiBaseUrl : settings.kimiBaseUrl
-    const newKimiModel = values.kimiModel !== undefined ? values.kimiModel : settings.kimiModel
-    const newDeepseekV3ApiKey = values.deepseekV3ApiKey !== undefined ? values.deepseekV3ApiKey : settings.deepseekV3ApiKey
-    const newDeepseekV3BaseUrl = values.deepseekV3BaseUrl !== undefined ? values.deepseekV3BaseUrl : settings.deepseekV3BaseUrl
-    const newDeepseekV3Model = values.deepseekV3Model !== undefined ? values.deepseekV3Model : settings.deepseekV3Model
-    const newQwenCoderApiKey = values.qwenCoderApiKey !== undefined ? values.qwenCoderApiKey : settings.qwenCoderApiKey
-    const newQwenCoderBaseUrl = values.qwenCoderBaseUrl !== undefined ? values.qwenCoderBaseUrl : settings.qwenCoderBaseUrl
-    const newQwenCoderModel = values.qwenCoderModel !== undefined ? values.qwenCoderModel : settings.qwenCoderModel
-    const newMinimaxApiKey = values.minimaxApiKey !== undefined ? values.minimaxApiKey : settings.minimaxApiKey
-    const newMinimaxBaseUrl = values.minimaxBaseUrl !== undefined ? values.minimaxBaseUrl : settings.minimaxBaseUrl
-    const newMinimaxModel = values.minimaxModel !== undefined ? values.minimaxModel : settings.minimaxModel
-    const newGlmApiKey = values.glmApiKey !== undefined ? values.glmApiKey : settings.glmApiKey
-    const newGlmBaseUrl = values.glmBaseUrl !== undefined ? values.glmBaseUrl : settings.glmBaseUrl
-    const newGlmModel = values.glmModel !== undefined ? values.glmModel : settings.glmModel
+    const newClaudeApiKey = values.claudeApiKey !== undefined ? values.claudeApiKey : settings.claudeApiKey
+    const newClaudeBaseUrl = values.claudeBaseUrl !== undefined
+      ? normalizeBaseUrlInput(values.claudeBaseUrl)
+      : settings.claudeBaseUrl
+    const newClaudeModel = values.claudeModel !== undefined ? values.claudeModel : settings.claudeModel
 
-    const legacyApiKey = (() => {
-      switch (values.provider) {
-        case 'deepseek':
-          return newDeepseekApiKey
-        case 'claude':
-          return newClaudeApiKey
-        case 'qwen':
-          return newQwenApiKey
-        case 'gpt':
-          return newGptApiKey
-        case 'grok':
-          return newGrokApiKey
-        case 'gemini':
-          return newGeminiApiKey
-        case 'geminiPreview':
-          return newGeminiPreviewApiKey
-        case 'kimi':
-          return newKimiApiKey
-        case 'deepseekV3':
-          return newDeepseekV3ApiKey
-        case 'qwenCoder':
-          return newQwenCoderApiKey
-        case 'minimax':
-          return newMinimaxApiKey
-        case 'glm':
-          return newGlmApiKey
-        default:
-          return newDeepseekApiKey
-      }
-    })()
+    const legacyApiKey = values.provider === 'grok' ? newGrokApiKey
+      : values.provider === 'claude' ? newClaudeApiKey
+      : newDeepseekApiKey
 
     setSettings({
       provider: values.provider,
       deepseekApiKey: newDeepseekApiKey,
-      claudeApiKey: newClaudeApiKey,
-      claudeBaseUrl: newClaudeBaseUrl,
-      claudeModel: newClaudeModel,
-      qwenApiKey: newQwenApiKey,
-      qwenBaseUrl: newQwenBaseUrl,
-      qwenModel: newQwenModel,
-      gptApiKey: newGptApiKey,
-      gptBaseUrl: newGptBaseUrl,
-      gptModel: newGptModel,
+      deepseekModel: newDeepseekModel,
       grokApiKey: newGrokApiKey,
       grokBaseUrl: newGrokBaseUrl,
       grokModel: newGrokModel,
-      geminiApiKey: newGeminiApiKey,
-      geminiBaseUrl: newGeminiBaseUrl,
-      geminiModel: newGeminiModel,
-      geminiPreviewApiKey: newGeminiPreviewApiKey,
-      geminiPreviewBaseUrl: newGeminiPreviewBaseUrl,
-      geminiPreviewModel: newGeminiPreviewModel,
-      kimiApiKey: newKimiApiKey,
-      kimiBaseUrl: newKimiBaseUrl,
-      kimiModel: newKimiModel,
-      deepseekV3ApiKey: newDeepseekV3ApiKey,
-      deepseekV3BaseUrl: newDeepseekV3BaseUrl,
-      deepseekV3Model: newDeepseekV3Model,
-      qwenCoderApiKey: newQwenCoderApiKey,
-      qwenCoderBaseUrl: newQwenCoderBaseUrl,
-      qwenCoderModel: newQwenCoderModel,
-      minimaxApiKey: newMinimaxApiKey,
-      minimaxBaseUrl: newMinimaxBaseUrl,
-      minimaxModel: newMinimaxModel,
-      glmApiKey: newGlmApiKey,
-      glmBaseUrl: newGlmBaseUrl,
-      glmModel: newGlmModel,
-      // 兼容旧版本
+      claudeApiKey: newClaudeApiKey,
+      claudeBaseUrl: newClaudeBaseUrl,
+      claudeModel: newClaudeModel,
       apiKey: legacyApiKey
     })
     message.success('设置已保存')
@@ -325,39 +230,13 @@ export function AIChatPage() {
     settingsForm.setFieldsValue({
       provider: settings.provider || 'deepseek',
       deepseekApiKey: settings.deepseekApiKey || '',
-      claudeApiKey: settings.claudeApiKey || '',
-      claudeBaseUrl: settings.claudeBaseUrl || 'http://127.0.0.1:8045/v1',
-      claudeModel: settings.claudeModel || 'claude-opus-4-5-thinking',
-      qwenApiKey: settings.qwenApiKey || '',
-      qwenBaseUrl: settings.qwenBaseUrl || 'http://118.178.253.190:8317/v1',
-      qwenModel: settings.qwenModel || 'qwen3-max',
-      gptApiKey: settings.gptApiKey || '',
-      gptBaseUrl: settings.gptBaseUrl || 'http://localhost:8317/v1',
-      gptModel: settings.gptModel || 'gpt-5.2',
+      deepseekModel: settings.deepseekModel || 'deepseek-v4-flash',
       grokApiKey: settings.grokApiKey || '',
       grokBaseUrl: settings.grokBaseUrl || 'http://localhost:8000/v1',
       grokModel: settings.grokModel || 'grok-4-1-fast-non-reasoning',
-      geminiApiKey: settings.geminiApiKey || '',
-      geminiBaseUrl: settings.geminiBaseUrl || 'http://127.0.0.1:8045/v1',
-      geminiModel: settings.geminiModel || 'gemini-3-pro-high',
-      geminiPreviewApiKey: settings.geminiPreviewApiKey || '',
-      geminiPreviewBaseUrl: settings.geminiPreviewBaseUrl || 'http://localhost:8317/v1',
-      geminiPreviewModel: settings.geminiPreviewModel || 'gemini-3-pro-preview',
-      kimiApiKey: settings.kimiApiKey || '',
-      kimiBaseUrl: settings.kimiBaseUrl || 'http://118.178.253.190:8317/v1',
-      kimiModel: settings.kimiModel || 'kimi-k2-0905',
-      deepseekV3ApiKey: settings.deepseekV3ApiKey || '',
-      deepseekV3BaseUrl: settings.deepseekV3BaseUrl || 'http://118.178.253.190:8317/v1',
-      deepseekV3Model: settings.deepseekV3Model || 'deepseek-v3.2-chat',
-      qwenCoderApiKey: settings.qwenCoderApiKey || '',
-      qwenCoderBaseUrl: settings.qwenCoderBaseUrl || 'http://118.178.253.190:8317/v1',
-      qwenCoderModel: settings.qwenCoderModel || 'qwen3-coder-plus',
-      minimaxApiKey: settings.minimaxApiKey || '',
-      minimaxBaseUrl: settings.minimaxBaseUrl || 'http://118.178.253.190:8317/v1',
-      minimaxModel: settings.minimaxModel || 'minimax-m2.1',
-      glmApiKey: settings.glmApiKey || '',
-      glmBaseUrl: settings.glmBaseUrl || 'http://118.178.253.190:8317/v1',
-      glmModel: settings.glmModel || 'glm-4.7'
+      claudeApiKey: settings.claudeApiKey || '',
+      claudeBaseUrl: settings.claudeBaseUrl || 'https://api.duojie.games/v1',
+      claudeModel: settings.claudeModel || 'claude-sonnet-4-6'
     })
     setSettingsVisible(true)
   }
@@ -507,20 +386,12 @@ export function AIChatPage() {
             <Slider min={0} max={100} marks={{ 0: '透明', 50: '半透明', 100: '不透明' }} />
           </Form.Item>
 
-          <Form.Item name="modelName" label="使用模型" initialValue="deepseek-chat">
+          <Form.Item name="modelName" label="使用模型" initialValue="deepseek-v4-flash">
             <Select>
-              <Select.Option value="deepseek-chat">DeepSeek</Select.Option>
-              <Select.Option value="claude-opus-4-5-thinking">Claude</Select.Option>
-              <Select.Option value="qwen3-max">Qwen</Select.Option>
-              <Select.Option value="gpt-5.2">GPT</Select.Option>
+              <Select.Option value="deepseek-v4-flash">DeepSeek V4 Flash</Select.Option>
+              <Select.Option value="deepseek-v4-pro">DeepSeek V4 Pro</Select.Option>
               <Select.Option value="grok-4-1-fast-non-reasoning">Grok</Select.Option>
-              <Select.Option value="gemini-3-pro-high">Gemini</Select.Option>
-              <Select.Option value="gemini-3-pro-preview">Gemini Preview</Select.Option>
-              <Select.Option value="kimi-k2-0905">Kimi</Select.Option>
-              <Select.Option value="deepseek-v3.2-chat">DeepSeek V3</Select.Option>
-              <Select.Option value="qwen3-coder-plus">Qwen Coder</Select.Option>
-              <Select.Option value="minimax-m2.1">MiniMax</Select.Option>
-              <Select.Option value="glm-4.7">GLM</Select.Option>
+              <Select.Option value="claude-sonnet-4-6">Claude Sonnet 4</Select.Option>
             </Select>
           </Form.Item>
 
@@ -548,17 +419,8 @@ export function AIChatPage() {
           >
             <Radio.Group>
               <Radio.Button value="deepseek">DeepSeek</Radio.Button>
-              <Radio.Button value="claude">Claude</Radio.Button>
-              <Radio.Button value="qwen">Qwen</Radio.Button>
-              <Radio.Button value="gpt">GPT</Radio.Button>
               <Radio.Button value="grok">Grok</Radio.Button>
-              <Radio.Button value="gemini">Gemini</Radio.Button>
-              <Radio.Button value="geminiPreview">Gemini Preview</Radio.Button>
-              <Radio.Button value="kimi">Kimi</Radio.Button>
-              <Radio.Button value="deepseekV3">DeepSeek V3</Radio.Button>
-              <Radio.Button value="qwenCoder">Qwen Coder</Radio.Button>
-              <Radio.Button value="minimax">MiniMax</Radio.Button>
-              <Radio.Button value="glm">GLM</Radio.Button>
+              <Radio.Button value="claude">Claude</Radio.Button>
             </Radio.Group>
           </Form.Item>
 
@@ -567,93 +429,21 @@ export function AIChatPage() {
               const provider = getFieldValue('provider')
               if (provider === 'deepseek') {
                 return (
-                  <Form.Item
-                    name="deepseekApiKey"
-                    label="DeepSeek API Key"
-                    extra="从 platform.deepseek.com 获取 API Key"
-                  >
-                    <Input.Password placeholder="sk-..." />
-                  </Form.Item>
-                )
-              }
-              if (provider === 'claude') {
-                return (
                   <>
                     <Form.Item
-                      name="claudeBaseUrl"
-                      label="Claude API 地址"
-                      extra="本地代理服务器地址"
-                    >
-                      <Input placeholder="http://127.0.0.1:8045/v1" />
-                    </Form.Item>
-                    <Form.Item
-                      name="claudeApiKey"
-                      label="Claude API Key"
+                      name="deepseekApiKey"
+                      label="DeepSeek API Key"
+                      extra="从 platform.deepseek.com 获取 API Key"
                     >
                       <Input.Password placeholder="sk-..." />
                     </Form.Item>
                     <Form.Item
-                      name="claudeModel"
-                      label="Claude 模型"
+                      name="deepseekModel"
+                      label="DeepSeek 模型"
                     >
                       <Select>
-                        <Select.Option value="claude-opus-4-5-thinking">claude-opus-4-5-thinking</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </>
-                )
-              }
-              // Qwen
-              if (provider === 'qwen') {
-                return (
-                  <>
-                    <Form.Item
-                      name="qwenBaseUrl"
-                      label="Qwen API 地址"
-                      extra="本地代理服务器地址"
-                    >
-                      <Input placeholder="http://118.178.253.190:8317/v1" />
-                    </Form.Item>
-                    <Form.Item
-                      name="qwenApiKey"
-                      label="Qwen API Key"
-                    >
-                      <Input.Password placeholder="sk-..." />
-                    </Form.Item>
-                    <Form.Item
-                      name="qwenModel"
-                      label="Qwen 模型"
-                    >
-                      <Select>
-                        <Select.Option value="qwen3-max">qwen3-max</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </>
-                )
-              }
-              // GPT
-              if (provider === 'gpt') {
-                return (
-                  <>
-                    <Form.Item
-                      name="gptBaseUrl"
-                      label="GPT API 地址"
-                      extra="本地代理服务器地址"
-                    >
-                      <Input placeholder="http://localhost:8317/v1" />
-                    </Form.Item>
-                    <Form.Item
-                      name="gptApiKey"
-                      label="GPT API Key"
-                    >
-                      <Input.Password placeholder="sk-..." />
-                    </Form.Item>
-                    <Form.Item
-                      name="gptModel"
-                      label="GPT 模型"
-                    >
-                      <Select>
-                        <Select.Option value="gpt-5.2">gpt-5.2</Select.Option>
+                        <Select.Option value="deepseek-v4-flash">deepseek-v4-flash</Select.Option>
+                        <Select.Option value="deepseek-v4-pro">deepseek-v4-pro</Select.Option>
                       </Select>
                     </Form.Item>
                   </>
@@ -687,204 +477,34 @@ export function AIChatPage() {
                   </>
                 )
               }
-              // Gemini
-              if (provider === 'gemini') {
+              // Claude
+              if (provider === 'claude') {
                 return (
                   <>
                     <Form.Item
-                      name="geminiBaseUrl"
-                      label="Gemini API 地址"
-                      extra="本地代理服务器地址"
+                      name="claudeBaseUrl"
+                      label="Claude API 地址"
+                      extra="代理服务器地址"
                     >
-                      <Input placeholder="http://127.0.0.1:8045/v1" />
+                      <Input placeholder="https://api.duojie.games/v1" />
                     </Form.Item>
                     <Form.Item
-                      name="geminiApiKey"
-                      label="Gemini API Key"
+                      name="claudeApiKey"
+                      label="Claude API Key"
                     >
                       <Input.Password placeholder="sk-..." />
                     </Form.Item>
                     <Form.Item
-                      name="geminiModel"
-                      label="Gemini 模型"
+                      name="claudeModel"
+                      label="Claude 模型"
                     >
                       <Select>
-                        <Select.Option value="gemini-3-pro-high">gemini-3-pro-high</Select.Option>
+                        <Select.Option value="claude-sonnet-4-6">claude-sonnet-4-6</Select.Option>
                       </Select>
                     </Form.Item>
                   </>
                 )
               }
-              // Gemini Preview
-              if (provider === 'geminiPreview') {
-                return (
-                  <>
-                    <Form.Item
-                      name="geminiPreviewBaseUrl"
-                      label="Gemini Preview API 地址"
-                      extra="本地代理服务器地址"
-                    >
-                      <Input placeholder="http://localhost:8317/v1" />
-                    </Form.Item>
-                    <Form.Item
-                      name="geminiPreviewApiKey"
-                      label="Gemini Preview API Key"
-                    >
-                      <Input.Password placeholder="sk-..." />
-                    </Form.Item>
-                    <Form.Item
-                      name="geminiPreviewModel"
-                      label="Gemini Preview 模型"
-                    >
-                      <Select>
-                        <Select.Option value="gemini-3-pro-preview">gemini-3-pro-preview</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </>
-                )
-              }
-              // Kimi
-              if (provider === 'kimi') {
-                return (
-                  <>
-                    <Form.Item
-                      name="kimiBaseUrl"
-                      label="Kimi API 地址"
-                      extra="远程代理服务器地址"
-                    >
-                      <Input placeholder="http://118.178.253.190:8317/v1" />
-                    </Form.Item>
-                    <Form.Item
-                      name="kimiApiKey"
-                      label="Kimi API Key"
-                    >
-                      <Input.Password placeholder="sk-..." />
-                    </Form.Item>
-                    <Form.Item
-                      name="kimiModel"
-                      label="Kimi 模型"
-                    >
-                      <Select>
-                        <Select.Option value="kimi-k2-0905">kimi-k2-0905</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </>
-                )
-              }
-              // DeepSeek V3
-              if (provider === 'deepseekV3') {
-                return (
-                  <>
-                    <Form.Item
-                      name="deepseekV3BaseUrl"
-                      label="DeepSeek V3 API 地址"
-                      extra="本地代理服务器地址"
-                    >
-                      <Input placeholder="http://118.178.253.190:8317/v1" />
-                    </Form.Item>
-                    <Form.Item
-                      name="deepseekV3ApiKey"
-                      label="DeepSeek V3 API Key"
-                    >
-                      <Input.Password placeholder="sk-..." />
-                    </Form.Item>
-                    <Form.Item
-                      name="deepseekV3Model"
-                      label="DeepSeek V3 模型"
-                    >
-                      <Select>
-                        <Select.Option value="deepseek-v3.2-chat">deepseek-v3.2-chat</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </>
-                )
-              }
-
-              // Qwen Coder
-              if (provider === 'qwenCoder') {
-                return (
-                  <>
-                    <Form.Item
-                      name="qwenCoderBaseUrl"
-                      label="Qwen Coder API 地址"
-                      extra="远程代理服务器地址"
-                    >
-                      <Input placeholder="http://118.178.253.190:8317/v1" />
-                    </Form.Item>
-                    <Form.Item
-                      name="qwenCoderApiKey"
-                      label="Qwen Coder API Key"
-                    >
-                      <Input.Password placeholder="sk-..." />
-                    </Form.Item>
-                    <Form.Item
-                      name="qwenCoderModel"
-                      label="Qwen Coder 模型"
-                    >
-                      <Select>
-                        <Select.Option value="qwen3-coder-plus">qwen3-coder-plus</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </>
-                )
-              }
-
-              if (provider === 'minimax') {
-                return (
-                  <>
-                    <Form.Item
-                      name="minimaxBaseUrl"
-                      label="MiniMax API 地址"
-                      extra="远程代理服务器地址"
-                    >
-                      <Input placeholder="http://118.178.253.190:8317/v1" />
-                    </Form.Item>
-                    <Form.Item
-                      name="minimaxApiKey"
-                      label="MiniMax API Key"
-                    >
-                      <Input.Password placeholder="sk-..." />
-                    </Form.Item>
-                    <Form.Item
-                      name="minimaxModel"
-                      label="MiniMax 模型"
-                    >
-                      <Select>
-                        <Select.Option value="minimax-m2.1">minimax-m2.1</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </>
-                )
-              }
-
-              if (provider === 'glm') {
-                return (
-                  <>
-                    <Form.Item
-                      name="glmBaseUrl"
-                      label="GLM API 地址"
-                      extra="远程代理服务器地址"
-                    >
-                      <Input placeholder="http://118.178.253.190:8317/v1" />
-                    </Form.Item>
-                    <Form.Item
-                      name="glmApiKey"
-                      label="GLM API Key"
-                    >
-                      <Input.Password placeholder="sk-..." />
-                    </Form.Item>
-                    <Form.Item
-                      name="glmModel"
-                      label="GLM 模型"
-                    >
-                      <Select>
-                        <Select.Option value="glm-4.7">glm-4.7</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </>
-                )
-              }
-
               return null
             }}
           </Form.Item>

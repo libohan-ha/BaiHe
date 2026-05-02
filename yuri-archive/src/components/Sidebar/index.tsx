@@ -66,7 +66,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
     if (location.pathname.startsWith('/gallery') || location.pathname.startsWith('/image')) {
       return 'gallery'
     }
-    if (location.pathname.startsWith('/ai-chat')) {
+    if (location.pathname.startsWith('/ai-chat') || location.pathname.startsWith('/ai-group-chat')) {
       return 'ai-chat'
     }
     if (location.pathname.startsWith('/public-chat')) {

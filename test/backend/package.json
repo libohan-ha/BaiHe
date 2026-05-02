@@ -5,6 +5,8 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
+    "smoke": "node scripts/smoke/smoke-test.mjs",
+    "smoke:ai": "node scripts/smoke/smoke-test.mjs --ai",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:push": "prisma db push",

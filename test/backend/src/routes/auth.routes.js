@@ -1,5 +1,6 @@
 const { body } = require('express-validator');
 const { auth } = require('../middleware/auth.middleware');
+const { createRateLimiter } = require('../middleware/rateLimit');
 const validator = require('../middleware/validator');
 const {
   register,
@@ -11,14 +12,23 @@ const {
 
 const router = require('express').Router();
 
-router.post('/register', [
+const authRateLimitWindowMs = Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS || 10 * 60 * 1000);
+const authRateLimitMax = Number(process.env.AUTH_RATE_LIMIT_MAX || 20);
+const authRateLimiter = createRateLimiter({
+  windowMs: authRateLimitWindowMs,
+  maxRequests: authRateLimitMax,
+  message: '登录或注册尝试过于频繁，请稍后再试',
+  keyGenerator: (req, clientIp) => `auth:${req.path}:${clientIp}`
+});
+
+router.post('/register', authRateLimiter, [
   body('email').isEmail().withMessage('请输入有效的邮箱地址'),
   body('username').isLength({ min: 2, max: 20 }).withMessage('用户名长度2-20位'),
   body('password').isLength({ min: 6 }).withMessage('密码长度至少6位'),
   validator
 ], register);
 
-router.post('/login', [
+router.post('/login', authRateLimiter, [
   body('password').notEmpty().withMessage('密码不能为空'),
   // 验证 identifier 或 email 字段（兼容新旧版本）
   body().custom((value, { req }) => {

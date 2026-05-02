@@ -92,7 +92,7 @@ export function AIGroupChatPage() {
       setMessages(msgList)
     } catch (err) {
       message.error(err instanceof Error ? err.message : '加载群聊失败')
-      navigate('/ai-chat', { replace: true })
+      navigate('/ai-group-chat', { replace: true })
     } finally {
       setLoading(false)
     }
@@ -337,7 +337,7 @@ export function AIGroupChatPage() {
           <Button
             type="text"
             icon={<ArrowLeftOutlined />}
-            onClick={() => navigate('/ai-chat', { replace: true })}
+            onClick={() => navigate('/ai-group-chat', { replace: true })}
             className={styles.backButton}
           />
           <TeamOutlined className={styles.groupIcon} />

@@ -14,7 +14,8 @@ const UPLOAD_DIRS = {
   avatar: path.join(__dirname, '../../uploads/avatars'),
   cover: path.join(__dirname, '../../uploads/covers'),
   gallery: path.join(__dirname, '../../uploads/gallery'),
-  chat: path.join(__dirname, '../../uploads/chat')
+  chat: path.join(__dirname, '../../uploads/chat'),
+  private: path.join(__dirname, '../../uploads/private')
 };
 
 // 确保所有上传目录存在
@@ -87,6 +88,13 @@ const uploadChat = multer({
   limits: { fileSize: 50 * 1024 * 1024 }
 });
 
+// 私有相册图片上传（仅用于隐私相册，不走公开静态目录）
+const uploadPrivate = multer({
+  storage: createStorage('private'),
+  fileFilter,
+  limits: { fileSize: MAX_FILE_SIZE }
+});
+
 // 通用上传（默认为 avatar）
 const upload = multer({
   storage: createStorage('avatar'),
@@ -100,6 +108,7 @@ module.exports = {
   uploadCover,
   uploadGallery,
   uploadChat,
+  uploadPrivate,
   UPLOAD_DIRS,
   ALLOWED_TYPES,
   MAX_FILE_SIZE

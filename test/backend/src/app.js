@@ -1,10 +1,15 @@
-const express = require('express');
+﻿const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const http = require('http');
 const morgan = require('morgan');
 const path = require('path');
 require('dotenv').config();
+const { corsOriginDelegate } = require('./config/cors');
+const { validateSecurityConfig } = require('./config/security');
+const securityHeaders = require('./middleware/securityHeaders');
+
+validateSecurityConfig();
 
 const errorHandler = require('./middleware/errorHandler');
 const authRoutes = require('./routes/auth.routes');
@@ -19,33 +24,35 @@ const imageRoutes = require('./routes/image.routes');
 const imageTagRoutes = require('./routes/imageTag.routes');
 const imageCollectionRoutes = require('./routes/imageCollection.routes');
 const aiChatRoutes = require('./routes/aiChat.routes');
-// 隐私相册相关路由
 const privateImageRoutes = require('./routes/privateImage.routes');
 const privateImageTagRoutes = require('./routes/privateImageTag.routes');
 const privateImageCollectionRoutes = require('./routes/privateImageCollection.routes');
-// 公共聊天室相关
 const publicChatRoutes = require('./routes/publicChat.routes');
-// AI群聊相关
 const aiGroupChatRoutes = require('./routes/aiGroupChat.routes');
 const { initSocket } = require('./socket');
 
 const app = express();
 const server = http.createServer(app);
+const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '20mb';
 
-// 初始化 Socket.io
 const io = initSocket(server);
 
+app.disable('x-powered-by');
 app.use(morgan('dev'));
+app.use(securityHeaders);
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || true,  // 允许所有来源（开发环境）
+  origin: corsOriginDelegate,
   credentials: true
 }));
-app.use(express.json({ limit: '500mb' }));  // 增加请求体大小限制，支持图片 base64
-app.use(express.urlencoded({ extended: true, limit: '500mb' }));
+app.use(express.json({ limit: requestBodyLimit }));
+app.use(express.urlencoded({ extended: true, limit: requestBodyLimit }));
 app.use(cookieParser());
 
-// 静态文件服务 - 用于访问上传的文件
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+const uploadsRoot = path.join(__dirname, '../uploads');
+app.use('/uploads/avatars', express.static(path.join(uploadsRoot, 'avatars')));
+app.use('/uploads/covers', express.static(path.join(uploadsRoot, 'covers')));
+app.use('/uploads/gallery', express.static(path.join(uploadsRoot, 'gallery')));
+app.use('/uploads/chat', express.static(path.join(uploadsRoot, 'chat')));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -63,19 +70,16 @@ app.use('/api/images', imageRoutes);
 app.use('/api/image-tags', imageTagRoutes);
 app.use('/api/image-collections', imageCollectionRoutes);
 app.use('/api/ai-chat', aiChatRoutes);
-// 隐私相册相关路由
 app.use('/api/private-images', privateImageRoutes);
 app.use('/api/private-image-tags', privateImageTagRoutes);
 app.use('/api/private-image-collections', privateImageCollectionRoutes);
-// 公共聊天室路由
 app.use('/api/public-chat', publicChatRoutes);
-// AI群聊路由
 app.use('/api/ai-group-chat', aiGroupChatRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
     code: 404,
-    message: '资源不存在',
+    message: 'Resource not found',
     data: null
   });
 });
@@ -83,13 +87,11 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '0.0.0.0';  // 监听所有网络接口
+const HOST = process.env.HOST || '0.0.0.0';
 
 server.listen(PORT, HOST, () => {
-  console.log(`🚀 服务器运行在 http://${HOST}:${PORT}`);
-  console.log(`📝 健康检查: http://localhost:${PORT}/api/health`);
-  console.log(`🌐 局域网访问: http://<你的IP>:${PORT}`);
-  console.log(`💬 公共聊天室 WebSocket 已启用`);
+  console.log(`[server] listening on http://${HOST}:${PORT}`);
+  console.log(`[health] http://localhost:${PORT}/api/health`);
 });
 
 module.exports = { app, server, io };

@@ -2,11 +2,12 @@
  const jwt = require('jsonwebtoken');
  const chatHandler = require('./chatHandler');
  const prisma = require('../models/prisma');
+ const { socketCorsOriginDelegate } = require('../config/cors');
  
  function initSocket(server) {
    const io = new Server(server, {
      cors: {
-       origin: process.env.CORS_ORIGIN || '*',
+       origin: socketCorsOriginDelegate,
        credentials: true
      }
    });

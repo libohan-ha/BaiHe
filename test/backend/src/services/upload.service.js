@@ -14,22 +14,28 @@ const processUpload = (file, type = 'avatar') => {
     throw createError(400, '请选择要上传的文件');
   }
 
-  // 构建相对 URL 路径
-  let relativePath;
-  switch (type) {
-    case 'cover':
-      relativePath = 'covers';
-      break;
-    case 'gallery':
-      relativePath = 'gallery';
-      break;
-    case 'chat':
-      relativePath = 'chat';
-      break;
-    default:
-      relativePath = 'avatars';
+  let url;
+  if (type === 'private') {
+    // 私有图片不放在公开静态目录，走鉴权路由访问
+    url = `/api/private-images/file/${file.filename}`;
+  } else {
+    // 构建公开访问 URL 路径
+    let relativePath;
+    switch (type) {
+      case 'cover':
+        relativePath = 'covers';
+        break;
+      case 'gallery':
+        relativePath = 'gallery';
+        break;
+      case 'chat':
+        relativePath = 'chat';
+        break;
+      default:
+        relativePath = 'avatars';
+    }
+    url = `/uploads/${relativePath}/${file.filename}`;
   }
-  const url = `/uploads/${relativePath}/${file.filename}`;
 
   return {
     url,
@@ -47,8 +53,16 @@ const processUpload = (file, type = 'avatar') => {
  * @returns {boolean} 是否删除成功
  */
 const deleteFile = (filename, type = 'avatar') => {
+  if (!filename || typeof filename !== 'string') {
+    return false;
+  }
+  const safeFilename = path.basename(filename);
+  if (safeFilename !== filename) {
+    return false;
+  }
+
   const uploadDir = UPLOAD_DIRS[type] || UPLOAD_DIRS.avatar;
-  const filePath = path.join(uploadDir, filename);
+  const filePath = path.join(uploadDir, safeFilename);
 
   if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
@@ -59,19 +73,34 @@ const deleteFile = (filename, type = 'avatar') => {
 };
 
 /**
- * 根据 URL 删除文件
- * @param {string} url - 文件 URL (如 /uploads/avatars/xxx.jpg)
- * @returns {boolean} 是否删除成功
+ * 解析上传文件 URL
+ * @param {string} url
+ * @returns {{ type: string, filename: string, pathname: string } | null}
  */
-const deleteFileByUrl = (url) => {
-  if (!url || !url.startsWith('/uploads/')) {
-    return false;
+const parseUploadUrl = (url) => {
+  if (!url || typeof url !== 'string') {
+    return null;
   }
 
-  const parts = url.split('/');
-  if (parts.length < 4) {
-    return false;
+  let pathname = url;
+  try {
+    pathname = new URL(url, 'http://localhost').pathname;
+  } catch {
+    pathname = url;
   }
+
+  if (pathname.startsWith('/api/private-images/file/')) {
+    const filename = pathname.split('/').pop();
+    if (!filename) return null;
+    return { type: 'private', filename, pathname };
+  }
+
+  if (!pathname.startsWith('/uploads/')) {
+    return null;
+  }
+
+  const parts = pathname.split('/');
+  if (parts.length < 4) return null;
 
   let type;
   switch (parts[2]) {
@@ -84,16 +113,37 @@ const deleteFileByUrl = (url) => {
     case 'chat':
       type = 'chat';
       break;
-    default:
+    case 'private':
+      type = 'private';
+      break;
+    case 'avatars':
       type = 'avatar';
+      break;
+    default:
+      return null;
   }
-  const filename = parts[3];
 
-  return deleteFile(filename, type);
+  const filename = parts[3];
+  if (!filename) return null;
+  return { type, filename, pathname };
+};
+
+/**
+ * 根据 URL 删除文件
+ * @param {string} url - 文件 URL (如 /uploads/avatars/xxx.jpg)
+ * @returns {boolean} 是否删除成功
+ */
+const deleteFileByUrl = (url) => {
+  const parsed = parseUploadUrl(url);
+  if (!parsed) {
+    return false;
+  }
+  return deleteFile(parsed.filename, parsed.type);
 };
 
 module.exports = {
   processUpload,
   deleteFile,
-  deleteFileByUrl
+  deleteFileByUrl,
+  parseUploadUrl
 };

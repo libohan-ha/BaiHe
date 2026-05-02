@@ -20,6 +20,11 @@
   gap: 12px;
 }
 
+.backButton {
+  padding-left: 0;
+  color: #6b7280;
+}
+
 .titleIcon {
   font-size: 28px;
   color: #c084fc;

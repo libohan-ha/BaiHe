@@ -3,6 +3,9 @@ const jwt = require('jsonwebtoken');
 const prisma = require('../models/prisma');
 const { createError } = require('../utils/errors');
 
+// Used when account is missing to keep bcrypt timing close to normal login flow.
+const DUMMY_PASSWORD_HASH = '$2b$10$7EqJtq98hPqEX7fNZaFWoO5h8Yg5M8Q7V6czS4QhIwTZPIYOvTo2K';
+
 const register = async (email, username, password) => {
   const existingUser = await prisma.user.findFirst({
     where: {
@@ -46,7 +49,6 @@ const register = async (email, username, password) => {
 };
 
 const login = async (identifier, password) => {
-  // 支持邮箱或用户名登录
   const user = await prisma.user.findFirst({
     where: {
       OR: [
@@ -56,14 +58,11 @@ const login = async (identifier, password) => {
     }
   });
 
-  if (!user) {
-    throw createError(401, '用户不存在');
-  }
+  const passwordHash = user?.password || DUMMY_PASSWORD_HASH;
+  const isValidPassword = await bcrypt.compare(password, passwordHash);
 
-  const isValidPassword = await bcrypt.compare(password, user.password);
-
-  if (!isValidPassword) {
-    throw createError(401, '密码错误');
+  if (!user || !isValidPassword) {
+    throw createError(401, '邮箱/用户名或密码错误');
   }
 
   const token = jwt.sign(

@@ -1,4 +1,4 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined, TeamOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, DeleteOutlined, EditOutlined, PlusOutlined, TeamOutlined } from '@ant-design/icons'
 import { Avatar, Button, Input, message, Modal, Spin, Tooltip } from 'antd'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -139,6 +139,15 @@ export function AIGroupChatListPage() {
       {/* 头部 */}
       <div className={styles.header}>
         <div className={styles.titleSection}>
+          <Button
+            type="text"
+            icon={<ArrowLeftOutlined />}
+            className={styles.backButton}
+            onClick={() => navigate('/ai-chat')}
+            aria-label="Back to AI chat"
+          >
+            返回 AI 聊天
+          </Button>
           <TeamOutlined className={styles.titleIcon} />
           <h2 className={styles.title}>AI 群聊</h2>
         </div>

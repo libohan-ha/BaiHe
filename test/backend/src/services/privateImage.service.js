@@ -1,7 +1,12 @@
 const prisma = require('../models/prisma');
+const fs = require('fs');
+const path = require('path');
+const { UPLOAD_DIRS } = require('../config/multer');
 const { createError } = require('../utils/errors');
 
 const isCuid = (value) => /^c[a-z0-9]{24}$/.test(value);
+const PRIVATE_FILE_URL_PREFIX = '/api/private-images/file/';
+const PUBLIC_GALLERY_URL_PREFIX = '/uploads/gallery/';
 
 /**
  * 标准化标签输入（用于隐私图片标签）
@@ -96,6 +101,87 @@ const normalizePageNumber = (value, fallback) => {
   return Math.floor(num);
 };
 
+const normalizePathname = (url) => {
+  if (!url || typeof url !== 'string') return '';
+  try {
+    return new URL(url, 'http://localhost').pathname;
+  } catch {
+    return url;
+  }
+};
+
+const toSafeFilename = (value) => {
+  if (!value || typeof value !== 'string') return null;
+  const safe = path.basename(value);
+  return safe === value ? safe : null;
+};
+
+const buildPrivateFileUrl = (filename) => `${PRIVATE_FILE_URL_PREFIX}${filename}`;
+
+const copyGalleryImageToPrivate = async (sourceUrl, ownerId) => {
+  const pathname = normalizePathname(sourceUrl);
+  if (!pathname.startsWith(PUBLIC_GALLERY_URL_PREFIX)) {
+    return null;
+  }
+
+  const sourceFilenameRaw = pathname.slice(PUBLIC_GALLERY_URL_PREFIX.length);
+  const sourceFilename = toSafeFilename(sourceFilenameRaw);
+  if (!sourceFilename) {
+    return null;
+  }
+
+  const sourceFilePath = path.join(UPLOAD_DIRS.gallery, sourceFilename);
+  if (!fs.existsSync(sourceFilePath)) {
+    throw createError(404, '源图片文件不存在');
+  }
+
+  // 目标文件名采用“拥有者 + 原文件名”，可避免重复转移产生多份副本
+  const targetFilename = `${ownerId}_${sourceFilename}`;
+  const targetFilePath = path.join(UPLOAD_DIRS.private, targetFilename);
+
+  if (!fs.existsSync(targetFilePath)) {
+    await fs.promises.copyFile(sourceFilePath, targetFilePath);
+  }
+
+  return buildPrivateFileUrl(targetFilename);
+};
+
+const migrateLegacyPrivateImageUrl = async (image) => {
+  if (!image || !image.url) return image;
+
+  const migratedUrl = await copyGalleryImageToPrivate(image.url, image.ownerId);
+  if (!migratedUrl || migratedUrl === image.url) {
+    return image;
+  }
+
+  const oldUrlPath = normalizePathname(image.url);
+  const updateData = { url: migratedUrl };
+  if (image.thumbnailUrl && normalizePathname(image.thumbnailUrl) === oldUrlPath) {
+    updateData.thumbnailUrl = migratedUrl;
+  }
+
+  await prisma.privateImage.update({
+    where: { id: image.id },
+    data: updateData
+  });
+
+  return {
+    ...image,
+    ...updateData
+  };
+};
+
+const normalizePrivateStorageUrl = (url) => {
+  const pathname = normalizePathname(url);
+  if (pathname.startsWith('/uploads/private/')) {
+    const filename = toSafeFilename(pathname.replace('/uploads/private/', ''));
+    if (filename) {
+      return buildPrivateFileUrl(filename);
+    }
+  }
+  return url;
+};
+
 /**
  * 获取用户的隐私图片列表
  * 只返回当前用户自己的隐私图片
@@ -168,8 +254,24 @@ const getPrivateImages = async (ownerId, filters) => {
     prisma.privateImage.count({ where })
   ]);
 
+  // 兼容历史数据：将旧的 /uploads/gallery/xxx 懒迁移到私有文件路径
+  const securedImages = await Promise.all(
+    images.map(async (image) => {
+      try {
+        const normalizedImage = {
+          ...image,
+          url: normalizePrivateStorageUrl(image.url),
+          thumbnailUrl: normalizePrivateStorageUrl(image.thumbnailUrl)
+        };
+        return await migrateLegacyPrivateImageUrl(normalizedImage);
+      } catch (error) {
+        return image;
+      }
+    })
+  );
+
   return {
-    images,
+    images: securedImages,
     pagination: {
       page: Number(page),
       pageSize: Number(pageSize),
@@ -218,15 +320,76 @@ const getPrivateImageById = async (id, userId) => {
     throw createError(403, '无权查看此隐私图片');
   }
 
-  return image;
+  const normalizedImage = {
+    ...image,
+    url: normalizePrivateStorageUrl(image.url),
+    thumbnailUrl: normalizePrivateStorageUrl(image.thumbnailUrl)
+  };
+
+  try {
+    return await migrateLegacyPrivateImageUrl(normalizedImage);
+  } catch {
+    return normalizedImage;
+  }
+};
+
+/**
+ * 获取私有图片文件绝对路径（用于鉴权后下发文件）
+ */
+const getPrivateImageFilePath = async (filename, userId) => {
+  const safeFilename = toSafeFilename(filename);
+  if (!safeFilename) {
+    throw createError(400, '文件名无效');
+  }
+
+  const fileUrl = buildPrivateFileUrl(safeFilename);
+  const legacyUrl = `/uploads/private/${safeFilename}`;
+
+  const image = await prisma.privateImage.findFirst({
+    where: {
+      ownerId: userId,
+      OR: [
+        { url: fileUrl },
+        { thumbnailUrl: fileUrl },
+        { url: legacyUrl },
+        { thumbnailUrl: legacyUrl }
+      ]
+    },
+    select: { id: true }
+  });
+
+  if (!image) {
+    throw createError(404, '图片不存在或无权访问');
+  }
+
+  const filePath = path.join(UPLOAD_DIRS.private, safeFilename);
+  if (!fs.existsSync(filePath)) {
+    throw createError(404, '图片文件不存在');
+  }
+
+  return filePath;
 };
 
 /**
  * 创建隐私图片
  */
 const createPrivateImage = async (data, ownerId) => {
-  const { title, description, url, thumbnailUrl, width, height, size } = data;
+  let { title, description, url, thumbnailUrl, width, height, size } = data;
   const tagsRelation = buildTagsRelation(data);
+
+  // 兼容输入的旧路径格式
+  url = normalizePrivateStorageUrl(url);
+  thumbnailUrl = normalizePrivateStorageUrl(thumbnailUrl);
+
+  // 若传入公开画廊地址，复制为私有副本后再入库
+  const copiedPrivateUrl = await copyGalleryImageToPrivate(url, ownerId);
+  if (copiedPrivateUrl) {
+    const oldUrlPath = normalizePathname(url);
+    url = copiedPrivateUrl;
+    if (thumbnailUrl && normalizePathname(thumbnailUrl) === oldUrlPath) {
+      thumbnailUrl = copiedPrivateUrl;
+    }
+  }
 
   const image = await prisma.privateImage.create({
     data: {
@@ -276,7 +439,19 @@ const updatePrivateImage = async (id, data, userId) => {
     throw createError(403, '无权修改此隐私图片');
   }
 
-  const { title, description, url, thumbnailUrl } = data;
+  let { title, description, url, thumbnailUrl } = data;
+
+  url = normalizePrivateStorageUrl(url);
+  thumbnailUrl = normalizePrivateStorageUrl(thumbnailUrl);
+
+  const copiedPrivateUrl = await copyGalleryImageToPrivate(url, userId);
+  if (copiedPrivateUrl) {
+    const oldUrlPath = normalizePathname(url);
+    url = copiedPrivateUrl;
+    if (thumbnailUrl && normalizePathname(thumbnailUrl) === oldUrlPath) {
+      thumbnailUrl = copiedPrivateUrl;
+    }
+  }
 
   const updateData = {};
   if (title !== undefined) updateData.title = title;
@@ -363,11 +538,17 @@ const transferFromGallery = async (imageId, userId) => {
     throw createError(404, '图片不存在');
   }
 
-  // 2. 检查是否已经复制过（避免重复复制）
+  // 2. 将公开图片文件复制到私有目录
+  const privateUrl = await copyGalleryImageToPrivate(publicImage.url, userId);
+  if (!privateUrl) {
+    throw createError(400, '该图片来源不支持转移到隐私相册');
+  }
+
+  // 3. 检查是否已经复制过（避免重复复制）
   const existingPrivateImage = await prisma.privateImage.findFirst({
     where: {
       ownerId: userId,
-      url: publicImage.url
+      url: privateUrl
     }
   });
 
@@ -375,15 +556,15 @@ const transferFromGallery = async (imageId, userId) => {
     throw createError(400, '该图片已在您的隐私相册中');
   }
 
-  // 3. 创建隐私图片副本，同时同步标签
+  // 4. 创建隐私图片副本，同时同步标签
   const tagNames = publicImage.tags.map(tag => tag.name);
   
   const privateImage = await prisma.privateImage.create({
     data: {
       title: publicImage.title,
       description: publicImage.description,
-      url: publicImage.url,
-      thumbnailUrl: publicImage.thumbnailUrl,
+      url: privateUrl,
+      thumbnailUrl: privateUrl,
       width: publicImage.width,
       height: publicImage.height,
       size: publicImage.size,
@@ -473,6 +654,7 @@ const getPrivateImageStats = async (userId) => {
 module.exports = {
   getPrivateImages,
   getPrivateImageById,
+  getPrivateImageFilePath,
   createPrivateImage,
   updatePrivateImage,
   deletePrivateImage,

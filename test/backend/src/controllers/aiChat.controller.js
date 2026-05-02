@@ -8,35 +8,90 @@ const path = require('path');
  * Docker环境下：所有本地代理端口都转换为 host.docker.internal
  * 非Docker环境下：局域网IP转换为127.0.0.1
  */
-const fixProxyUrl = (url) => {
+const normalizeApiUrl = (url) => {
+  if (typeof url !== 'string') return null;
+
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+
+  const hasScheme = /^[a-zA-Z][a-zA-Z\d+.-]*:\/\//.test(trimmed);
+  const normalized = hasScheme ? trimmed : `http://${trimmed}`;
+
   try {
-    const urlObj = new URL(url);
-    const localProxyPorts = ['8045', '8080', '8000', '8317'];
-    const isPrivateIP = /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(urlObj.hostname);
-    const isLocalhost = urlObj.hostname === '127.0.0.1' || urlObj.hostname === 'localhost';
-    
-    // 检测是否在Docker环境中
-    const isDocker = process.env.NODE_ENV === 'production' || process.env.DOCKER_ENV === 'true';
-    
-    if (isDocker) {
-      // Docker环境下：所有本地代理端口（127.0.0.1、localhost、局域网IP）都转换为 host.docker.internal
-      // 因为代理服务通常只监听 127.0.0.1，Docker容器需要通过 host.docker.internal 访问
-      if ((isLocalhost || isPrivateIP) && localProxyPorts.includes(urlObj.port)) {
-        urlObj.hostname = 'host.docker.internal';
-        return urlObj.toString();
-      }
-      return url;
-    } else {
-      // 非Docker环境：局域网IP转换为127.0.0.1
-      if (isPrivateIP && localProxyPorts.includes(urlObj.port)) {
-        urlObj.hostname = '127.0.0.1';
-        return urlObj.toString();
-      }
-      return url;
+    const urlObj = new URL(normalized);
+    if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+      return null;
     }
+    return urlObj;
   } catch {
-    return url;
+    return null;
   }
+};
+
+const fixProxyUrl = (url) => {
+  const urlObj = normalizeApiUrl(url);
+  if (!urlObj) return null;
+
+  const localProxyPorts = ['8045', '8080', '8000', '8317'];
+  const isPrivateIP = /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(urlObj.hostname);
+  const isLocalhost = urlObj.hostname === '127.0.0.1' || urlObj.hostname === 'localhost';
+  
+  // 检测是否在Docker环境中
+  const isDocker = process.env.NODE_ENV === 'production' || process.env.DOCKER_ENV === 'true';
+  
+  if (isDocker) {
+    // Docker环境下：所有本地代理端口（127.0.0.1、localhost、局域网IP）都转换为 host.docker.internal
+    // 因为代理服务通常只监听 127.0.0.1，Docker容器需要通过 host.docker.internal 访问
+    if ((isLocalhost || isPrivateIP) && localProxyPorts.includes(urlObj.port)) {
+      urlObj.hostname = 'host.docker.internal';
+    }
+    return urlObj.toString();
+  }
+
+  // 非Docker环境：局域网IP转换为127.0.0.1
+  if (isPrivateIP && localProxyPorts.includes(urlObj.port)) {
+    urlObj.hostname = '127.0.0.1';
+  }
+  return urlObj.toString();
+};
+
+const parseUpstreamHostname = (rawUrl) => {
+  try {
+    return new URL(rawUrl).hostname;
+  } catch {
+    return '';
+  }
+};
+
+const getUpstreamFetchError = (err, rawUrl) => {
+  const cause = err?.cause ?? err;
+  const code = cause?.code;
+  if (!code) return null;
+
+  const hostname = parseUpstreamHostname(rawUrl);
+
+  if (code === 'ENOTFOUND') {
+    return {
+      statusCode: 400,
+      message: `AI API 地址无法解析（${hostname || 'unknown host'}）。请在 API 设置中填写可访问的完整地址，例如 http://192.168.10.104:8045/v1`
+    };
+  }
+
+  if (code === 'ECONNREFUSED') {
+    return {
+      statusCode: 502,
+      message: `AI API 连接被拒绝（${hostname || 'unknown host'}）。请检查服务是否已启动，并确认端口可访问。`
+    };
+  }
+
+  if (code === 'ETIMEDOUT' || code === 'UND_ERR_CONNECT_TIMEOUT') {
+    return {
+      statusCode: 504,
+      message: `AI API 连接超时（${hostname || 'unknown host'}）。请检查网络连通性或代理服务状态。`
+    };
+  }
+
+  return null;
 };
 
 // ============ 多模态图片处理（仅携带最新一条消息图片） ============
@@ -147,6 +202,9 @@ const proxyAIRequest = async (req, res, next) => {
 
     // 修复 API URL（局域网地址转本地）
     const fixedUrl = fixProxyUrl(apiUrl);
+    if (!fixedUrl) {
+      return res.status(400).json(error('API URL 格式无效，请填写完整地址（例如 https://example.com/v1/chat/completions）', 400));
+    }
     console.log('AI代理请求:', model, apiUrl, '->', fixedUrl);
 
     // 转发请求到 AI API
@@ -194,6 +252,10 @@ const proxyAIRequest = async (req, res, next) => {
     }
   } catch (err) {
     console.error('AI代理请求失败:', err);
+    const upstreamError = getUpstreamFetchError(err, req.body?.apiUrl);
+    if (upstreamError) {
+      return res.status(upstreamError.statusCode).json(error(upstreamError.message, upstreamError.statusCode));
+    }
     next(err);
   }
 };
@@ -369,6 +431,9 @@ const regenerateAssistantMessage = async (req, res, next) => {
 
     // 修复 API URL
     const fixedUrl = fixProxyUrl(apiUrl);
+    if (!fixedUrl) {
+      return res.status(400).json(error('API URL 格式无效，请填写完整地址（例如 https://example.com/v1/chat/completions）', 400));
+    }
     console.log('重新生成AI回复:', model, apiUrl, '->', fixedUrl);
 
     // 仅携带最新一条消息的图片（多模态）
@@ -441,6 +506,10 @@ const regenerateAssistantMessage = async (req, res, next) => {
     }
   } catch (err) {
     console.error('重新生成AI回复失败:', err);
+    const upstreamError = getUpstreamFetchError(err, req.body?.apiUrl);
+    if (upstreamError) {
+      return res.status(upstreamError.statusCode).json(error(upstreamError.message, upstreamError.statusCode));
+    }
     next(err);
   }
 };
@@ -460,6 +529,9 @@ const editAndRegenerateMessage = async (req, res, next) => {
 
     // 修复 API URL
     const fixedUrl = fixProxyUrl(apiUrl);
+    if (!fixedUrl) {
+      return res.status(400).json(error('API URL 格式无效，请填写完整地址（例如 https://example.com/v1/chat/completions）', 400));
+    }
     console.log('编辑消息并重新生成AI回复:', model, apiUrl, '->', fixedUrl);
 
     // 仅携带最新一条消息的图片（多模态）
@@ -532,6 +604,10 @@ const editAndRegenerateMessage = async (req, res, next) => {
     }
   } catch (err) {
     console.error('编辑消息并重新生成失败:', err);
+    const upstreamError = getUpstreamFetchError(err, req.body?.apiUrl);
+    if (upstreamError) {
+      return res.status(upstreamError.statusCode).json(error(upstreamError.message, upstreamError.statusCode));
+    }
     next(err);
   }
 };

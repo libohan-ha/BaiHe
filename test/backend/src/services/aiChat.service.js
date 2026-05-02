@@ -33,7 +33,7 @@ const createCharacter = async (data, userId) => {
       userAvatarUrl,
       prompt,
       backgroundUrl,
-      modelName: modelName || 'deepseek-chat',
+      modelName: modelName || 'deepseek-v4-flash',
       bubbleOpacity: bubbleOpacity ?? 85,
       userId
     }

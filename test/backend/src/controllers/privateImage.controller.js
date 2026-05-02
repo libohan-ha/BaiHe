@@ -54,6 +54,19 @@ const getPrivateImageById = async (req, res, next) => {
 };
 
 /**
+ * 获取私有图片文件（鉴权）
+ */
+const getPrivateImageFile = async (req, res, next) => {
+  try {
+    const { filename } = req.params;
+    const filePath = await privateImageService.getPrivateImageFilePath(filename, req.user.id);
+    res.sendFile(filePath);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * 创建隐私图片
  * 支持两种方式：
  * 1. 直接上传文件（multipart/form-data，包含 file 字段）
@@ -78,7 +91,7 @@ const createPrivateImage = async (req, res, next) => {
 
     // 如果有上传的文件，处理文件并获取URL
     if (req.file) {
-      const uploadResult = uploadService.processUpload(req.file, 'gallery');
+      const uploadResult = uploadService.processUpload(req.file, 'private');
       url = uploadResult.url;
       size = uploadResult.size;
     }
@@ -241,6 +254,7 @@ const getPrivateImageStats = async (req, res, next) => {
 module.exports = {
   getPrivateImages,
   getPrivateImageById,
+  getPrivateImageFile,
   createPrivateImage,
   updatePrivateImage,
   deletePrivateImage,

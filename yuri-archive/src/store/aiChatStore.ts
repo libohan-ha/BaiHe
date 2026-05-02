@@ -4,67 +4,22 @@ import type { AICharacter, ChatMessage, Conversation } from '../types'
 
 export type AIProvider =
   | 'deepseek'
-  | 'claude'
-  | 'qwen'
-  | 'gpt'
   | 'grok'
-  | 'gemini'
-  | 'geminiPreview'
-  | 'kimi'
-  | 'deepseekV3'
-  | 'qwenCoder'
-  | 'minimax'
-  | 'glm'
+  | 'claude'
 
 interface AISettings {
   provider: AIProvider
   // DeepSeek 设置
   deepseekApiKey: string
   deepseekModel: string
-  // Claude 设置
-  claudeApiKey: string
-  claudeBaseUrl: string
-  claudeModel: string
-  // Qwen 设置
-  qwenApiKey: string
-  qwenBaseUrl: string
-  qwenModel: string
-  // GPT 设置
-  gptApiKey: string
-  gptBaseUrl: string
-  gptModel: string
   // Grok 设置
   grokApiKey: string
   grokBaseUrl: string
   grokModel: string
-  // Gemini 设置
-  geminiApiKey: string
-  geminiBaseUrl: string
-  geminiModel: string
-  // Gemini Preview 设置
-  geminiPreviewApiKey: string
-  geminiPreviewBaseUrl: string
-  geminiPreviewModel: string
-  // Kimi 设置
-  kimiApiKey: string
-  kimiBaseUrl: string
-  kimiModel: string
-  // DeepSeek V3 设置
-  deepseekV3ApiKey: string
-  deepseekV3BaseUrl: string
-  deepseekV3Model: string
-  // Qwen Coder 设置
-  qwenCoderApiKey: string
-  qwenCoderBaseUrl: string
-  qwenCoderModel: string
-  // Minimax 设置
-  minimaxApiKey: string
-  minimaxBaseUrl: string
-  minimaxModel: string
-  // GLM 设置
-  glmApiKey: string
-  glmBaseUrl: string
-  glmModel: string
+  // Claude 设置
+  claudeApiKey: string
+  claudeBaseUrl: string
+  claudeModel: string
   // 兼容旧版本
   apiKey: string
   defaultModel: string
@@ -123,54 +78,18 @@ const initialState = {
     provider: 'deepseek' as AIProvider,
     // DeepSeek 设置
     deepseekApiKey: '',
-    deepseekModel: 'deepseek-chat',
-    // Claude 设置
-    claudeApiKey: 'sk-ace780b87a754995a3437a13518e99c9',
-    claudeBaseUrl: 'http://127.0.0.1:8045/v1',
-    claudeModel: 'claude-opus-4-5-thinking',
-    // Qwen 设置
-    qwenApiKey: '123456',
-    qwenBaseUrl: 'http://118.178.253.190:8317/v1',
-    qwenModel: 'qwen3-max',
-    // GPT 设置
-    gptApiKey: '123456',
-    gptBaseUrl: 'http://localhost:8317/v1',
-    gptModel: 'gpt-5.2',
+    deepseekModel: 'deepseek-v4-flash',
     // Grok 设置
-    grokApiKey: '123456',
+    grokApiKey: '',
     grokBaseUrl: 'http://localhost:8000/v1',
     grokModel: 'grok-4-1-fast-non-reasoning',
-    // Gemini 设置
-    geminiApiKey: 'sk-ace780b87a754995a3437a13518e99c9',
-    geminiBaseUrl: 'http://127.0.0.1:8045/v1',
-    geminiModel: 'gemini-3-pro-high',
-    // Gemini Preview 设置
-    geminiPreviewApiKey: '123456',
-    geminiPreviewBaseUrl: 'http://localhost:8317/v1',
-    geminiPreviewModel: 'gemini-3-pro-preview',
-    // Kimi 设置
-    kimiApiKey: '123456',
-    kimiBaseUrl: 'http://118.178.253.190:8317/v1',
-    kimiModel: 'kimi-k2-0905',
-    // DeepSeek V3 设置
-    deepseekV3ApiKey: '123456',
-    deepseekV3BaseUrl: 'http://118.178.253.190:8317/v1',
-    deepseekV3Model: 'deepseek-v3.2-chat',
-    // Qwen Coder 设置
-    qwenCoderApiKey: '123456',
-    qwenCoderBaseUrl: 'http://118.178.253.190:8317/v1',
-    qwenCoderModel: 'qwen3-coder-plus',
-    // Minimax 设置
-    minimaxApiKey: '123456',
-    minimaxBaseUrl: 'http://118.178.253.190:8317/v1',
-    minimaxModel: 'minimax-m2.1',
-    // GLM 设置
-    glmApiKey: '123456',
-    glmBaseUrl: 'http://118.178.253.190:8317/v1',
-    glmModel: 'glm-4.7',
+    // Claude 设置
+    claudeApiKey: '',
+    claudeBaseUrl: 'https://api.duojie.games/v1',
+    claudeModel: 'claude-sonnet-4-6',
     // 兼容旧版本
     apiKey: '',
-    defaultModel: 'deepseek-chat'
+    defaultModel: 'deepseek-v4-flash'
   },
   characters: [],
   currentCharacter: null,
@@ -185,11 +104,15 @@ const initialState = {
 }
 
 const STORAGE_KEY = 'anime-archive-ai-chat'
-const STORAGE_VERSION = 4
+const STORAGE_VERSION = 8
 
 const normalizeBaseUrl = (value: unknown): string => {
   if (typeof value !== 'string') return ''
-  return value.trim().replace(/\/+$/, '')
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+  const hasScheme = /^[a-zA-Z][a-zA-Z\d+.-]*:\/\//.test(trimmed)
+  const withScheme = hasScheme ? trimmed : `http://${trimmed}`
+  return withScheme.replace(/\/+$/, '')
 }
 
 const LEGACY_LOCAL_8317_BASE_URLS = new Set([
@@ -197,14 +120,55 @@ const LEGACY_LOCAL_8317_BASE_URLS = new Set([
   'http://127.0.0.1:8317/v1'
 ])
 
+const LEGACY_INSECURE_API_KEYS = new Set([
+  '123456',
+  'sk-ace780b87a754995a3437a13518e99c9'
+])
+
+const BASE_URL_FIELDS = [
+  'grokBaseUrl',
+  'claudeBaseUrl'
+] as const satisfies ReadonlyArray<keyof AISettings>
+
+const API_KEY_FIELDS = [
+  'deepseekApiKey',
+  'grokApiKey',
+  'claudeApiKey',
+  'apiKey'
+] as const satisfies ReadonlyArray<keyof AISettings>
+
+const sanitizeApiKeys = (settings: AISettings): AISettings => {
+  for (const key of API_KEY_FIELDS) {
+    const value = settings[key]
+    if (typeof value === 'string' && LEGACY_INSECURE_API_KEYS.has(value.trim())) {
+      settings[key] = ''
+    }
+  }
+  return settings
+}
+
+const sanitizeBaseUrls = (settings: AISettings): AISettings => {
+  for (const key of BASE_URL_FIELDS) {
+    const normalized = normalizeBaseUrl(settings[key])
+    if (normalized) {
+      settings[key] = normalized
+    }
+  }
+  return settings
+}
+
 export const useAIChatStore = create<AIChatStore>()(
   persist(
     (set) => ({
       ...initialState,
       
-      setSettings: (newSettings) => set((state) => ({
-        settings: { ...state.settings, ...newSettings }
-      })),
+      setSettings: (newSettings) => set((state) => {
+        const mergedSettings: AISettings = { ...state.settings, ...newSettings }
+        sanitizeBaseUrls(mergedSettings)
+        return {
+          settings: mergedSettings
+        }
+      }),
       
       setCharacters: (characters) => set({ characters }),
       
@@ -299,22 +263,22 @@ export const useAIChatStore = create<AIChatStore>()(
           ...persistedSettings
         }
 
-        const remoteBaseUrlKeys = [
-          'qwenBaseUrl',
-          'kimiBaseUrl',
-          'deepseekV3BaseUrl',
-          'qwenCoderBaseUrl',
-          'minimaxBaseUrl',
-          'glmBaseUrl'
-        ] as const satisfies ReadonlyArray<keyof AISettings>
-
-        for (const key of remoteBaseUrlKeys) {
+        for (const key of BASE_URL_FIELDS) {
           const raw = persistedSettings[key]
           const normalized = normalizeBaseUrl(raw)
-          if (!normalized || LEGACY_LOCAL_8317_BASE_URLS.has(normalized)) {
+          if (!normalized) {
             mergedSettings[key] = initialState.settings[key]
+            continue
           }
+          if (LEGACY_LOCAL_8317_BASE_URLS.has(normalized)) {
+            mergedSettings[key] = initialState.settings[key]
+            continue
+          }
+          mergedSettings[key] = normalized
         }
+
+        sanitizeApiKeys(mergedSettings)
+        sanitizeBaseUrls(mergedSettings)
 
         return {
           ...state,
