@@ -1,12 +1,13 @@
 import { PlusOutlined, RobotOutlined, SettingOutlined, TeamOutlined, UploadOutlined } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
-import { Avatar, Button, Form, Input, Modal, Radio, Select, Slider, Spin, Typography, Upload, message } from 'antd'
+import { Avatar, Button, Form, Input, Modal, Select, Slider, Spin, Typography, Upload, message } from 'antd'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createAICharacter, deleteAICharacter, getAICharacters, getImageUrl, updateAICharacter, uploadAIChatImage } from '../../services/api'
+import { createAICharacter, deleteAICharacter, getAICharacters, getImageUrl, listAIModels, updateAICharacter, uploadAIChatImage } from '../../services/api'
 import { useAIChatStore, useUserStore } from '../../store'
-import type { AIProvider } from '../../store/aiChatStore'
+import type { CustomApiCredential } from '../../store/aiChatStore'
 import type { AICharacter, CreateCharacterData } from '../../types'
+import { getDefaultModel, getSavedModelOptions, normalizeOpenAIBaseUrl } from '../../utils/aiConfig'
 import styles from './AIChatPage.module.css'
 
 const { Title } = Typography
@@ -23,11 +24,49 @@ export function AIChatPage() {
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [userAvatarUploading, setUserAvatarUploading] = useState(false)
   const [backgroundUploading, setBackgroundUploading] = useState(false)
+  const [modelsLoading, setModelsLoading] = useState(false)
   const [form] = Form.useForm()
   const [settingsForm] = Form.useForm()
   const navigate = useNavigate()
   const { isLoggedIn } = useUserStore()
   const { characters, setCharacters, settings, setSettings } = useAIChatStore()
+  const modelOptions = getSavedModelOptions(settings)
+  const defaultModel = getDefaultModel(settings)
+  const activeCredential = settings.customCredentials.find(item => item.id === settings.activeCustomCredentialId)
+
+  const createCredentialId = () => `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+
+  const getCredentialName = (baseUrl: string, model: string) => {
+    if (model) return model
+    if (baseUrl) {
+      try {
+        return new URL(baseUrl).hostname
+      } catch {
+        return baseUrl
+      }
+    }
+    return `自定义配置 ${settings.customCredentials.length + 1}`
+  }
+
+  const applyCredential = (credential: CustomApiCredential) => {
+    settingsForm.setFieldsValue({
+      customCredentialId: credential.id,
+      customName: credential.name,
+      customBaseUrl: credential.baseUrl,
+      customApiKey: credential.apiKey,
+      customModel: credential.model || credential.models[0],
+    })
+    setSettings({
+      provider: 'custom',
+      activeCustomCredentialId: credential.id,
+      customBaseUrl: credential.baseUrl,
+      customApiKey: credential.apiKey,
+      customModel: credential.model || credential.models[0] || '',
+      customModels: credential.models,
+      defaultModel: credential.model || credential.models[0] || settings.defaultModel,
+      apiKey: credential.apiKey,
+    })
+  }
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -53,6 +92,7 @@ export function AIChatPage() {
   const handleCreate = () => {
     setEditingCharacter(null)
     form.resetFields()
+    form.setFieldsValue({ modelName: defaultModel })
     setAvatarUrl('')
     setUserAvatarUrl('')
     setBackgroundUrl('')
@@ -174,69 +214,192 @@ export function AIChatPage() {
     navigate(`/ai-chat/${character.id}`)
   }
 
-  const normalizeBaseUrlInput = (value: string): string => {
-    const trimmed = value.trim()
-    if (!trimmed) return ''
-    const hasScheme = /^[a-zA-Z][a-zA-Z\d+.-]*:\/\//.test(trimmed)
-    const withScheme = hasScheme ? trimmed : `http://${trimmed}`
-    return withScheme.replace(/\/+$/, '')
-  }
-
   const handleSettingsSave = (values: {
-    provider: AIProvider
-    deepseekApiKey?: string
-    deepseekModel?: string
-    grokApiKey?: string
-    grokBaseUrl?: string
-    grokModel?: string
-    claudeApiKey?: string
-    claudeBaseUrl?: string
-    claudeModel?: string
+    customCredentialId?: string
+    customName?: string
+    customBaseUrl?: string
+    customApiKey?: string
+    customModel?: string
   }) => {
-    const newDeepseekApiKey = values.deepseekApiKey !== undefined ? values.deepseekApiKey : settings.deepseekApiKey
-    const newDeepseekModel = values.deepseekModel !== undefined ? values.deepseekModel : settings.deepseekModel
-    const newGrokApiKey = values.grokApiKey !== undefined ? values.grokApiKey : settings.grokApiKey
-    const newGrokBaseUrl = values.grokBaseUrl !== undefined
-      ? normalizeBaseUrlInput(values.grokBaseUrl)
-      : settings.grokBaseUrl
-    const newGrokModel = values.grokModel !== undefined ? values.grokModel : settings.grokModel
-    const newClaudeApiKey = values.claudeApiKey !== undefined ? values.claudeApiKey : settings.claudeApiKey
-    const newClaudeBaseUrl = values.claudeBaseUrl !== undefined
-      ? normalizeBaseUrlInput(values.claudeBaseUrl)
-      : settings.claudeBaseUrl
-    const newClaudeModel = values.claudeModel !== undefined ? values.claudeModel : settings.claudeModel
-
-    const legacyApiKey = values.provider === 'grok' ? newGrokApiKey
-      : values.provider === 'claude' ? newClaudeApiKey
-      : newDeepseekApiKey
+    const customBaseUrl = normalizeOpenAIBaseUrl(values.customBaseUrl || settings.customBaseUrl)
+    const customApiKey = values.customApiKey !== undefined ? values.customApiKey : settings.customApiKey
+    const customModel = values.customModel || settings.customModel || settings.customModels[0] || defaultModel
+    const credentialId = values.customCredentialId || settings.activeCustomCredentialId || createCredentialId()
+    const credentialName = values.customName?.trim() || getCredentialName(customBaseUrl, customModel)
+    const existingCredential = settings.customCredentials.find(item => item.id === credentialId)
+    const nextCredential: CustomApiCredential = {
+      id: credentialId,
+      name: credentialName,
+      baseUrl: customBaseUrl,
+      apiKey: customApiKey,
+      model: customModel,
+      models: settings.customModels,
+      updatedAt: Date.now()
+    }
+    const customCredentials = existingCredential
+      ? settings.customCredentials.map(item => item.id === credentialId ? nextCredential : item)
+      : [nextCredential, ...settings.customCredentials]
 
     setSettings({
-      provider: values.provider,
-      deepseekApiKey: newDeepseekApiKey,
-      deepseekModel: newDeepseekModel,
-      grokApiKey: newGrokApiKey,
-      grokBaseUrl: newGrokBaseUrl,
-      grokModel: newGrokModel,
-      claudeApiKey: newClaudeApiKey,
-      claudeBaseUrl: newClaudeBaseUrl,
-      claudeModel: newClaudeModel,
-      apiKey: legacyApiKey
+      provider: 'custom',
+      activeCustomCredentialId: credentialId,
+      customCredentials,
+      customBaseUrl,
+      customApiKey,
+      customModel,
+      defaultModel: customModel,
+      apiKey: customApiKey,
     })
     message.success('设置已保存')
     setSettingsVisible(false)
   }
 
+  const handleLoadModels = async () => {
+    const { customCredentialId, customName, customBaseUrl, customApiKey } = settingsForm.getFieldsValue(['customCredentialId', 'customName', 'customBaseUrl', 'customApiKey'])
+    const baseUrl = normalizeOpenAIBaseUrl(customBaseUrl || '')
+    const apiKey = customApiKey || ''
+
+    if (!baseUrl || !apiKey) {
+      message.warning('请先填写自定义端点和 API Key')
+      return
+    }
+
+    setModelsLoading(true)
+    try {
+      const models = await listAIModels(baseUrl, apiKey)
+      if (models.length === 0) {
+        message.warning('端点返回的模型列表为空')
+        return
+      }
+      const selectedModel = models.includes(settings.customModel) ? settings.customModel : models[0]
+      const credentialId = customCredentialId || settings.activeCustomCredentialId || createCredentialId()
+      const credentialName = customName?.trim() || getCredentialName(baseUrl, selectedModel)
+      const nextCredential: CustomApiCredential = {
+        id: credentialId,
+        name: credentialName,
+        baseUrl,
+        apiKey,
+        model: selectedModel,
+        models,
+        updatedAt: Date.now()
+      }
+      const existingCredential = settings.customCredentials.find(item => item.id === credentialId)
+      const customCredentials = existingCredential
+        ? settings.customCredentials.map(item => item.id === credentialId ? nextCredential : item)
+        : [nextCredential, ...settings.customCredentials]
+      settingsForm.setFieldsValue({
+        customCredentialId: credentialId,
+        customName: credentialName,
+        customBaseUrl: baseUrl,
+        customModel: selectedModel,
+      })
+      setSettings({
+        provider: 'custom',
+        activeCustomCredentialId: credentialId,
+        customCredentials,
+        customBaseUrl: baseUrl,
+        customApiKey: apiKey,
+        customModel: selectedModel,
+        customModels: models,
+        defaultModel: selectedModel,
+        apiKey,
+      })
+      message.success(`已获取 ${models.length} 个模型`)
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '获取模型列表失败')
+    } finally {
+      setModelsLoading(false)
+    }
+  }
+
+  const handleCredentialChange = (credentialId: string) => {
+    const credential = settings.customCredentials.find(item => item.id === credentialId)
+    if (credential) {
+      applyCredential(credential)
+    }
+  }
+
+  const handleNewCredential = () => {
+    const nextName = `自定义配置 ${settings.customCredentials.length + 1}`
+    settingsForm.setFieldsValue({
+      customCredentialId: '',
+      customName: nextName,
+      customBaseUrl: '',
+      customApiKey: '',
+      customModel: undefined,
+    })
+    setSettings({
+      activeCustomCredentialId: '',
+      customBaseUrl: '',
+      customApiKey: '',
+      customModel: '',
+      customModels: [],
+      apiKey: '',
+    })
+  }
+
+  const handleDeleteCredential = () => {
+    const credentialId = settingsForm.getFieldValue('customCredentialId') || settings.activeCustomCredentialId
+    if (!credentialId) {
+      message.warning('当前没有可删除的配置')
+      return
+    }
+
+    const credential = settings.customCredentials.find(item => item.id === credentialId)
+    Modal.confirm({
+      title: '删除配置',
+      content: `确定删除「${credential?.name || '当前配置'}」吗？`,
+      onOk: () => {
+        const customCredentials = settings.customCredentials.filter(item => item.id !== credentialId)
+        const nextCredential = customCredentials[0]
+        if (nextCredential) {
+          setSettings({
+            activeCustomCredentialId: nextCredential.id,
+            customCredentials,
+            customBaseUrl: nextCredential.baseUrl,
+            customApiKey: nextCredential.apiKey,
+            customModel: nextCredential.model,
+            customModels: nextCredential.models,
+            defaultModel: nextCredential.model || settings.defaultModel,
+            apiKey: nextCredential.apiKey,
+          })
+          settingsForm.setFieldsValue({
+            customCredentialId: nextCredential.id,
+            customName: nextCredential.name,
+            customBaseUrl: nextCredential.baseUrl,
+            customApiKey: nextCredential.apiKey,
+            customModel: nextCredential.model,
+          })
+        } else {
+          setSettings({
+            activeCustomCredentialId: '',
+            customCredentials: [],
+            customBaseUrl: '',
+            customApiKey: '',
+            customModel: '',
+            customModels: [],
+            apiKey: '',
+          })
+          settingsForm.setFieldsValue({
+            customCredentialId: '',
+            customName: '自定义配置 1',
+            customBaseUrl: '',
+            customApiKey: '',
+            customModel: undefined,
+          })
+        }
+        message.success('配置已删除')
+      }
+    })
+  }
+
   const openSettings = () => {
     settingsForm.setFieldsValue({
-      provider: settings.provider || 'deepseek',
-      deepseekApiKey: settings.deepseekApiKey || '',
-      deepseekModel: settings.deepseekModel || 'deepseek-v4-flash',
-      grokApiKey: settings.grokApiKey || '',
-      grokBaseUrl: settings.grokBaseUrl || 'http://localhost:8000/v1',
-      grokModel: settings.grokModel || 'grok-4-1-fast-non-reasoning',
-      claudeApiKey: settings.claudeApiKey || '',
-      claudeBaseUrl: settings.claudeBaseUrl || 'https://api.duojie.games/v1',
-      claudeModel: settings.claudeModel || 'claude-sonnet-4-6'
+      customCredentialId: activeCredential?.id || settings.activeCustomCredentialId || '',
+      customName: activeCredential?.name || getCredentialName(settings.customBaseUrl, settings.customModel),
+      customBaseUrl: activeCredential?.baseUrl || settings.customBaseUrl || '',
+      customApiKey: activeCredential?.apiKey || settings.customApiKey || '',
+      customModel: activeCredential?.model || settings.customModel || defaultModel,
     })
     setSettingsVisible(true)
   }
@@ -386,13 +549,12 @@ export function AIChatPage() {
             <Slider min={0} max={100} marks={{ 0: '透明', 50: '半透明', 100: '不透明' }} />
           </Form.Item>
 
-          <Form.Item name="modelName" label="使用模型" initialValue="deepseek-v4-flash">
-            <Select>
-              <Select.Option value="deepseek-v4-flash">DeepSeek V4 Flash</Select.Option>
-              <Select.Option value="deepseek-v4-pro">DeepSeek V4 Pro</Select.Option>
-              <Select.Option value="grok-4-1-fast-non-reasoning">Grok</Select.Option>
-              <Select.Option value="claude-sonnet-4-6">Claude Sonnet 4</Select.Option>
-            </Select>
+          <Form.Item name="modelName" label="使用模型" initialValue={defaultModel}>
+            <Select
+              showSearch
+              options={modelOptions.map(model => ({ label: model, value: model }))}
+              placeholder="请先在 API 设置中获取模型"
+            />
           </Form.Item>
 
           <Form.Item>
@@ -412,101 +574,69 @@ export function AIChatPage() {
         width={520}
       >
         <Form form={settingsForm} layout="vertical" onFinish={handleSettingsSave}>
-          <Form.Item
-            name="provider"
-            label="选择 AI 服务"
-            initialValue="deepseek"
-          >
-            <Radio.Group>
-              <Radio.Button value="deepseek">DeepSeek</Radio.Button>
-              <Radio.Button value="grok">Grok</Radio.Button>
-              <Radio.Button value="claude">Claude</Radio.Button>
-            </Radio.Group>
+          <Form.Item label="已保存配置">
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Form.Item name="customCredentialId" noStyle>
+                <Select
+                  allowClear
+                  placeholder="选择已保存配置"
+                  style={{ flex: 1 }}
+                  onChange={handleCredentialChange}
+                  options={settings.customCredentials.map(item => ({
+                    label: `${item.name} · ${item.model || '未选择模型'}`,
+                    value: item.id,
+                  }))}
+                />
+              </Form.Item>
+              <Button onClick={handleNewCredential}>新建</Button>
+              <Button danger onClick={handleDeleteCredential} disabled={settings.customCredentials.length === 0}>
+                删除
+              </Button>
+            </div>
           </Form.Item>
 
-          <Form.Item noStyle shouldUpdate={(prev, cur) => prev.provider !== cur.provider}>
-            {({ getFieldValue }) => {
-              const provider = getFieldValue('provider')
-              if (provider === 'deepseek') {
-                return (
-                  <>
-                    <Form.Item
-                      name="deepseekApiKey"
-                      label="DeepSeek API Key"
-                      extra="从 platform.deepseek.com 获取 API Key"
-                    >
-                      <Input.Password placeholder="sk-..." />
-                    </Form.Item>
-                    <Form.Item
-                      name="deepseekModel"
-                      label="DeepSeek 模型"
-                    >
-                      <Select>
-                        <Select.Option value="deepseek-v4-flash">deepseek-v4-flash</Select.Option>
-                        <Select.Option value="deepseek-v4-pro">deepseek-v4-pro</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </>
-                )
-              }
-              // Grok
-              if (provider === 'grok') {
-                return (
-                  <>
-                    <Form.Item
-                      name="grokBaseUrl"
-                      label="Grok API 地址"
-                      extra="本地代理服务器地址"
-                    >
-                      <Input placeholder="http://localhost:8000/v1" />
-                    </Form.Item>
-                    <Form.Item
-                      name="grokApiKey"
-                      label="Grok API Key"
-                    >
-                      <Input.Password placeholder="sk-..." />
-                    </Form.Item>
-                    <Form.Item
-                      name="grokModel"
-                      label="Grok 模型"
-                    >
-                      <Select>
-                        <Select.Option value="grok-4-1-fast-non-reasoning">grok-4-1-fast-non-reasoning</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </>
-                )
-              }
-              // Claude
-              if (provider === 'claude') {
-                return (
-                  <>
-                    <Form.Item
-                      name="claudeBaseUrl"
-                      label="Claude API 地址"
-                      extra="代理服务器地址"
-                    >
-                      <Input placeholder="https://api.duojie.games/v1" />
-                    </Form.Item>
-                    <Form.Item
-                      name="claudeApiKey"
-                      label="Claude API Key"
-                    >
-                      <Input.Password placeholder="sk-..." />
-                    </Form.Item>
-                    <Form.Item
-                      name="claudeModel"
-                      label="Claude 模型"
-                    >
-                      <Select>
-                        <Select.Option value="claude-sonnet-4-6">claude-sonnet-4-6</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </>
-                )
-              }
-              return null
-            }}
+          <Form.Item
+            name="customName"
+            label="配置名称"
+            rules={[{ required: true, message: '请输入配置名称' }]}
+          >
+            <Input placeholder="例如：GPT 主力 Key / Claude Key" />
+          </Form.Item>
+
+          <Form.Item
+            name="customBaseUrl"
+            label="自定义端点（基础 URL）"
+            extra="兼容 OpenAI 格式，例如 https://ai98pro.xyz/v1；发送消息时会自动使用 /chat/completions。"
+            rules={[{ required: true, message: '请输入自定义端点' }]}
+          >
+            <Input placeholder="https://ai98pro.xyz/v1" />
+          </Form.Item>
+
+          <Form.Item
+            name="customApiKey"
+            label="自定义 API Key"
+            rules={[{ required: true, message: '请输入 API Key' }]}
+          >
+            <Input.Password placeholder="sk-..." />
+          </Form.Item>
+
+          <Form.Item>
+            <Button onClick={handleLoadModels} loading={modelsLoading} block>
+              获取可用模型
+            </Button>
+          </Form.Item>
+
+          <Form.Item
+            name="customModel"
+            label="可用模型"
+            rules={[{ required: true, message: '请选择模型' }]}
+          >
+            <Select
+              showSearch
+              loading={modelsLoading}
+              options={modelOptions.map(model => ({ label: model, value: model }))}
+              placeholder="点击获取可用模型后选择"
+            />
           </Form.Item>
 
           <Form.Item>

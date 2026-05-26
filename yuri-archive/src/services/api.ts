@@ -953,6 +953,14 @@ export async function saveAssistantMessage(conversationId: string, content: stri
 }
 
 // 重新生成AI回复 (返回流式响应)
+export async function listAIModels(apiUrl: string, apiKey: string): Promise<string[]> {
+  const result = await request<{ models: string[] }>('/api/ai-chat/models', {
+    method: 'POST',
+    body: JSON.stringify({ apiUrl, apiKey }),
+  })
+  return result.models
+}
+
 export async function regenerateAssistantMessage(
   conversationId: string,
   messageId: string,

@@ -1,8 +1,10 @@
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Button, Drawer, Input } from 'antd'
 import { CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
 import type { Conversation } from '../../../types'
 import styles from '../AIChatRoomPage.module.css'
+
+const HISTORY_RENDER_STEP = 80
 
 interface HistoryDrawerProps {
   visible: boolean
@@ -36,6 +38,20 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({
   onSaveTitle,
   onCancelEdit,
 }) => {
+  const [visibleCount, setVisibleCount] = useState(HISTORY_RENDER_STEP)
+
+  useEffect(() => {
+    if (visible) {
+      setVisibleCount(HISTORY_RENDER_STEP)
+    }
+  }, [visible, conversations.length])
+
+  const visibleConversations = useMemo(
+    () => conversations.slice(0, visibleCount),
+    [conversations, visibleCount]
+  )
+  const hasMore = visibleCount < conversations.length
+
   // 格式化对话时间
   const formatConversationTime = (dateStr: string) => {
     const date = new Date(dateStr)
@@ -73,71 +89,82 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({
             <p>暂无历史对话</p>
           </div>
         ) : (
-          conversations.map(conv => (
-            <div
-              key={conv.id}
-              className={`${styles.historyItem} ${currentConversationId === conv.id ? styles.active : ''}`}
-              onClick={() => editingConvId !== conv.id && onSwitchConversation(conv)}
-            >
-              <div className={styles.historyItemContent}>
-                {editingConvId === conv.id ? (
-                  <div className={styles.editTitleWrapper} onClick={e => e.stopPropagation()}>
-                    <Input
+          <>
+            {visibleConversations.map(conv => (
+              <div
+                key={conv.id}
+                className={`${styles.historyItem} ${currentConversationId === conv.id ? styles.active : ''}`}
+                onClick={() => editingConvId !== conv.id && onSwitchConversation(conv)}
+              >
+                <div className={styles.historyItemContent}>
+                  {editingConvId === conv.id ? (
+                    <div className={styles.editTitleWrapper} onClick={e => e.stopPropagation()}>
+                      <Input
+                        size="small"
+                        value={editingTitle}
+                        onChange={e => onEditingTitleChange(e.target.value)}
+                        onPressEnter={() => onSaveTitle(conv.id)}
+                        onBlur={() => onSaveTitle(conv.id)}
+                        autoFocus
+                        className={styles.editTitleInput}
+                      />
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<CheckOutlined />}
+                        onClick={() => onSaveTitle(conv.id)}
+                        className={styles.editTitleBtn}
+                      />
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<CloseOutlined />}
+                        onClick={onCancelEdit}
+                        className={styles.editTitleBtn}
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <div className={styles.historyItemTitle}>
+                        {conv.title || '新对话'}
+                      </div>
+                      <div className={styles.historyItemTime}>
+                        {formatConversationTime(conv.updatedAt || conv.createdAt)}
+                      </div>
+                    </>
+                  )}
+                </div>
+                {editingConvId !== conv.id && (
+                  <div className={styles.historyItemActions}>
+                    <Button
+                      type="text"
                       size="small"
-                      value={editingTitle}
-                      onChange={e => onEditingTitleChange(e.target.value)}
-                      onPressEnter={() => onSaveTitle(conv.id)}
-                      onBlur={() => onSaveTitle(conv.id)}
-                      autoFocus
-                      className={styles.editTitleInput}
+                      icon={<EditOutlined />}
+                      onClick={(e) => onStartEditTitle(conv, e)}
+                      className={styles.historyActionBtn}
                     />
                     <Button
                       type="text"
                       size="small"
-                      icon={<CheckOutlined />}
-                      onClick={() => onSaveTitle(conv.id)}
-                      className={styles.editTitleBtn}
-                    />
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<CloseOutlined />}
-                      onClick={onCancelEdit}
-                      className={styles.editTitleBtn}
+                      icon={<DeleteOutlined />}
+                      onClick={(e) => onDeleteConversation(conv.id, e)}
+                      className={styles.historyActionBtn}
+                      danger
                     />
                   </div>
-                ) : (
-                  <>
-                    <div className={styles.historyItemTitle}>
-                      {conv.title || '新对话'}
-                    </div>
-                    <div className={styles.historyItemTime}>
-                      {formatConversationTime(conv.updatedAt || conv.createdAt)}
-                    </div>
-                  </>
                 )}
               </div>
-              {editingConvId !== conv.id && (
-                <div className={styles.historyItemActions}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<EditOutlined />}
-                    onClick={(e) => onStartEditTitle(conv, e)}
-                    className={styles.historyActionBtn}
-                  />
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<DeleteOutlined />}
-                    onClick={(e) => onDeleteConversation(conv.id, e)}
-                    className={styles.historyActionBtn}
-                    danger
-                  />
-                </div>
-              )}
-            </div>
-          ))
+            ))}
+            {hasMore && (
+              <Button
+                block
+                onClick={() => setVisibleCount(count => count + HISTORY_RENDER_STEP)}
+                className={styles.loadMoreHistoryButton}
+              >
+                加载更多历史（剩余 {conversations.length - visibleCount}）
+              </Button>
+            )}
+          </>
         )}
       </div>
     </Drawer>

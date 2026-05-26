@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { getApiConfig, fixLocalUrl, isGrokModel } from './aiConfig'
+import {
+  buildOpenAIUrl,
+  fixLocalUrl,
+  getApiConfig,
+  getSavedModelOptions,
+  isGrokModel,
+  normalizeOpenAIBaseUrl,
+} from './aiConfig'
 
 describe('aiConfig', () => {
   describe('isGrokModel', () => {
@@ -26,44 +33,60 @@ describe('aiConfig', () => {
     })
   })
 
+  describe('OpenAI-compatible urls', () => {
+    it('should strip endpoint suffixes from base url', () => {
+      expect(normalizeOpenAIBaseUrl('https://ai98pro.xyz/v1/chat/completions')).toBe('https://ai98pro.xyz/v1')
+      expect(normalizeOpenAIBaseUrl('https://ai98pro.xyz/v1/models')).toBe('https://ai98pro.xyz/v1')
+    })
+
+    it('should build chat and models endpoints', () => {
+      expect(buildOpenAIUrl('https://ai98pro.xyz/v1', 'chat/completions')).toBe('https://ai98pro.xyz/v1/chat/completions')
+      expect(buildOpenAIUrl('https://ai98pro.xyz/v1/', 'models')).toBe('https://ai98pro.xyz/v1/models')
+    })
+  })
+
   describe('getApiConfig', () => {
     const mockSettings = {
-      provider: 'deepseek' as const,
+      provider: 'custom' as const,
+      customBaseUrl: 'https://ai98pro.xyz/v1',
+      customApiKey: 'custom-key',
+      customModel: 'gpt-5.4-mini',
+      customModels: ['gpt-5.4-mini', 'gpt-5.5'],
       deepseekApiKey: 'deepseek-key',
       deepseekModel: 'deepseek-v4-flash',
       grokApiKey: 'grok-key',
       grokBaseUrl: 'http://localhost:8000/v1',
       grokModel: 'grok-4-1-fast-non-reasoning',
+      claudeApiKey: 'claude-key',
+      claudeBaseUrl: 'https://api.duojie.games/v1',
+      claudeModel: 'claude-sonnet-4-6',
       apiKey: '',
-      defaultModel: 'deepseek-v4-flash'
+      defaultModel: 'gpt-5.4-mini',
     }
 
-    it('should return deepseek config by default', () => {
+    it('should return custom OpenAI-compatible config by default', () => {
       const config = getApiConfig(mockSettings)
-      expect(config.provider).toBe('deepseek')
-      expect(config.apiKey).toBe('deepseek-key')
+      expect(config.provider).toBe('custom')
+      expect(config.apiKey).toBe('custom-key')
+      expect(config.model).toBe('gpt-5.4-mini')
+      expect(config.url).toBe('https://ai98pro.xyz/v1/chat/completions')
     })
 
-    it('should return grok config when character model is grok', () => {
-      const config = getApiConfig(mockSettings, 'grok-4-1-fast-non-reasoning')
-      expect(config.provider).toBe('grok')
-      expect(config.apiKey).toBe('grok-key')
-      expect(config.model).toBe('grok-4-1-fast-non-reasoning')
-      expect(config.url).toBe('http://localhost:8000/v1/chat/completions')
+    it('should honor character model on the same custom endpoint', () => {
+      const config = getApiConfig(mockSettings, 'gpt-5.5')
+      expect(config.provider).toBe('custom')
+      expect(config.apiKey).toBe('custom-key')
+      expect(config.model).toBe('gpt-5.5')
     })
 
-    it('should return grok config when provider is grok', () => {
-      const grokSettings = { ...mockSettings, provider: 'grok' as const }
-      const config = getApiConfig(grokSettings)
-      expect(config.provider).toBe('grok')
-      expect(config.apiKey).toBe('grok-key')
-      expect(config.model).toBe('grok-4-1-fast-non-reasoning')
-    })
-
-    it('should fallback to deepseek for unknown model', () => {
-      const config = getApiConfig(mockSettings, 'unknown-model')
-      expect(config.provider).toBe('deepseek')
-      expect(config.model).toBe('unknown-model')
+    it('should keep saved model options unique', () => {
+      expect(getSavedModelOptions(mockSettings)).toEqual([
+        'gpt-5.4-mini',
+        'gpt-5.5',
+        'deepseek-v4-flash',
+        'grok-4-1-fast-non-reasoning',
+        'claude-sonnet-4-6',
+      ])
     })
   })
 })

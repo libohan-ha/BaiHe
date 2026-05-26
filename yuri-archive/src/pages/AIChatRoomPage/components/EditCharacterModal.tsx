@@ -3,6 +3,8 @@ import { Avatar, Button, Form, Input, Modal, Select, Slider, Spin, Upload } from
 import { UploadOutlined } from '@ant-design/icons'
 import type { FormInstance, UploadProps } from 'antd'
 import { getImageUrl } from '../../../services/api'
+import { useAIChatStore } from '../../../store'
+import { getDefaultModel, getSavedModelOptions } from '../../../utils/aiConfig'
 import styles from '../AIChatRoomPage.module.css'
 
 interface EditCharacterModalProps {
@@ -39,6 +41,10 @@ export const EditCharacterModal: React.FC<EditCharacterModalProps> = ({
   backgroundUploading,
   onBackgroundUpload,
 }) => {
+  const { settings } = useAIChatStore()
+  const modelOptions = getSavedModelOptions(settings)
+  const defaultModel = getDefaultModel(settings)
+
   return (
     <Modal title="编辑角色" open={visible} onCancel={onClose} footer={null} width={600}>
       <p style={{ color: '#666', marginBottom: 16 }}>编辑角色的信息和设置。</p>
@@ -115,13 +121,12 @@ export const EditCharacterModal: React.FC<EditCharacterModalProps> = ({
           <Input.TextArea rows={4} />
         </Form.Item>
 
-        <Form.Item name="modelName" label="AI 模型" initialValue="deepseek-v4-flash">
-          <Select>
-            <Select.Option value="deepseek-v4-flash">DeepSeek V4 Flash</Select.Option>
-            <Select.Option value="deepseek-v4-pro">DeepSeek V4 Pro</Select.Option>
-            <Select.Option value="grok-4-1-fast-non-reasoning">Grok</Select.Option>
-            <Select.Option value="claude-sonnet-4-6">Claude Sonnet 4</Select.Option>
-          </Select>
+        <Form.Item name="modelName" label="AI 模型" initialValue={defaultModel}>
+          <Select
+            showSearch
+            options={modelOptions.map(model => ({ label: model, value: model }))}
+            placeholder="请先在 API 设置中获取模型"
+          />
         </Form.Item>
 
         <Form.Item name="bubbleOpacity" label="气泡透明度">

@@ -14,6 +14,7 @@ const {
   getMessages,
   sendMessage,
   saveAssistantMessage,
+  listAIModels,
   proxyAIRequest,
   regenerateAssistantMessage,
   editAndRegenerateMessage
@@ -33,6 +34,12 @@ router.post('/proxy', [
   body('messages').isArray().withMessage('消息必须是数组'),
   validator
 ], proxyAIRequest);
+
+router.post('/models', [
+  body('apiUrl').notEmpty().withMessage('API URL 不能为空'),
+  body('apiKey').notEmpty().withMessage('API Key 不能为空'),
+  validator
+], listAIModels);
 
 // ============ AI角色路由 ============
 

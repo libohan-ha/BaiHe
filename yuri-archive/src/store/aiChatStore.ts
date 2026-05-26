@@ -6,9 +6,26 @@ export type AIProvider =
   | 'deepseek'
   | 'grok'
   | 'claude'
+  | 'custom'
+
+export interface CustomApiCredential {
+  id: string
+  name: string
+  baseUrl: string
+  apiKey: string
+  model: string
+  models: string[]
+  updatedAt: number
+}
 
 interface AISettings {
   provider: AIProvider
+  activeCustomCredentialId: string
+  customCredentials: CustomApiCredential[]
+  customBaseUrl: string
+  customApiKey: string
+  customModel: string
+  customModels: string[]
   // DeepSeek 设置
   deepseekApiKey: string
   deepseekModel: string
@@ -75,7 +92,13 @@ interface AIChatStore {
 
 const initialState = {
   settings: {
-    provider: 'deepseek' as AIProvider,
+    provider: 'custom' as AIProvider,
+    activeCustomCredentialId: '',
+    customCredentials: [],
+    customBaseUrl: '',
+    customApiKey: '',
+    customModel: '',
+    customModels: [],
     // DeepSeek 设置
     deepseekApiKey: '',
     deepseekModel: 'deepseek-v4-flash',
@@ -104,7 +127,7 @@ const initialState = {
 }
 
 const STORAGE_KEY = 'anime-archive-ai-chat'
-const STORAGE_VERSION = 8
+const STORAGE_VERSION = 10
 
 const normalizeBaseUrl = (value: unknown): string => {
   if (typeof value !== 'string') return ''
@@ -126,11 +149,13 @@ const LEGACY_INSECURE_API_KEYS = new Set([
 ])
 
 const BASE_URL_FIELDS = [
+  'customBaseUrl',
   'grokBaseUrl',
   'claudeBaseUrl'
 ] as const satisfies ReadonlyArray<keyof AISettings>
 
 const API_KEY_FIELDS = [
+  'customApiKey',
   'deepseekApiKey',
   'grokApiKey',
   'claudeApiKey',
@@ -164,6 +189,12 @@ export const useAIChatStore = create<AIChatStore>()(
       
       setSettings: (newSettings) => set((state) => {
         const mergedSettings: AISettings = { ...state.settings, ...newSettings }
+        if (!Array.isArray(mergedSettings.customModels)) {
+          mergedSettings.customModels = []
+        }
+        if (!Array.isArray(mergedSettings.customCredentials)) {
+          mergedSettings.customCredentials = []
+        }
         sanitizeBaseUrls(mergedSettings)
         return {
           settings: mergedSettings
@@ -261,6 +292,36 @@ export const useAIChatStore = create<AIChatStore>()(
         const mergedSettings: AISettings = {
           ...initialState.settings,
           ...persistedSettings
+        }
+
+        if (!Array.isArray(mergedSettings.customModels)) {
+          mergedSettings.customModels = []
+        }
+
+        if (!Array.isArray(mergedSettings.customCredentials)) {
+          mergedSettings.customCredentials = []
+        }
+
+        if (mergedSettings.provider !== 'custom') {
+          mergedSettings.provider = 'custom'
+        }
+
+        if (
+          mergedSettings.customBaseUrl &&
+          mergedSettings.customApiKey &&
+          mergedSettings.customCredentials.length === 0
+        ) {
+          const migratedCredential: CustomApiCredential = {
+            id: 'custom-migrated',
+            name: '默认配置',
+            baseUrl: mergedSettings.customBaseUrl,
+            apiKey: mergedSettings.customApiKey,
+            model: mergedSettings.customModel || mergedSettings.defaultModel || '',
+            models: mergedSettings.customModels,
+            updatedAt: Date.now()
+          }
+          mergedSettings.customCredentials = [migratedCredential]
+          mergedSettings.activeCustomCredentialId = migratedCredential.id
         }
 
         for (const key of BASE_URL_FIELDS) {

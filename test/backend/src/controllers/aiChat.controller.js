@@ -63,6 +63,18 @@ const parseUpstreamHostname = (rawUrl) => {
   }
 };
 
+const buildOpenAIModelsUrl = (apiUrl) => {
+  const urlObj = normalizeApiUrl(apiUrl);
+  if (!urlObj) return null;
+
+  urlObj.pathname = urlObj.pathname
+    .replace(/\/(?:chat\/completions|models?)\/?$/i, '')
+    .replace(/\/+$/, '');
+  urlObj.pathname = `${urlObj.pathname}/models`.replace(/\/{2,}/g, '/');
+  urlObj.search = '';
+  return urlObj.toString();
+};
+
 const getUpstreamFetchError = (err, rawUrl) => {
   const cause = err?.cause ?? err;
   const code = cause?.code;
@@ -252,6 +264,49 @@ const proxyAIRequest = async (req, res, next) => {
     }
   } catch (err) {
     console.error('AI代理请求失败:', err);
+    const upstreamError = getUpstreamFetchError(err, req.body?.apiUrl);
+    if (upstreamError) {
+      return res.status(upstreamError.statusCode).json(error(upstreamError.message, upstreamError.statusCode));
+    }
+    next(err);
+  }
+};
+
+// OpenAI-compatible models proxy
+const listAIModels = async (req, res, next) => {
+  try {
+    const { apiUrl, apiKey } = req.body;
+
+    if (!apiUrl || !apiKey) {
+      return res.status(400).json(error('缺少必要参数', 400));
+    }
+
+    const modelsUrl = buildOpenAIModelsUrl(apiUrl);
+    const fixedUrl = modelsUrl ? fixProxyUrl(modelsUrl) : null;
+    if (!fixedUrl) {
+      return res.status(400).json(error('API URL 格式无效，请填写完整地址（例如：https://example.com/v1）', 400));
+    }
+
+    const response = await fetch(fixedUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return res.status(response.status).json(error(errorData.error?.message || '获取模型列表失败', response.status));
+    }
+
+    const data = await response.json();
+    const models = Array.isArray(data.data)
+      ? data.data.map(item => item?.id).filter(id => typeof id === 'string' && id.trim())
+      : [];
+
+    res.json(success({ models }, '获取成功'));
+  } catch (err) {
+    console.error('获取AI模型列表失败:', err);
     const upstreamError = getUpstreamFetchError(err, req.body?.apiUrl);
     if (upstreamError) {
       return res.status(upstreamError.statusCode).json(error(upstreamError.message, upstreamError.statusCode));
@@ -625,6 +680,7 @@ module.exports = {
   getMessages,
   sendMessage,
   saveAssistantMessage,
+  listAIModels,
   proxyAIRequest,
   regenerateAssistantMessage,
   editAndRegenerateMessage

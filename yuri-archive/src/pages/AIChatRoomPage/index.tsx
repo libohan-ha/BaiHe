@@ -30,6 +30,8 @@ import styles from './AIChatRoomPage.module.css'
 import { EditCharacterModal, HistoryDrawer, InputArea, MessageBubble } from './components'
 import { useChat, useConversation, useImageUpload } from './hooks'
 
+const MESSAGE_RENDER_LIMIT = 200
+
 export function AIChatRoomPage() {
   const { characterId } = useParams<{ characterId: string }>()
   const navigate = useNavigate()
@@ -809,6 +811,11 @@ export function AIChatRoomPage() {
     () => getLatestAssistantMessageId(messages),
     [getLatestAssistantMessageId, messages]
   )
+  const hiddenMessageCount = Math.max(0, messages.length - MESSAGE_RENDER_LIMIT)
+  const visibleMessages = useMemo(
+    () => hiddenMessageCount > 0 ? messages.slice(-MESSAGE_RENDER_LIMIT) : messages,
+    [hiddenMessageCount, messages]
+  )
 
   const canEditMessage = !sending && !regeneratingMessageId && !editingMessageId
   const canRegenerateMessage = canEditMessage
@@ -874,7 +881,12 @@ export function AIChatRoomPage() {
           </div>
         ) : (
           <div className={styles.messagesContainer}>
-            {messages.map(msg => {
+            {hiddenMessageCount > 0 && (
+              <div className={styles.messageLimitNotice}>
+                已隐藏较早的 {hiddenMessageCount} 条消息，以保持页面流畅
+              </div>
+            )}
+            {visibleMessages.map(msg => {
               const isUser = msg.role === 'user'
               const isStreamingThis = isStreaming && streamingConversationId === currentConversation?.id && streamingMessageId === msg.id
               const isEditingThis = msg.id === editingMessageId
