@@ -10,9 +10,9 @@ router.get('/', imageController.getImages);
 router.get('/:id', imageController.getImageById);
 
 // 上传图片文件（type=gallery）- 仅上传，返回URL
-router.post('/upload', auth, uploadGallery.single('file'), (req, res, next) => {
+router.post('/upload', auth, uploadGallery.single('file'), async (req, res, next) => {
   try {
-    const result = uploadService.processUpload(req.file, 'gallery');
+    const result = await uploadService.processUpload(req.file, 'gallery');
     res.json({
       code: 200,
       message: '上传成功',

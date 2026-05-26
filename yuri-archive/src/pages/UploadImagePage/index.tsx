@@ -72,6 +72,7 @@ export function UploadImagePage() {
         const uploaded = await uploadGalleryImage(rawFile)
         await createImage({
           imageUrl: uploaded.url,
+          thumbnailUrl: uploaded.thumbnailUrl,
           tagIds: values.tagIds || [],
         })
         successFiles.push(fileName)

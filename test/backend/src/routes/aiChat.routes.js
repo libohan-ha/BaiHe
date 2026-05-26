@@ -31,7 +31,6 @@ router.post('/proxy', [
   body('apiUrl').notEmpty().withMessage('API URL 不能为空'),
   body('apiKey').notEmpty().withMessage('API Key 不能为空'),
   body('model').notEmpty().withMessage('模型名称不能为空'),
-  body('messages').isArray().withMessage('消息必须是数组'),
   validator
 ], proxyAIRequest);
 

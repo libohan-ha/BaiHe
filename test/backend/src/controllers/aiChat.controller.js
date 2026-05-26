@@ -204,11 +204,134 @@ const attachLatestMessageImages = async (messages) => {
 };
 
 // AI API 代理 - 支持流式响应
+const DEFAULT_CONTEXT_MESSAGE_LIMIT = 20;
+const SUMMARY_START_THRESHOLD = 40;
+const SUMMARY_REFRESH_STEP = 20;
+
+const normalizeContextStrategy = (strategy) => strategy === 'all' ? 'all' : 'summary_recent';
+
+const normalizeContextLimit = (limit) => {
+  const parsed = Number(limit);
+  if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_CONTEXT_MESSAGE_LIMIT;
+  return Math.min(Math.floor(parsed), 100);
+};
+
+const textOnlyMessages = (messages) => messages.map(message => ({
+  role: message.role,
+  content: typeof message.content === 'string' ? message.content : String(message.content ?? '')
+}));
+
+const callSummaryModel = async ({ fixedUrl, apiKey, model, previousSummary, messagesToSummarize }) => {
+  if (!messagesToSummarize.length) return previousSummary || '';
+
+  const transcript = textOnlyMessages(messagesToSummarize)
+    .map(message => `${message.role === 'assistant' ? 'AI' : '用户'}: ${message.content}`)
+    .join('\n');
+
+  const response = await fetch(fixedUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model,
+      stream: false,
+      messages: [
+        {
+          role: 'system',
+          content: '你负责为角色扮演聊天维护长期记忆摘要。保留人物关系、称呼、约定、偏好、重要事实、未完成事项和情绪走向。不要编造，不要总结最近仍会原文发送的消息。'
+        },
+        {
+          role: 'user',
+          content: [
+            previousSummary ? `已有摘要：\n${previousSummary}` : '已有摘要：无',
+            '请把下面新增的旧消息合并成一份简洁但信息完整的会话摘要：',
+            transcript
+          ].join('\n\n')
+        }
+      ]
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error?.message || '会话摘要生成失败');
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content?.trim() || previousSummary || '';
+};
+
+const ensureConversationSummary = async ({ conversation, messages, userId, fixedUrl, apiKey, model, recentLimit }) => {
+  if (!conversation || messages.length <= SUMMARY_START_THRESHOLD) {
+    return conversation?.summary || '';
+  }
+
+  const summaryMessageCount = Math.max(0, Math.min(conversation.summaryMessageCount || 0, messages.length));
+  const summarizableCount = Math.max(0, messages.length - recentLimit);
+  if (summarizableCount <= 0) return conversation.summary || '';
+
+  const hasEnoughNewOldMessages = summarizableCount - summaryMessageCount >= SUMMARY_REFRESH_STEP;
+  if (conversation.summary && !hasEnoughNewOldMessages) {
+    return conversation.summary;
+  }
+
+  const messagesToSummarize = messages.slice(summaryMessageCount, summarizableCount);
+  try {
+    const summary = await callSummaryModel({
+      fixedUrl,
+      apiKey,
+      model,
+      previousSummary: conversation.summary || '',
+      messagesToSummarize
+    });
+
+    await aiChatService.updateConversationSummary(conversation.id, userId, summary, summarizableCount);
+    return summary;
+  } catch (err) {
+    console.warn('会话摘要生成失败，使用最近消息继续请求:', err.message);
+    return conversation.summary || '';
+  }
+};
+
+const buildAIRequestMessages = async ({ conversation, messages, character, userId, apiKey, model, fixedUrl, contextStrategy, contextMessageLimit }) => {
+  const strategy = normalizeContextStrategy(contextStrategy);
+  const recentLimit = normalizeContextLimit(contextMessageLimit);
+  const systemPrompt = character?.prompt || '你是一个友好的AI助手。';
+
+  if (strategy === 'all') {
+    const preparedMessages = await attachLatestMessageImages(messages);
+    return [
+      { role: 'system', content: systemPrompt },
+      ...preparedMessages
+    ];
+  }
+
+  const summary = await ensureConversationSummary({
+    conversation,
+    messages,
+    userId,
+    fixedUrl,
+    apiKey,
+    model,
+    recentLimit
+  });
+  const recentMessages = messages.slice(-recentLimit);
+  const preparedRecentMessages = await attachLatestMessageImages(recentMessages);
+
+  return [
+    { role: 'system', content: systemPrompt },
+    ...(summary ? [{ role: 'system', content: `以下是较早对话摘要，请作为长期记忆参考，不要逐字复述：\n${summary}` }] : []),
+    ...preparedRecentMessages
+  ];
+};
+
 const proxyAIRequest = async (req, res, next) => {
   try {
-    const { apiUrl, apiKey, model, messages, stream = true } = req.body;
+    const { apiUrl, apiKey, model, messages, conversationId, contextStrategy, contextMessageLimit, stream = true } = req.body;
 
-    if (!apiUrl || !apiKey || !model || !messages) {
+    if (!apiUrl || !apiKey || !model || (!messages && !conversationId)) {
       return res.status(400).json(error('缺少必要参数', 400));
     }
 
@@ -219,6 +342,20 @@ const proxyAIRequest = async (req, res, next) => {
     }
     console.log('AI代理请求:', model, apiUrl, '->', fixedUrl);
 
+    let requestMessages = messages;
+    if (conversationId) {
+      const context = await aiChatService.getConversationForAIContext(conversationId, req.user.id);
+      requestMessages = await buildAIRequestMessages({
+        ...context,
+        userId: req.user.id,
+        apiKey,
+        model,
+        fixedUrl,
+        contextStrategy,
+        contextMessageLimit
+      });
+    }
+
     // 转发请求到 AI API
     const response = await fetch(fixedUrl, {
       method: 'POST',
@@ -228,7 +365,7 @@ const proxyAIRequest = async (req, res, next) => {
       },
       body: JSON.stringify({
         model,
-        messages,
+        messages: requestMessages,
         stream
       })
     });
@@ -475,14 +612,14 @@ const saveAssistantMessage = async (req, res, next) => {
 const regenerateAssistantMessage = async (req, res, next) => {
   try {
     const { conversationId, messageId } = req.params;
-    const { apiUrl, apiKey, model } = req.body;
+    const { apiUrl, apiKey, model, contextStrategy, contextMessageLimit } = req.body;
 
     if (!apiUrl || !apiKey || !model) {
       return res.status(400).json(error('缺少必要参数', 400));
     }
 
     // 获取该消息之前的历史记录和角色信息
-    const { messages, character } = await aiChatService.getMessagesBeforeId(conversationId, messageId, req.user.id);
+    const { conversation, messages, character } = await aiChatService.getMessagesBeforeId(conversationId, messageId, req.user.id);
 
     // 修复 API URL
     const fixedUrl = fixProxyUrl(apiUrl);
@@ -491,8 +628,17 @@ const regenerateAssistantMessage = async (req, res, next) => {
     }
     console.log('重新生成AI回复:', model, apiUrl, '->', fixedUrl);
 
-    // 仅携带最新一条消息的图片（多模态）
-    const preparedMessages = await attachLatestMessageImages(messages);
+    const requestMessages = await buildAIRequestMessages({
+      conversation,
+      messages,
+      character,
+      userId: req.user.id,
+      apiKey,
+      model,
+      fixedUrl,
+      contextStrategy,
+      contextMessageLimit
+    });
 
     // 调用 AI API
     const response = await fetch(fixedUrl, {
@@ -503,10 +649,7 @@ const regenerateAssistantMessage = async (req, res, next) => {
       },
       body: JSON.stringify({
         model,
-        messages: [
-          { role: 'system', content: character?.prompt || '你是一个友好的AI助手。' },
-          ...preparedMessages
-        ],
+        messages: requestMessages,
         stream: true
       })
     });
@@ -573,14 +716,14 @@ const regenerateAssistantMessage = async (req, res, next) => {
 const editAndRegenerateMessage = async (req, res, next) => {
   try {
     const { conversationId, messageId } = req.params;
-    const { content, apiUrl, apiKey, model } = req.body;
+    const { content, apiUrl, apiKey, model, contextStrategy, contextMessageLimit } = req.body;
 
     if (!content || !apiUrl || !apiKey || !model) {
       return res.status(400).json(error('缺少必要参数', 400));
     }
 
     // 编辑消息并截断历史
-    const { messages, character } = await aiChatService.editMessageAndTruncate(messageId, content, req.user.id);
+    const { conversation, messages, character } = await aiChatService.editMessageAndTruncate(messageId, content, req.user.id);
 
     // 修复 API URL
     const fixedUrl = fixProxyUrl(apiUrl);
@@ -589,8 +732,17 @@ const editAndRegenerateMessage = async (req, res, next) => {
     }
     console.log('编辑消息并重新生成AI回复:', model, apiUrl, '->', fixedUrl);
 
-    // 仅携带最新一条消息的图片（多模态）
-    const preparedMessages = await attachLatestMessageImages(messages);
+    const requestMessages = await buildAIRequestMessages({
+      conversation,
+      messages,
+      character,
+      userId: req.user.id,
+      apiKey,
+      model,
+      fixedUrl,
+      contextStrategy,
+      contextMessageLimit
+    });
 
     // 调用 AI API
     const response = await fetch(fixedUrl, {
@@ -601,10 +753,7 @@ const editAndRegenerateMessage = async (req, res, next) => {
       },
       body: JSON.stringify({
         model,
-        messages: [
-          { role: 'system', content: character?.prompt || '你是一个友好的AI助手。' },
-          ...preparedMessages
-        ],
+        messages: requestMessages,
         stream: true
       })
     });

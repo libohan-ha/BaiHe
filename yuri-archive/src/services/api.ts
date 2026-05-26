@@ -105,6 +105,8 @@ async function request<T>(
 
 interface UploadResponse {
   url: string
+  thumbnailUrl?: string
+  thumbnailFilename?: string
   filename: string
   originalName: string
   size: number
@@ -964,7 +966,7 @@ export async function listAIModels(apiUrl: string, apiKey: string): Promise<stri
 export async function regenerateAssistantMessage(
   conversationId: string,
   messageId: string,
-  apiConfig: { apiUrl: string; apiKey: string; model: string }
+  apiConfig: { apiUrl: string; apiKey: string; model: string; contextStrategy?: string; contextMessageLimit?: number }
 ): Promise<Response> {
   const token = localStorage.getItem('token')
   
@@ -990,7 +992,7 @@ export async function editAndRegenerateMessage(
   conversationId: string,
   messageId: string,
   content: string,
-  apiConfig: { apiUrl: string; apiKey: string; model: string }
+  apiConfig: { apiUrl: string; apiKey: string; model: string; contextStrategy?: string; contextMessageLimit?: number }
 ): Promise<Response> {
   const token = localStorage.getItem('token')
   

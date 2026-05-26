@@ -19,9 +19,10 @@ RUN npx prisma generate
 
 # 复制源代码
 COPY src ./src/
+COPY scripts ./scripts/
 
 # 创建上传目录
-RUN mkdir -p uploads/avatars uploads/covers uploads/gallery uploads/chat
+RUN mkdir -p uploads/avatars uploads/covers uploads/gallery uploads/chat uploads/private
 
 # 暴露端口
 EXPOSE 3000

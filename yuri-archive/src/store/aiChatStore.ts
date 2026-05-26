@@ -18,8 +18,12 @@ export interface CustomApiCredential {
   updatedAt: number
 }
 
+export type AIContextStrategy = 'summary_recent' | 'all'
+
 interface AISettings {
   provider: AIProvider
+  contextStrategy: AIContextStrategy
+  contextMessageLimit: number
   activeCustomCredentialId: string
   customCredentials: CustomApiCredential[]
   customBaseUrl: string
@@ -93,6 +97,8 @@ interface AIChatStore {
 const initialState = {
   settings: {
     provider: 'custom' as AIProvider,
+    contextStrategy: 'summary_recent' as AIContextStrategy,
+    contextMessageLimit: 20,
     activeCustomCredentialId: '',
     customCredentials: [],
     customBaseUrl: '',
@@ -127,7 +133,7 @@ const initialState = {
 }
 
 const STORAGE_KEY = 'anime-archive-ai-chat'
-const STORAGE_VERSION = 10
+const STORAGE_VERSION = 11
 
 const normalizeBaseUrl = (value: unknown): string => {
   if (typeof value !== 'string') return ''
@@ -189,6 +195,12 @@ export const useAIChatStore = create<AIChatStore>()(
       
       setSettings: (newSettings) => set((state) => {
         const mergedSettings: AISettings = { ...state.settings, ...newSettings }
+        if (mergedSettings.contextStrategy !== 'all' && mergedSettings.contextStrategy !== 'summary_recent') {
+          mergedSettings.contextStrategy = 'summary_recent'
+        }
+        if (!Number.isFinite(mergedSettings.contextMessageLimit) || mergedSettings.contextMessageLimit < 1) {
+          mergedSettings.contextMessageLimit = 20
+        }
         if (!Array.isArray(mergedSettings.customModels)) {
           mergedSettings.customModels = []
         }

@@ -7,12 +7,11 @@ import {
   RobotOutlined,
 } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
-import { Avatar, Button, Form, message, Modal, Spin } from 'antd'
+import { Avatar, Button, Form, message, Modal, Select, Spin } from 'antd'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   editAndRegenerateMessage,
-  formatMessageWithImages,
   getAICharacterById,
   getChatMessages,
   getConversations,
@@ -24,6 +23,7 @@ import {
   uploadAIChatImage,
 } from '../../services/api'
 import { useAIChatStore, useUserStore } from '../../store'
+import type { AIContextStrategy } from '../../store/aiChatStore'
 import type { AICharacter, Conversation } from '../../types'
 import { getApiConfig, getProviderDisplayName } from '../../utils/aiConfig'
 import styles from './AIChatRoomPage.module.css'
@@ -42,6 +42,7 @@ export function AIChatRoomPage() {
     streamingConversationId,
     streamingMessageId,
     isStreaming,
+    setSettings,
     setStreamingState,
     appendStreamingContent,
     resetStreaming
@@ -337,9 +338,6 @@ export function AIChatRoomPage() {
       const userMsg = await sendChatMessage(currentConversation.id, userContent, imagesToSend.length > 0 ? imagesToSend : undefined)
       setMessages(prev => [...prev, userMsg])
 
-      // 构建多模态消息内容（只对最新消息处理图片）
-      const formattedUserContent = await formatMessageWithImages(userContent, imagesToSend)
-
       // 通过后端代理调用 AI API - 避免 CORS 问题
       const token = localStorage.getItem('token')
       const response = await fetch('/api/ai-chat/proxy', {
@@ -352,13 +350,9 @@ export function AIChatRoomPage() {
           apiUrl: apiConfig.url,
           apiKey: apiConfig.apiKey,
           model: apiConfig.model,
-          messages: [
-            { role: 'system', content: character?.prompt || '你是一个友好的AI助手。' },
-            // 历史消息不传图片
-            ...messages.map(m => ({ role: m.role, content: m.content })),
-            // 当前消息使用多模态格式
-            { role: 'user', content: formattedUserContent }
-          ],
+          conversationId: currentConversation.id,
+          contextStrategy: settings.contextStrategy,
+          contextMessageLimit: settings.contextMessageLimit,
           stream: true  // 启用流式响应
         })
       })
@@ -533,7 +527,9 @@ export function AIChatRoomPage() {
         {
           apiUrl: apiConfig.url,
           apiKey: apiConfig.apiKey,
-          model: apiConfig.model
+          model: apiConfig.model,
+          contextStrategy: settings.contextStrategy,
+          contextMessageLimit: settings.contextMessageLimit,
         }
       )
 
@@ -643,7 +639,9 @@ export function AIChatRoomPage() {
         {
           apiUrl: apiConfig.url,
           apiKey: apiConfig.apiKey,
-          model: apiConfig.model
+          model: apiConfig.model,
+          contextStrategy: settings.contextStrategy,
+          contextMessageLimit: settings.contextMessageLimit,
         }
       )
 
@@ -860,7 +858,19 @@ export function AIChatRoomPage() {
         >
           历史对话 ({conversations.length})
         </Button>
-        <Button size="small" icon={<PlusOutlined />} onClick={handleNewConversation}>新建对话</Button>
+        <div className={styles.conversationActions}>
+          <Select
+            size="small"
+            value={settings.contextStrategy || 'summary_recent'}
+            onChange={(contextStrategy) => setSettings({ contextStrategy: contextStrategy as AIContextStrategy, contextMessageLimit: 20 })}
+            className={styles.contextStrategySelect}
+            options={[
+              { label: '最近20条+摘要', value: 'summary_recent' },
+              { label: '全部历史', value: 'all' },
+            ]}
+          />
+          <Button size="small" icon={<PlusOutlined />} onClick={handleNewConversation}>新建对话</Button>
+        </div>
       </div>
 
       {/* 聊天区域 */}

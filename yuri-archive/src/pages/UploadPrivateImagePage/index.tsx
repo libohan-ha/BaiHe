@@ -35,6 +35,7 @@ export function UploadPrivateImagePage() {
   const [tags, setTags] = useState<PrivateImageTag[]>([])
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const [imageUrl, setImageUrl] = useState<string>('')
+  const [thumbnailUrl, setThumbnailUrl] = useState<string>('')
   const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
@@ -62,6 +63,7 @@ export function UploadPrivateImagePage() {
     try {
       const result = await uploadPrivateImage(file as File)
       setImageUrl(result.url)
+      setThumbnailUrl(result.thumbnailUrl || '')
       onSuccess?.(result)
       message.success('图片上传成功')
     } catch (err) {
@@ -70,6 +72,7 @@ export function UploadPrivateImagePage() {
       // 上传失败时清空文件列表和图片URL
       setFileList([])
       setImageUrl('')
+      setThumbnailUrl('')
     } finally {
       setUploading(false)
     }
@@ -79,6 +82,7 @@ export function UploadPrivateImagePage() {
     // 如果文件被删除，清空 imageUrl
     if (newFileList.length === 0) {
       setImageUrl('')
+      setThumbnailUrl('')
     }
     setFileList(newFileList)
   }
@@ -95,6 +99,7 @@ export function UploadPrivateImagePage() {
         title: values.title,
         description: values.description,
         imageUrl,
+        thumbnailUrl: thumbnailUrl || undefined,
         tagIds: values.tagIds || [],
       })
       message.success('发布成功')

@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createAICharacter, deleteAICharacter, getAICharacters, getImageUrl, listAIModels, updateAICharacter, uploadAIChatImage } from '../../services/api'
 import { useAIChatStore, useUserStore } from '../../store'
-import type { CustomApiCredential } from '../../store/aiChatStore'
+import type { AIContextStrategy, CustomApiCredential } from '../../store/aiChatStore'
 import type { AICharacter, CreateCharacterData } from '../../types'
 import { getDefaultModel, getSavedModelOptions, normalizeOpenAIBaseUrl } from '../../utils/aiConfig'
 import styles from './AIChatPage.module.css'
@@ -220,6 +220,7 @@ export function AIChatPage() {
     customBaseUrl?: string
     customApiKey?: string
     customModel?: string
+    contextStrategy?: AIContextStrategy
   }) => {
     const customBaseUrl = normalizeOpenAIBaseUrl(values.customBaseUrl || settings.customBaseUrl)
     const customApiKey = values.customApiKey !== undefined ? values.customApiKey : settings.customApiKey
@@ -249,6 +250,8 @@ export function AIChatPage() {
       customModel,
       defaultModel: customModel,
       apiKey: customApiKey,
+      contextStrategy: values.contextStrategy || settings.contextStrategy,
+      contextMessageLimit: 20,
     })
     message.success('设置已保存')
     setSettingsVisible(false)
@@ -400,6 +403,7 @@ export function AIChatPage() {
       customBaseUrl: activeCredential?.baseUrl || settings.customBaseUrl || '',
       customApiKey: activeCredential?.apiKey || settings.customApiKey || '',
       customModel: activeCredential?.model || settings.customModel || defaultModel,
+      contextStrategy: settings.contextStrategy || 'summary_recent',
     })
     setSettingsVisible(true)
   }
@@ -636,6 +640,20 @@ export function AIChatPage() {
               loading={modelsLoading}
               options={modelOptions.map(model => ({ label: model, value: model }))}
               placeholder="点击获取可用模型后选择"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="contextStrategy"
+            label="上下文策略"
+            initialValue="summary_recent"
+            extra="默认只发送最近 20 条文字消息；超过 40 条后自动摘要旧消息。历史图片不会进入上下文。"
+          >
+            <Select
+              options={[
+                { label: '最近 20 条 + 自动摘要', value: 'summary_recent' },
+                { label: '全部历史', value: 'all' },
+              ]}
             />
           </Form.Item>
 

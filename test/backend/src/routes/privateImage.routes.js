@@ -27,9 +27,9 @@ router.get('/', privateImageController.getPrivateImages);
 router.get('/stats', privateImageController.getPrivateImageStats);
 
 // 上传图片文件 - 仅上传，返回URL
-router.post('/upload', uploadPrivate.single('file'), (req, res, next) => {
+router.post('/upload', uploadPrivate.single('file'), async (req, res, next) => {
   try {
-    const result = uploadService.processUpload(req.file, 'private');
+    const result = await uploadService.processUpload(req.file, 'private');
     res.json({
       code: 200,
       message: '上传成功',

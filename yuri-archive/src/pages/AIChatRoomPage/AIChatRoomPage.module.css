@@ -608,6 +608,16 @@
   color: #a855f7;
 }
 
+.conversationActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contextStrategySelect {
+  min-width: 132px;
+}
+
 /* 历史对话抽屉 */
 .historyDrawer :global(.ant-drawer-body) {
   padding: 0;
@@ -753,10 +763,19 @@
   
   .conversationBar {
     padding: 8px 16px;
+    gap: 8px;
   }
   
   .historyButton {
     font-size: 13px;
+  }
+
+  .conversationActions {
+    flex-shrink: 0;
+  }
+
+  .contextStrategySelect {
+    min-width: 116px;
   }
 }
 

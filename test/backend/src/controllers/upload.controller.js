@@ -12,7 +12,7 @@ const uploadFile = async (req, res, next) => {
     // 优先使用路由设置的类型，其次是 body 中的类型
     const type = req.uploadType || req.body.type || 'avatar';
 
-    const result = uploadService.processUpload(req.file, type);
+    const result = await uploadService.processUpload(req.file, type);
     
     res.status(201).json(success(result, '上传成功'));
   } catch (err) {

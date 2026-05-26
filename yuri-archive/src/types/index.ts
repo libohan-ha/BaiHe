@@ -215,6 +215,8 @@ export interface AICharacter {
 export interface Conversation {
   id: string
   title: string
+  summary?: string | null
+  summaryMessageCount?: number
   characterId: string
   userId: string
   createdAt: string

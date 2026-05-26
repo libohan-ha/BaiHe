@@ -60,6 +60,7 @@ const getPrivateImageFile = async (req, res, next) => {
   try {
     const { filename } = req.params;
     const filePath = await privateImageService.getPrivateImageFilePath(filename, req.user.id);
+    res.set('Cache-Control', 'private, max-age=2592000, immutable');
     res.sendFile(filePath);
   } catch (error) {
     next(error);
@@ -91,8 +92,9 @@ const createPrivateImage = async (req, res, next) => {
 
     // 如果有上传的文件，处理文件并获取URL
     if (req.file) {
-      const uploadResult = uploadService.processUpload(req.file, 'private');
+      const uploadResult = await uploadService.processUpload(req.file, 'private');
       url = uploadResult.url;
+      thumbnailUrl = uploadResult.thumbnailUrl || thumbnailUrl;
       size = uploadResult.size;
     }
 

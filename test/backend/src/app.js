@@ -49,10 +49,14 @@ app.use(express.urlencoded({ extended: true, limit: requestBodyLimit }));
 app.use(cookieParser());
 
 const uploadsRoot = path.join(__dirname, '../uploads');
-app.use('/uploads/avatars', express.static(path.join(uploadsRoot, 'avatars')));
-app.use('/uploads/covers', express.static(path.join(uploadsRoot, 'covers')));
-app.use('/uploads/gallery', express.static(path.join(uploadsRoot, 'gallery')));
-app.use('/uploads/chat', express.static(path.join(uploadsRoot, 'chat')));
+const uploadStaticOptions = {
+  maxAge: '30d',
+  immutable: true
+};
+app.use('/uploads/avatars', express.static(path.join(uploadsRoot, 'avatars'), uploadStaticOptions));
+app.use('/uploads/covers', express.static(path.join(uploadsRoot, 'covers'), uploadStaticOptions));
+app.use('/uploads/gallery', express.static(path.join(uploadsRoot, 'gallery'), uploadStaticOptions));
+app.use('/uploads/chat', express.static(path.join(uploadsRoot, 'chat'), uploadStaticOptions));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

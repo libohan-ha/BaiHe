@@ -545,6 +545,10 @@ const transferFromGallery = async (imageId, userId) => {
   }
 
   // 3. 检查是否已经复制过（避免重复复制）
+  const privateThumbnailUrl = publicImage.thumbnailUrl
+    ? await copyGalleryImageToPrivate(publicImage.thumbnailUrl, userId)
+    : null;
+
   const existingPrivateImage = await prisma.privateImage.findFirst({
     where: {
       ownerId: userId,
@@ -558,13 +562,13 @@ const transferFromGallery = async (imageId, userId) => {
 
   // 4. 创建隐私图片副本，同时同步标签
   const tagNames = publicImage.tags.map(tag => tag.name);
-  
+
   const privateImage = await prisma.privateImage.create({
     data: {
       title: publicImage.title,
       description: publicImage.description,
       url: privateUrl,
-      thumbnailUrl: privateUrl,
+      thumbnailUrl: privateThumbnailUrl,
       width: publicImage.width,
       height: publicImage.height,
       size: publicImage.size,

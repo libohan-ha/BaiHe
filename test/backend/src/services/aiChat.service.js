@@ -168,6 +168,39 @@ const getMessages = async (conversationId, userId) => {
   return { messages };
 };
 
+const getConversationForAIContext = async (conversationId, userId) => {
+  const conversation = await prisma.conversation.findFirst({
+    where: { id: conversationId, userId },
+    include: { character: true }
+  });
+
+  if (!conversation) {
+    throw createError(404, '对话不存在');
+  }
+
+  const messages = await prisma.chatMessage.findMany({
+    where: { conversationId },
+    orderBy: { createdAt: 'asc' }
+  });
+
+  return { conversation, messages, character: conversation.character };
+};
+
+const updateConversationSummary = async (conversationId, userId, summary, summaryMessageCount) => {
+  const conversation = await prisma.conversation.findFirst({
+    where: { id: conversationId, userId }
+  });
+
+  if (!conversation) {
+    throw createError(404, '对话不存在');
+  }
+
+  return prisma.conversation.update({
+    where: { id: conversationId },
+    data: { summary, summaryMessageCount }
+  });
+};
+
 const addMessage = async (conversationId, content, role, userId, images = []) => {
   // 验证对话属于当前用户
   const conversation = await prisma.conversation.findFirst({
@@ -230,7 +263,7 @@ const addMessage = async (conversationId, content, role, userId, images = []) =>
       orderBy: { createdAt: 'asc' }
     });
     
-    return { messages, character: conversation.character };
+    return { conversation, messages, character: conversation.character };
   };
   
   // 更新消息内容
@@ -290,6 +323,11 @@ const addMessage = async (conversationId, content, role, userId, images = []) =>
         createdAt: { gt: message.createdAt }
       }
     });
+
+    await prisma.conversation.update({
+      where: { id: conversationId },
+      data: { summary: null, summaryMessageCount: 0 }
+    });
     
     // 更新当前消息的内容
     const updatedMessage = await prisma.chatMessage.update({
@@ -306,6 +344,7 @@ const addMessage = async (conversationId, content, role, userId, images = []) =>
     return {
       updatedMessage,
       messages: remainingMessages,
+      conversation: message.conversation,
       character: message.conversation.character
     };
   };
@@ -321,6 +360,8 @@ const addMessage = async (conversationId, content, role, userId, images = []) =>
     updateConversation,
     deleteConversation,
     getMessages,
+    getConversationForAIContext,
+    updateConversationSummary,
     addMessage,
     getMessagesBeforeId,
     updateMessageContent,

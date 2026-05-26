@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: baihe-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: blog
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - baihe-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d blog"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./test/backend
+      dockerfile: Dockerfile
+    container_name: baihe-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/blog?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      PORT: 3000
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3004,http://127.0.0.1:3004}
+    volumes:
+      - ./test/backend/uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - baihe-network
+    command: sh -c "npx prisma migrate deploy && node src/app.js"
+
+  frontend:
+    build:
+      context: ./yuri-archive
+      dockerfile: Dockerfile
+    container_name: baihe-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3004}:80"
+    depends_on:
+      - backend
+    networks:
+      - baihe-network
+
+networks:
+  baihe-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
